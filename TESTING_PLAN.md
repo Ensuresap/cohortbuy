@@ -98,6 +98,16 @@
 - ☐ (integration) RLS: quotes visible/insertable only within the request's cohort.
 - ◐ (manual) comparison sorts by price ascending; currency formats per code.
 
+## Procurement lifecycle (decision → contract → cost-share → deliver)
+- ☐ (integration) `select_quote` sets one quote `selected`, others `rejected`, records agreed amount/vendor; non-coordinator → `not_coordinator`.
+- ☐ (integration) `generate_cost_shares` even-splits agreed amount across joined participants; remainder cents to coordinator; sum equals agreed amount.
+- ☐ (integration) `set_share_paid` allowed for coordinator or the share's own member only.
+- ☐ (integration) `complete_project` sets status=completed + note/date; coordinator-gated.
+- ☐ (integration) RLS: `cost_shares` readable by request's cohort members; writes only via SECURITY DEFINER fns.
+- ◐ (manual) selecting a quote highlights it "Selected"; Decision & contract shows agreed vendor/amount + Drive link; facilitator disclaimer present.
+- ◐ (manual) cost-share list shows per-member amounts, paid toggle, collected/agreed total; SafetyNote + off-platform note present.
+- ◐ (e2e) full path: forming → select quote → record contract → generate split → mark paid → complete → Completed banner.
+
 ## Project detail page
 - ☐ (unit) `AddCommentInput` requires non-empty body ≤ 2000 chars.
 - ☐ (integration) RLS: `request_comments` readable by the request's cohort members; insert only own row as approved member.

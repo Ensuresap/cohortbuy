@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { CheckCircle2, ExternalLink } from "lucide-react";
 import {
   getRequest,
   listParticipants,
   listComments,
+  listCostShares,
 } from "@/core/requests/services/requestService";
 import { listScope } from "@/core/scope/services/scopeService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
@@ -15,12 +17,18 @@ import {
 } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
+import SafetyNote from "@/components/app/SafetyNote";
 import {
   joinRequestAction,
   addScopeAction,
   advanceRequestAction,
   addQuoteAction,
   addCommentAction,
+  selectQuoteAction,
+  recordContractAction,
+  generateCostSharesAction,
+  setSharePaidAction,
+  completeProjectAction,
 } from "../actions";
 
 const fieldClass =
@@ -60,20 +68,27 @@ export default async function RequestPage({ params }: { params: { id: string } }
   const req = reqRes.ok ? reqRes.data : null;
   if (!req) notFound();
 
-  const [partsRes, scopeRes, quotesRes, commentsRes] = await Promise.all([
+  const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes] = await Promise.all([
     listParticipants(ctx, { requestId: params.id }),
     listScope(ctx, params.id),
     listQuotes(ctx, params.id),
     listComments(ctx, params.id),
+    listCostShares(ctx, params.id),
   ]);
   const participants = partsRes.ok ? partsRes.data : [];
   const scopeItems = scopeRes.ok ? scopeRes.data : [];
   const quotes = quotesRes.ok ? quotesRes.data : [];
   const comments = commentsRes.ok ? commentsRes.data : [];
+  const shares = sharesRes.ok ? sharesRes.data : [];
 
   const isParticipant = participants.some((p) => p.user_id === user.id);
   const isCoordinator = req.created_by === user.id;
   const vendorCount = new Set(quotes.map((q) => q.vendor_name)).size;
+  const hasSelection = !!req.selected_quote_id;
+  const isCompleted = req.status === "completed";
+  const sharesPaid = shares.filter((s) => s.paid);
+  const collectedCents = sharesPaid.reduce((t, s) => t + s.amount_cents, 0);
+  const shareCurrency = shares[0]?.currency ?? req.agreed_currency ?? "USD";
 
   const currentIndex = PIPELINE.indexOf(req.status);
   const nextStatus =
@@ -112,6 +127,22 @@ export default async function RequestPage({ params }: { params: { id: string } }
             </form>
           )}
         </div>
+
+        {isCompleted && (
+          <div className="mt-4 flex items-start gap-2 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p className="font-medium text-text">Completed</p>
+              {req.completed_at && (
+                <p className="text-sm text-muted">
+                  Signed off {new Date(req.completed_at).toLocaleDateString("en-US", { dateStyle: "medium" })}
+                  {req.contract_vendor ? ` · ${req.contract_vendor}` : ""}
+                </p>
+              )}
+              {req.completion_note && <p className="mt-1 text-sm text-muted">{req.completion_note}</p>}
+            </div>
+          </div>
+        )}
 
         {/* Progress */}
         <section className="mt-5 rounded-2xl border border-border bg-surface p-5 shadow-soft">
@@ -183,29 +214,55 @@ export default async function RequestPage({ params }: { params: { id: string } }
                 <p className="mt-2 text-muted">No quotes recorded yet.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
-                  {quotes.map((q, i) => (
-                    <li key={q.id} className="rounded-xl border border-border px-4 py-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-text">
-                          {q.vendor_name}
-                          {i === 0 && (
-                            <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                              Best price
-                            </span>
-                          )}
-                        </span>
-                        <span className="font-display text-lg font-semibold text-primary">
-                          {fmt(q.amount_cents, q.currency)}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-subtle">
-                        {q.kind}
-                        {q.timeline ? ` · ${q.timeline}` : ""}
-                        {q.warranty ? ` · ${q.warranty}` : ""}
-                      </p>
-                      {q.notes && <p className="mt-1 text-sm text-muted">{q.notes}</p>}
-                    </li>
-                  ))}
+                  {quotes.map((q, i) => {
+                    const selected = q.id === req.selected_quote_id;
+                    return (
+                      <li
+                        key={q.id}
+                        className={
+                          "rounded-xl border px-4 py-3 " +
+                          (selected ? "border-primary bg-primary/5" : "border-border")
+                        }
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-text">
+                            {q.vendor_name}
+                            {selected && (
+                              <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+                                Selected
+                              </span>
+                            )}
+                            {!hasSelection && i === 0 && (
+                              <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                Best price
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-display text-lg font-semibold text-primary">
+                            {fmt(q.amount_cents, q.currency)}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-subtle">
+                          {q.kind}
+                          {q.timeline ? ` · ${q.timeline}` : ""}
+                          {q.warranty ? ` · ${q.warranty}` : ""}
+                        </p>
+                        {q.notes && <p className="mt-1 text-sm text-muted">{q.notes}</p>}
+                        {isCoordinator && !selected && !isCompleted && (
+                          <form action={selectQuoteAction} className="mt-2">
+                            <input type="hidden" name="requestId" value={req.id} />
+                            <input type="hidden" name="quoteId" value={q.id} />
+                            <button
+                              type="submit"
+                              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text hover:bg-surface-2"
+                            >
+                              Select this quote
+                            </button>
+                          </form>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               {isParticipant && (
@@ -228,6 +285,149 @@ export default async function RequestPage({ params }: { params: { id: string } }
                 </form>
               )}
             </section>
+
+            {/* Decision & contract */}
+            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+              <h2 className="font-display text-lg font-semibold text-text">Decision &amp; contract</h2>
+              {hasSelection ? (
+                <div className="mt-2 rounded-xl border border-border p-4">
+                  <p className="text-sm text-subtle">Agreed vendor</p>
+                  <p className="font-medium text-text">{req.contract_vendor}</p>
+                  {req.agreed_amount_cents != null && (
+                    <p className="mt-1 font-display text-xl font-semibold text-primary">
+                      {fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")}
+                    </p>
+                  )}
+                  {req.contract_url && (
+                    <a
+                      href={req.contract_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-4 w-4" /> View contract document
+                    </a>
+                  )}
+                  {req.contract_note && <p className="mt-1 text-sm text-muted">{req.contract_note}</p>}
+                </div>
+              ) : (
+                <p className="mt-2 text-muted">
+                  No quote selected yet. The coordinator picks a winning quote under Vendors &amp; quotes.
+                </p>
+              )}
+              <p className="mt-3 text-xs text-subtle">
+                The agreement is made directly between participating members and the vendor. CohortBuy
+                facilitates coordination only — it is not a party to the contract and holds no funds.
+              </p>
+              {isCoordinator && hasSelection && !isCompleted && (
+                <form action={recordContractAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
+                  <p className="text-sm font-medium text-text">Record the contract reference</p>
+                  <input type="hidden" name="requestId" value={req.id} />
+                  <input
+                    name="url"
+                    type="url"
+                    defaultValue={req.contract_url ?? ""}
+                    placeholder="Google Drive link to the signed agreement"
+                    className={fieldClass}
+                  />
+                  <textarea
+                    name="note"
+                    rows={2}
+                    defaultValue={req.contract_note ?? ""}
+                    placeholder="Notes (scope agreed, start date, terms…)"
+                    className={fieldClass}
+                  />
+                  <Button type="submit">Save contract reference</Button>
+                </form>
+              )}
+            </section>
+
+            {/* Cost share */}
+            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-lg font-semibold text-text">Cost share</h2>
+                {shares.length > 0 && req.agreed_amount_cents != null && (
+                  <span className="text-xs text-subtle">
+                    {fmt(collectedCents, shareCurrency)} of {fmt(req.agreed_amount_cents, shareCurrency)} collected
+                  </span>
+                )}
+              </div>
+              {shares.length === 0 ? (
+                <p className="mt-2 text-muted">
+                  {hasSelection
+                    ? "No split yet — the coordinator can generate an even split of the agreed amount."
+                    : "Cost shares appear once a winning quote sets the agreed amount."}
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {shares.map((s) => {
+                    const canToggle = isCoordinator || s.user_id === user.id;
+                    return (
+                      <li key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-2.5">
+                        <div className="flex min-w-0 items-center gap-2">
+                          {s.member_avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={s.member_avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                          ) : (
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[11px] font-semibold text-text">
+                              {initials(s.member_name)}
+                            </div>
+                          )}
+                          <span className="truncate text-sm text-text">
+                            {s.user_id === user.id ? "You" : s.member_name ?? "Member"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-text">{fmt(s.amount_cents, s.currency)}</span>
+                          {s.paid ? (
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Paid</span>
+                          ) : (
+                            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-subtle">Unpaid</span>
+                          )}
+                          {canToggle && !isCompleted && (
+                            <form action={setSharePaidAction}>
+                              <input type="hidden" name="requestId" value={req.id} />
+                              <input type="hidden" name="shareId" value={s.id} />
+                              <input type="hidden" name="paid" value={s.paid ? "false" : "true"} />
+                              <button type="submit" className="text-xs font-medium text-primary hover:underline">
+                                {s.paid ? "Mark unpaid" : "Mark paid"}
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {isCoordinator && hasSelection && !isCompleted && (
+                <form action={generateCostSharesAction} className="mt-3">
+                  <input type="hidden" name="requestId" value={req.id} />
+                  <button type="submit" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text hover:bg-surface-2">
+                    {shares.length === 0 ? "Generate even split" : "Regenerate split"}
+                  </button>
+                </form>
+              )}
+              <div className="mt-3">
+                <SafetyNote />
+              </div>
+              <p className="mt-2 text-xs text-subtle">
+                Payments are settled directly between members and the vendor, off-platform. This tracker
+                records who has paid — CohortBuy never collects or holds money.
+              </p>
+            </section>
+
+            {/* Completion */}
+            {isCoordinator && !isCompleted && (
+              <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+                <h2 className="font-display text-lg font-semibold text-text">Sign off completion</h2>
+                <form action={completeProjectAction} className="mt-3 space-y-2">
+                  <input type="hidden" name="requestId" value={req.id} />
+                  <textarea name="note" rows={2} placeholder="Completion note (what was delivered, outcome)…" className={fieldClass} />
+                  <Button type="submit">Mark project completed</Button>
+                </form>
+              </section>
+            )}
 
             {/* Discussion */}
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">

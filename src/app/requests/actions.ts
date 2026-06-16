@@ -8,6 +8,11 @@ import {
   joinServiceRequest,
   advanceStatus,
   addComment,
+  selectWinningQuote,
+  recordContract,
+  generateCostShares,
+  setSharePaid,
+  completeProject,
 } from "@/core/requests/services/requestService";
 import { addScopeItem } from "@/core/scope/services/scopeService";
 import { addQuote } from "@/core/quotes/services/quoteService";
@@ -70,6 +75,51 @@ export async function addCommentAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
   await addComment(ctx, { requestId, body: String(formData.get("body") ?? "") });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function selectQuoteAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await selectWinningQuote(ctx, { quoteId: String(formData.get("quoteId") ?? "") });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function recordContractAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await recordContract(ctx, {
+    requestId,
+    url: String(formData.get("url") ?? ""),
+    note: String(formData.get("note") ?? "") || undefined,
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function generateCostSharesAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await generateCostShares(ctx, { requestId });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function setSharePaidAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await setSharePaid(ctx, {
+    shareId: String(formData.get("shareId") ?? ""),
+    paid: String(formData.get("paid") ?? "") === "true",
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function completeProjectAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await completeProject(ctx, {
+    requestId,
+    note: String(formData.get("note") ?? "") || undefined,
+  });
   revalidatePath(`/requests/${requestId}`);
 }
 

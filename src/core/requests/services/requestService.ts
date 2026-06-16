@@ -4,9 +4,14 @@ import {
   RequestIdInput,
   AdvanceStatusInput,
   AddCommentInput,
+  SelectQuoteInput,
+  SetContractInput,
+  SetSharePaidInput,
+  CompleteProjectInput,
   type ServiceRequest,
   type Participant,
   type ProjectComment,
+  type CostShare,
 } from "../domain/request";
 import * as repo from "../repositories/requestRepo";
 import { ok, err, type Result } from "../../result";
@@ -113,6 +118,93 @@ export async function listComments(ctx: Ctx, requestId: string): Promise<Result<
   const { data, error } = await repo.commentsFeed(ctx.db, requestId);
   if (error) return err("db_error", error.message);
   return ok((data ?? []) as ProjectComment[]);
+}
+
+/** Coordinator selects a winning quote (records agreed amount + vendor). */
+export async function selectWinningQuote(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = SelectQuoteInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", "Invalid quote");
+  const { error } = await repo.selectQuote(ctx.db, p.data.quoteId);
+  if (error) {
+    if (error.message?.includes("not_coordinator"))
+      return err("forbidden", "Only the project coordinator can select a quote");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** Coordinator records the off-platform contract reference (e.g. Google Drive link). */
+export async function recordContract(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = SetContractInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", p.error.issues[0]?.message ?? "Invalid");
+  const { error } = await repo.setContract(ctx.db, {
+    requestId: p.data.requestId,
+    url: p.data.url ?? "",
+    note: p.data.note ?? "",
+  });
+  if (error) {
+    if (error.message?.includes("not_coordinator"))
+      return err("forbidden", "Only the project coordinator can record the contract");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** Coordinator generates an even split of the agreed amount across participants. */
+export async function generateCostShares(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = RequestIdInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", "Invalid request id");
+  const { error } = await repo.generateCostShares(ctx.db, p.data.requestId);
+  if (error) {
+    if (error.message?.includes("not_coordinator"))
+      return err("forbidden", "Only the project coordinator can generate cost shares");
+    if (error.message?.includes("no_agreed_amount"))
+      return err("invalid_input", "Select a winning quote first to set the agreed amount");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** Mark a member's share paid/unpaid (off-platform settlement; tracking only). */
+export async function setSharePaid(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = SetSharePaidInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", "Invalid share");
+  const { error } = await repo.setSharePaid(ctx.db, { shareId: p.data.shareId, paid: p.data.paid });
+  if (error) return err("db_error", error.message);
+  return ok(true);
+}
+
+/** Coordinator signs off project completion. */
+export async function completeProject(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = CompleteProjectInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", p.error.issues[0]?.message ?? "Invalid");
+  const { error } = await repo.completeProject(ctx.db, {
+    requestId: p.data.requestId,
+    note: p.data.note ?? "",
+  });
+  if (error) {
+    if (error.message?.includes("not_coordinator"))
+      return err("forbidden", "Only the project coordinator can complete the project");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+export async function listCostShares(ctx: Ctx, requestId: string): Promise<Result<CostShare[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.costSharesFeed(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as CostShare[]);
 }
 
 export async function listParticipants(ctx: Ctx, raw: unknown): Promise<Result<Participant[]>> {

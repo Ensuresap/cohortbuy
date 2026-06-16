@@ -43,6 +43,36 @@ export function commentsFeed(db: SupabaseClient, requestId: string) {
   return db.rpc("request_comments_feed", { p_request: requestId });
 }
 
+export function selectQuote(db: SupabaseClient, quoteId: string) {
+  return db.rpc("select_quote", { p_quote: quoteId });
+}
+
+export function setContract(
+  db: SupabaseClient,
+  args: { requestId: string; url: string; note: string }
+) {
+  return db.rpc("set_contract", { p_request: args.requestId, p_url: args.url, p_note: args.note });
+}
+
+export function generateCostShares(db: SupabaseClient, requestId: string) {
+  return db.rpc("generate_cost_shares", { p_request: requestId });
+}
+
+export function setSharePaid(db: SupabaseClient, args: { shareId: string; paid: boolean }) {
+  return db.rpc("set_share_paid", { p_share: args.shareId, p_paid: args.paid });
+}
+
+export function completeProject(
+  db: SupabaseClient,
+  args: { requestId: string; note: string }
+) {
+  return db.rpc("complete_project", { p_request: args.requestId, p_note: args.note });
+}
+
+export function costSharesFeed(db: SupabaseClient, requestId: string) {
+  return db.rpc("cost_shares_feed", { p_request: requestId });
+}
+
 export function listMyParticipations(db: SupabaseClient, userId: string) {
   return db
     .from("request_participants")
