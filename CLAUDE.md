@@ -116,6 +116,12 @@ This must feel like an app on a phone and be trivial to wrap as a native app lat
 - Money: store as **integer minor units + ISO currency code** (never floats). Format with `Intl.NumberFormat`.
 - Dates/numbers: format with `Intl.DateTimeFormat` / `Intl.NumberFormat` using the user's country/locale. Store timestamps in UTC.
 
+## Notifications
+- **Multi-channel** via the `NotificationChannel` adapter (`core/notifications/`): SMS / WhatsApp / email, console now → providers later. Each user has a `preferred_channel`; action-due alerts default to SMS.
+- **Consent is mandatory.** Never send SMS/WhatsApp without `sms_opt_in`. The service enforces this and falls back to email / in-app. Record `sms_opt_in_at`.
+- Capability services call `notifyActionDue(ctx, { userId, event, message, link })` at **every approval gate** (a notification fires on each action-due event). All sends are logged to `notifications`.
+- Honor STOP/HELP and (later) quiet hours; phone numbers are PII — handle per the privacy policy.
+
 ## Conventions
 - Keep it **seamless** — match the existing warm, calm visual language; don't introduce competing styles.
 - TypeScript everywhere; prefer Server Components; colocate components under `src/components`.
