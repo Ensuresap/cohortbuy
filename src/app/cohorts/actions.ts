@@ -13,6 +13,7 @@ import {
 } from "@/core/cohorts/services/cohortService";
 import { createServerClient } from "@/core/db/serverClient";
 import { notifyActionDue } from "@/core/services/notificationService";
+import { createPost } from "@/core/posts/services/postService";
 
 async function getCtx() {
   const supabase = createClient();
@@ -70,6 +71,17 @@ export async function setTitleAction(formData: FormData) {
     cohortId: String(formData.get("cohortId") ?? ""),
     userId: String(formData.get("userId") ?? ""),
     title: String(formData.get("title") ?? ""),
+  });
+  revalidatePath(`/${handle}`);
+}
+
+export async function createPostAction(formData: FormData) {
+  const ctx = await getCtx();
+  const handle = String(formData.get("handle") ?? "");
+  await createPost(ctx, {
+    cohortId: String(formData.get("cohortId") ?? ""),
+    body: String(formData.get("body") ?? ""),
+    imageUrl: String(formData.get("imageUrl") ?? "").trim(),
   });
   revalidatePath(`/${handle}`);
 }

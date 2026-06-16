@@ -22,6 +22,7 @@ import {
 } from "./requestTools";
 import { addScopeItemTool } from "./scopeTools";
 import { addQuoteTool } from "./quoteTools";
+import { createPostTool } from "./postTools";
 
 /**
  * Central tool registry. Add a capability's tool here and it becomes
@@ -50,6 +51,7 @@ export const tools: Tool[] = [
   advanceRequestStatusTool,
   addScopeItemTool,
   addQuoteTool,
+  createPostTool,
 ];
 
 export const toolMap: Record<string, Tool> = Object.fromEntries(

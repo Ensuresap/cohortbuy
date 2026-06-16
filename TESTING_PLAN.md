@@ -110,6 +110,11 @@
 - ☐ (integration) `updateCohortProfile` → forbidden for non-managers (RLS no rows).
 - ◐ (manual) online dot reflects last_seen < 5 min; member-since + Est. year render; owner/co-admin/member badges correct.
 
+## Cohort posts (feed)
+- ☐ (integration) only managers/co-admins can insert posts (RLS); members read.
+- ☐ (integration) `cohort_posts_feed` returns posts to members + (for public cohorts) any authed user, with author name/avatar.
+- ◐ (manual) composer shows only for managers; feed renders body + optional image; timeAgo formats.
+
 ## Cross-cutting
 - ☐ (unit) architecture guard: no `.from(`/`.rpc(` outside `repositories/` (grep test in CI).
 - ☐ (integration) admin-only services all enforce `isStaff` (table-driven negative tests).

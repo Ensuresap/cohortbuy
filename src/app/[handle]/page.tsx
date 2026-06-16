@@ -10,6 +10,8 @@ import {
 import type { DirectoryMember } from "@/core/cohorts/domain/cohort";
 import { listCohortRequests } from "@/core/requests/services/requestService";
 import { STAGE_LABELS } from "@/core/requests/domain/request";
+import { listFeed } from "@/core/posts/services/postService";
+import type { FeedPost } from "@/core/posts/domain/post";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import {
@@ -18,20 +20,29 @@ import {
   updateCohortProfileAction,
   setTitleAction,
   setComanagerAction,
+  createPostAction,
 } from "../cohorts/actions";
 import { createRequestAction } from "../requests/actions";
 
 const fieldClass =
   "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
 
-function initials(name: string | null): string {
+function initials(name: string | null) {
   return (name ?? "?").trim().split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase() || "?";
 }
-function isOnline(lastSeen: string | null): boolean {
-  return !!lastSeen && Date.now() - new Date(lastSeen).getTime() < 5 * 60 * 1000;
+function isOnline(t: string | null) {
+  return !!t && Date.now() - new Date(t).getTime() < 5 * 60 * 1000;
 }
-function monthYear(iso: string): string {
+function monthYear(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+function timeAgo(iso: string) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  if (s < 604800) return `${Math.floor(s / 86400)}d`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export default async function CohortPage({ params }: { params: { handle: string } }) {
@@ -57,16 +68,14 @@ export default async function CohortPage({ params }: { params: { handle: string 
   const isManager = isApproved && membership?.access_level === "manager";
   const isOwner = cohort.created_by === user.id;
 
-  let directory: DirectoryMember[] = [];
-  let projectList: Array<{ id: string; title: string; status: keyof typeof STAGE_LABELS }> = [];
-  if (isApproved) {
-    const [dir, pr] = await Promise.all([
-      getMemberDirectory(ctx, cohort.id),
-      listCohortRequests(ctx, cohort.id),
-    ]);
-    directory = (dir.ok ? dir.data : []) as DirectoryMember[];
-    projectList = (pr.ok ? pr.data : []) as typeof projectList;
-  }
+  const [dirRes, projRes, feedRes] = await Promise.all([
+    isApproved ? getMemberDirectory(ctx, cohort.id) : Promise.resolve({ ok: true, data: [] as DirectoryMember[] }),
+    isApproved ? listCohortRequests(ctx, cohort.id) : Promise.resolve({ ok: true, data: [] }),
+    listFeed(ctx, cohort.id),
+  ]);
+  const directory = (dirRes.ok ? dirRes.data : []) as DirectoryMember[];
+  const projects = (projRes.ok ? projRes.data : []) as Array<{ id: string; title: string; status: keyof typeof STAGE_LABELS }>;
+  const posts = (feedRes.ok ? feedRes.data : []) as FeedPost[];
 
   let requests: Array<{ id: string; user_id: string; note: string | null }> = [];
   if (isManager) {
@@ -76,199 +85,232 @@ export default async function CohortPage({ params }: { params: { handle: string 
 
   const estYear = new Date(cohort.created_at).getFullYear();
   const years = new Date().getFullYear() - estYear;
+  const onlineCount = directory.filter((m) => isOnline(m.last_seen_at)).length;
 
   return (
     <AppShell>
-      <main className="mx-auto w-full max-w-3xl px-6 py-10">
-        {/* Header */}
-        <section className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
-          <div className="flex items-start gap-4">
-            <Avatar url={cohort.avatar_url} name={cohort.name} big />
-            <div className="flex-1">
-              <h1 className="font-display text-3xl font-semibold text-text">{cohort.name}</h1>
-              {cohort.tagline && <p className="mt-1 text-muted">{cohort.tagline}</p>}
-              <p className="mt-2 text-xs text-subtle">
-                /{cohort.handle} · {cohort.visibility} · Est. {estYear}
-                {years > 0 ? ` · ${years} yr${years > 1 ? "s" : ""}` : ""}
-                {isApproved ? ` · ${directory.length} member${directory.length === 1 ? "" : "s"}` : ""}
-              </p>
-              {cohort.description && <p className="mt-3 text-sm text-muted">{cohort.description}</p>}
+      <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+        {/* Identity */}
+        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-soft">
+          <div className="h-24 bg-gradient-to-br from-brand-forest to-brand-forest-dark sm:h-28" />
+          <div className="px-6 pb-6">
+            <div className="-mt-10 flex items-end justify-between gap-4">
+              <Avatar url={cohort.avatar_url} name={cohort.name} big ring />
+              <div className="mb-1">
+                {!membership && (
+                  <form action={requestJoinAction}>
+                    <input type="hidden" name="cohortId" value={cohort.id} />
+                    <input type="hidden" name="handle" value={cohort.handle} />
+                    <Button type="submit">Request to join</Button>
+                  </form>
+                )}
+                {membership && membership.status !== "approved" && (
+                  <span className="rounded-full bg-surface-2 px-3 py-1.5 text-sm text-muted capitalize">{membership.status}</span>
+                )}
+                {isApproved && (
+                  <span className="rounded-full bg-surface-2 px-3 py-1.5 text-sm text-text">
+                    {isOwner ? "Owner" : membership?.access_level === "manager" ? "Co-admin" : "Member"}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-
-          <div className="mt-5">
-            {!membership && (
-              <form action={requestJoinAction}>
-                <input type="hidden" name="cohortId" value={cohort.id} />
-                <input type="hidden" name="handle" value={cohort.handle} />
-                <Button type="submit">Request to join</Button>
-              </form>
-            )}
-            {membership && membership.status !== "approved" && (
-              <p className="text-sm text-muted">
-                Your request is <strong className="text-text">{membership.status}</strong>.
-              </p>
-            )}
-            {isApproved && (
-              <p className="text-sm text-muted">
-                You&rsquo;re {isOwner ? "the owner" : membership?.access_level === "manager" ? "a co-admin" : "a member"} here.
-              </p>
-            )}
+            <h1 className="mt-3 font-display text-2xl font-semibold text-text sm:text-3xl">{cohort.name}</h1>
+            {cohort.tagline && <p className="mt-1 text-muted">{cohort.tagline}</p>}
+            <p className="mt-2 text-xs text-subtle">
+              {cohort.visibility === "public" ? "Public" : "Private"} · /{cohort.handle} · Est. {estYear}
+              {years > 0 ? ` · ${years} yr${years > 1 ? "s" : ""}` : ""}
+              {isApproved ? ` · ${directory.length} member${directory.length === 1 ? "" : "s"}` : ""}
+            </p>
           </div>
         </section>
 
-        {/* Members */}
-        {isApproved && (
-          <section className="mt-6 rounded-2xl border border-border bg-surface p-6">
-            <h2 className="font-display text-lg font-semibold text-text">
-              Members ({directory.length})
-            </h2>
-            <ul className="mt-4 space-y-3">
-              {directory.map((m) => {
-                const owner = m.user_id === cohort.created_by;
-                const role = owner ? "Owner" : m.access_level === "manager" ? "Co-admin" : "Member";
-                return (
-                  <li key={m.user_id} className="flex flex-wrap items-center gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
-                    <div className="relative">
-                      <Avatar url={m.avatar_url} name={m.display_name} />
-                      <span
-                        className={
-                          "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface " +
-                          (isOnline(m.last_seen_at) ? "bg-green-500" : "bg-subtle")
-                        }
-                        title={isOnline(m.last_seen_at) ? "Online" : "Offline"}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-text">
-                        {m.display_name ?? "Member"}
-                        {m.user_id === user.id && <span className="text-subtle"> (you)</span>}
-                      </p>
-                      <p className="text-xs text-subtle">
-                        {role}
-                        {m.title ? ` · ${m.title}` : ""} · member since {monthYear(m.member_since)}
-                      </p>
-                    </div>
-
-                    {isManager && !owner && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <form action={setTitleAction} className="flex items-center gap-1">
-                          <input type="hidden" name="cohortId" value={cohort.id} />
-                          <input type="hidden" name="userId" value={m.user_id} />
-                          <input type="hidden" name="handle" value={cohort.handle} />
-                          <input name="title" defaultValue={m.title ?? ""} placeholder="Title" className="h-9 w-28 rounded-lg border border-border bg-surface-2 px-2 text-sm text-text outline-none focus:ring-2 focus:ring-ring" />
-                          <Button type="submit" size="md" variant="secondary">Set</Button>
-                        </form>
-                        {isOwner && (
-                          <form action={setComanagerAction}>
-                            <input type="hidden" name="cohortId" value={cohort.id} />
-                            <input type="hidden" name="userId" value={m.user_id} />
-                            <input type="hidden" name="handle" value={cohort.handle} />
-                            <input type="hidden" name="make" value={m.access_level === "manager" ? "false" : "true"} />
-                            <Button type="submit" size="md" variant="ghost">
-                              {m.access_level === "manager" ? "Remove co-admin" : "Make co-admin"}
-                            </Button>
-                          </form>
+        <div className="mt-6 grid gap-6 lg:grid-cols-3">
+          {/* Main: feed + projects */}
+          <div className="space-y-6 lg:col-span-2">
+            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+              {isManager && (
+                <form action={createPostAction} className="space-y-2 border-b border-border pb-5">
+                  <input type="hidden" name="cohortId" value={cohort.id} />
+                  <input type="hidden" name="handle" value={cohort.handle} />
+                  <textarea name="body" required rows={3} placeholder="Share an update with this cohort…" className={fieldClass} />
+                  <div className="flex items-center gap-2">
+                    <input name="imageUrl" placeholder="Image URL (optional)" className={`${fieldClass} flex-1`} />
+                    <Button type="submit">Post</Button>
+                  </div>
+                </form>
+              )}
+              <div className={isManager ? "mt-5" : ""}>
+                {posts.length === 0 ? (
+                  <p className="text-muted">No posts yet{isManager ? " — share the first update." : "."}</p>
+                ) : (
+                  <ul className="space-y-5">
+                    {posts.map((po) => (
+                      <li key={po.id} className="border-b border-border pb-5 last:border-0 last:pb-0">
+                        <div className="flex items-center gap-3">
+                          <Avatar url={po.author_avatar} name={po.author_name} />
+                          <div>
+                            <p className="text-sm font-medium text-text">{po.author_name ?? "Admin"}</p>
+                            <p className="text-xs text-subtle">{timeAgo(po.created_at)}</p>
+                          </div>
+                        </div>
+                        <p className="mt-3 whitespace-pre-wrap text-text">{po.body}</p>
+                        {po.image_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={po.image_url} alt="" className="mt-3 w-full rounded-xl border border-border object-cover" />
                         )}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
 
-        {/* Projects */}
-        {isApproved && (
-          <section className="mt-6 rounded-2xl border border-border bg-surface p-6">
-            <h2 className="font-display text-lg font-semibold text-text">Projects</h2>
-            {projectList.length === 0 ? (
-              <p className="mt-2 text-muted">No projects yet. Start one below.</p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {projectList.map((p) => (
-                  <li key={p.id}>
-                    <Link href={`/requests/${p.id}`} className="flex items-center justify-between rounded-xl border border-border px-4 py-3 hover:bg-surface-2">
-                      <span className="font-medium text-text">{p.title}</span>
-                      <span className="text-xs text-subtle">{STAGE_LABELS[p.status]}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            {isApproved && (
+              <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+                <h2 className="font-display text-lg font-semibold text-text">Projects</h2>
+                {projects.length === 0 ? (
+                  <p className="mt-2 text-muted">No projects yet. Start one below.</p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {projects.map((p) => (
+                      <li key={p.id}>
+                        <Link href={`/requests/${p.id}`} className="flex items-center justify-between rounded-xl border border-border px-4 py-3 hover:bg-surface-2">
+                          <span className="font-medium text-text">{p.title}</span>
+                          <span className="text-xs text-subtle">{STAGE_LABELS[p.status]}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <form action={createRequestAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
+                  <p className="text-sm font-medium text-text">Start a project</p>
+                  <input type="hidden" name="cohortId" value={cohort.id} />
+                  <input type="hidden" name="handle" value={cohort.handle} />
+                  <input name="title" required placeholder="e.g. Backyard fence replacement" className={fieldClass} />
+                  <input name="category" placeholder="Category (e.g. Fencing)" className={fieldClass} />
+                  <Button type="submit">Create project</Button>
+                </form>
+              </section>
             )}
-            <form action={createRequestAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
-              <p className="text-sm font-medium text-text">Start a project</p>
-              <input type="hidden" name="cohortId" value={cohort.id} />
-              <input type="hidden" name="handle" value={cohort.handle} />
-              <input name="title" required placeholder="e.g. Backyard fence replacement" className={fieldClass} />
-              <input name="category" placeholder="Category (e.g. Fencing)" className={fieldClass} />
-              <textarea name="description" rows={2} placeholder="What needs doing?" className={fieldClass} />
-              <Button type="submit">Create project</Button>
-            </form>
-          </section>
-        )}
+          </div>
 
-        {/* Manager: pending requests */}
-        {isManager && (
-          <section className="mt-6 rounded-2xl border border-border bg-surface p-6">
-            <h2 className="font-display text-lg font-semibold text-text">Pending requests ({requests.length})</h2>
-            {requests.length === 0 ? (
-              <p className="mt-2 text-muted">No pending requests.</p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {requests.map((req) => (
-                  <li key={req.id} className="rounded-xl border border-border px-4 py-3">
-                    <p className="text-sm text-text">Member <span className="text-subtle">{req.user_id.slice(0, 8)}…</span></p>
-                    {req.note && <p className="mt-1 text-sm text-muted">&ldquo;{req.note}&rdquo;</p>}
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {(["approve", "reject", "needs_info"] as const).map((decision) => (
-                        <form key={decision} action={reviewAction}>
-                          <input type="hidden" name="cohortId" value={cohort.id} />
-                          <input type="hidden" name="userId" value={req.user_id} />
-                          <input type="hidden" name="handle" value={cohort.handle} />
-                          <input type="hidden" name="decision" value={decision} />
-                          <Button type="submit" size="md" variant={decision === "approve" ? "primary" : "secondary"}>
-                            {decision === "needs_info" ? "Ask info" : decision}
-                          </Button>
-                        </form>
+          {/* Side: members + manage */}
+          <div className="space-y-6">
+            {isApproved && (
+              <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-display text-lg font-semibold text-text">Members</h2>
+                  <span className="text-xs text-subtle">{onlineCount} online</span>
+                </div>
+                <ul className="mt-4 space-y-3">
+                  {directory.map((m) => {
+                    const owner = m.user_id === cohort.created_by;
+                    const role = owner ? "Owner" : m.access_level === "manager" ? "Co-admin" : "Member";
+                    return (
+                      <li key={m.user_id} className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Avatar url={m.avatar_url} name={m.display_name} />
+                            <span className={"absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface " + (isOnline(m.last_seen_at) ? "bg-green-500" : "bg-subtle")} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-text">
+                              {m.display_name ?? "Member"}{m.user_id === user.id ? " (you)" : ""}
+                            </p>
+                            <p className="truncate text-xs text-subtle">
+                              {role}{m.title ? ` · ${m.title}` : ""} · since {monthYear(m.member_since)}
+                            </p>
+                          </div>
+                        </div>
+                        {isManager && !owner && (
+                          <div className="flex flex-wrap items-center gap-1.5 pl-12">
+                            <form action={setTitleAction} className="flex items-center gap-1">
+                              <input type="hidden" name="cohortId" value={cohort.id} />
+                              <input type="hidden" name="userId" value={m.user_id} />
+                              <input type="hidden" name="handle" value={cohort.handle} />
+                              <input name="title" defaultValue={m.title ?? ""} placeholder="Title" className="h-8 w-24 rounded-lg border border-border bg-surface-2 px-2 text-xs text-text outline-none focus:ring-2 focus:ring-ring" />
+                              <Button type="submit" size="md" variant="secondary">Set</Button>
+                            </form>
+                            {isOwner && (
+                              <form action={setComanagerAction}>
+                                <input type="hidden" name="cohortId" value={cohort.id} />
+                                <input type="hidden" name="userId" value={m.user_id} />
+                                <input type="hidden" name="handle" value={cohort.handle} />
+                                <input type="hidden" name="make" value={m.access_level === "manager" ? "false" : "true"} />
+                                <Button type="submit" size="md" variant="ghost">
+                                  {m.access_level === "manager" ? "Demote" : "Co-admin"}
+                                </Button>
+                              </form>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
+
+            {isManager && (
+              <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+                <h2 className="font-display text-lg font-semibold text-text">Manage</h2>
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-muted">Requests to join ({requests.length})</p>
+                  {requests.length === 0 ? (
+                    <p className="mt-1 text-sm text-subtle">None pending.</p>
+                  ) : (
+                    <ul className="mt-2 space-y-2">
+                      {requests.map((req) => (
+                        <li key={req.id} className="rounded-xl border border-border px-3 py-2">
+                          <p className="text-xs text-subtle">{req.user_id.slice(0, 8)}…</p>
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {(["approve", "reject", "needs_info"] as const).map((d) => (
+                              <form key={d} action={reviewAction}>
+                                <input type="hidden" name="cohortId" value={cohort.id} />
+                                <input type="hidden" name="userId" value={req.user_id} />
+                                <input type="hidden" name="handle" value={cohort.handle} />
+                                <input type="hidden" name="decision" value={d} />
+                                <Button type="submit" size="md" variant={d === "approve" ? "primary" : "secondary"}>
+                                  {d === "needs_info" ? "Info" : d}
+                                </Button>
+                              </form>
+                            ))}
+                          </div>
+                        </li>
                       ))}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </ul>
+                  )}
+                </div>
+                <details className="mt-4">
+                  <summary className="cursor-pointer text-sm font-medium text-primary">Cohort settings</summary>
+                  <form action={updateCohortProfileAction} className="mt-3 space-y-2">
+                    <input type="hidden" name="cohortId" value={cohort.id} />
+                    <input type="hidden" name="handle" value={cohort.handle} />
+                    <input name="name" defaultValue={cohort.name} placeholder="Name" className={fieldClass} />
+                    <input name="tagline" defaultValue={cohort.tagline ?? ""} placeholder="Slogan / tagline" className={fieldClass} />
+                    <input name="avatarUrl" defaultValue={cohort.avatar_url ?? ""} placeholder="Logo image URL" className={fieldClass} />
+                    <textarea name="description" defaultValue={cohort.description ?? ""} rows={2} placeholder="Description" className={fieldClass} />
+                    <Button type="submit">Save</Button>
+                  </form>
+                </details>
+              </section>
             )}
-          </section>
-        )}
-
-        {/* Manager: cohort settings */}
-        {isManager && (
-          <section className="mt-6 rounded-2xl border border-border bg-surface p-6">
-            <h2 className="font-display text-lg font-semibold text-text">Cohort settings</h2>
-            <form action={updateCohortProfileAction} className="mt-4 space-y-3">
-              <input type="hidden" name="cohortId" value={cohort.id} />
-              <input type="hidden" name="handle" value={cohort.handle} />
-              <input name="name" defaultValue={cohort.name} placeholder="Cohort name" className={fieldClass} />
-              <input name="tagline" defaultValue={cohort.tagline ?? ""} placeholder="Slogan / tagline" className={fieldClass} />
-              <input name="avatarUrl" defaultValue={cohort.avatar_url ?? ""} placeholder="Logo image URL" className={fieldClass} />
-              <textarea name="description" defaultValue={cohort.description ?? ""} rows={2} placeholder="Description" className={fieldClass} />
-              <Button type="submit">Save settings</Button>
-            </form>
-          </section>
-        )}
+          </div>
+        </div>
       </main>
     </AppShell>
   );
 }
 
-function Avatar({ url, name, big }: { url: string | null; name: string | null; big?: boolean }) {
-  const size = big ? "h-16 w-16 text-xl" : "h-10 w-10 text-sm";
+function Avatar({ url, name, big, ring }: { url: string | null; name: string | null; big?: boolean; ring?: boolean }) {
+  const size = big ? "h-20 w-20 text-2xl" : "h-10 w-10 text-sm";
+  const ringCls = ring ? "ring-4 ring-surface" : "";
   if (url) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt={name ?? "avatar"} className={`${size} shrink-0 rounded-2xl object-cover`} />;
+    return <img src={url} alt={name ?? "avatar"} className={`${size} ${ringCls} shrink-0 rounded-2xl object-cover`} />;
   }
   return (
-    <div className={`${size} flex shrink-0 items-center justify-center rounded-2xl bg-primary font-display font-semibold text-primary-foreground`}>
+    <div className={`${size} ${ringCls} flex shrink-0 items-center justify-center rounded-2xl bg-primary font-display font-semibold text-primary-foreground`}>
       {initials(name)}
     </div>
   );
