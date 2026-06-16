@@ -41,6 +41,15 @@ export const AddCommentInput = z.object({
 });
 export type AddCommentInput = z.infer<typeof AddCommentInput>;
 
+export const EditRequestInput = z.object({
+  requestId: z.string().uuid(),
+  title: z.string().trim().min(2).max(120),
+  category: z.string().trim().max(60).optional(),
+  description: z.string().trim().max(2000).optional(),
+  driver: z.string().trim().max(1000).optional(),
+});
+export type EditRequestInput = z.infer<typeof EditRequestInput>;
+
 export interface ProjectComment {
   id: string;
   body: string;

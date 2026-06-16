@@ -8,6 +8,7 @@ import {
   joinServiceRequest,
   advanceStatus,
   addComment,
+  editProject,
   selectWinningQuote,
   recordContract,
   generateCostShares,
@@ -40,6 +41,19 @@ export async function createRequestAction(formData: FormData) {
     redirect(`/${handle}?error=${encodeURIComponent(res.error.message)}`);
   }
   redirect(`/requests/${res.data.requestId}`);
+}
+
+export async function updateProjectAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await editProject(ctx, {
+    requestId,
+    title: String(formData.get("title") ?? ""),
+    category: String(formData.get("category") ?? "") || undefined,
+    description: String(formData.get("description") ?? "") || undefined,
+    driver: String(formData.get("driver") ?? "") || undefined,
+  });
+  revalidatePath(`/requests/${requestId}`);
 }
 
 export async function joinRequestAction(formData: FormData) {

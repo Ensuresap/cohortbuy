@@ -18,6 +18,7 @@ import {
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import SafetyNote from "@/components/app/SafetyNote";
+import EditProjectButton from "@/components/app/EditProjectButton";
 import {
   joinRequestAction,
   addScopeAction,
@@ -120,12 +121,23 @@ export default async function RequestPage({ params }: { params: { id: string } }
               </span>
             </div>
           </div>
-          {!isParticipant && req.status === "forming" && (
-            <form action={joinRequestAction}>
-              <input type="hidden" name="requestId" value={req.id} />
-              <Button type="submit">Join this project</Button>
-            </form>
-          )}
+          <div className="flex items-center gap-2">
+            {isCoordinator && !isCompleted && (
+              <EditProjectButton
+                requestId={req.id}
+                title={req.title}
+                category={req.category}
+                description={req.description}
+                driver={req.driver}
+              />
+            )}
+            {!isParticipant && req.status === "forming" && (
+              <form action={joinRequestAction}>
+                <input type="hidden" name="requestId" value={req.id} />
+                <Button type="submit">Join this project</Button>
+              </form>
+            )}
+          </div>
         </div>
 
         {isCompleted && (

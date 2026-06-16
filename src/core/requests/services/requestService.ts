@@ -4,6 +4,7 @@ import {
   RequestIdInput,
   AdvanceStatusInput,
   AddCommentInput,
+  EditRequestInput,
   SelectQuoteInput,
   SetContractInput,
   SetSharePaidInput,
@@ -62,6 +63,25 @@ export async function getRequest(ctx: Ctx, raw: unknown): Promise<Result<Service
   const { data, error } = await repo.getById(ctx.db, parsed.data.requestId);
   if (error) return err("db_error", error.message);
   return ok((data as ServiceRequest) ?? null);
+}
+
+/** Edit a project's core details (coordinator/creator or cohort manager via RLS). */
+export async function editProject(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = EditRequestInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", p.error.issues[0]?.message ?? "Invalid");
+  const { data, error } = await repo.updateProject(ctx.db, {
+    requestId: p.data.requestId,
+    title: p.data.title,
+    category: p.data.category ?? null,
+    description: p.data.description ?? null,
+    driver: p.data.driver ?? null,
+  });
+  if (error) return err("db_error", error.message);
+  if (!data || data.length === 0)
+    return err("forbidden", "Only the coordinator or a cohort manager can edit this project");
+  return ok(true);
 }
 
 export async function joinServiceRequest(ctx: Ctx, raw: unknown): Promise<Result<true>> {

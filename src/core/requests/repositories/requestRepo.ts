@@ -94,6 +94,23 @@ export function joinRequest(
   });
 }
 
+export function updateProject(
+  db: SupabaseClient,
+  args: { requestId: string; title: string; category: string | null; description: string | null; driver: string | null }
+) {
+  return db
+    .from("service_requests")
+    .update({
+      title: args.title,
+      category: args.category,
+      description: args.description,
+      driver: args.driver,
+      last_activity_at: new Date().toISOString(),
+    })
+    .eq("id", args.requestId)
+    .select();
+}
+
 export function updateStatus(
   db: SupabaseClient,
   args: { requestId: string; status: string }
