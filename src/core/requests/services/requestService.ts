@@ -3,8 +3,10 @@ import {
   CreateRequestInput,
   RequestIdInput,
   AdvanceStatusInput,
+  AddCommentInput,
   type ServiceRequest,
   type Participant,
+  type ProjectComment,
 } from "../domain/request";
 import * as repo from "../repositories/requestRepo";
 import { ok, err, type Result } from "../../result";
@@ -90,6 +92,27 @@ export async function advanceStatus(ctx: Ctx, raw: unknown): Promise<Result<true
     return err("forbidden", "Only the coordinator or a cohort manager can change the stage");
   }
   return ok(true);
+}
+
+export async function addComment(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = AddCommentInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", p.error.issues[0]?.message ?? "Invalid");
+  const { error } = await repo.insertComment(ctx.db, {
+    requestId: p.data.requestId,
+    userId: ctx.actor.id,
+    body: p.data.body,
+  });
+  if (error) return err("db_error", error.message);
+  return ok(true);
+}
+
+export async function listComments(ctx: Ctx, requestId: string): Promise<Result<ProjectComment[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.commentsFeed(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as ProjectComment[]);
 }
 
 export async function listParticipants(ctx: Ctx, raw: unknown): Promise<Result<Participant[]>> {

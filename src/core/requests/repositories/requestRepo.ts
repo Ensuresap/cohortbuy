@@ -7,6 +7,7 @@ export function createRequest(db: SupabaseClient, input: CreateRequestInput) {
     p_title: input.title,
     p_category: input.category ?? null,
     p_description: input.description ?? null,
+    p_driver: input.driver ?? null,
     p_min_size: input.minSize,
   });
 }
@@ -20,7 +21,26 @@ export function listByCohort(db: SupabaseClient, cohortId: string) {
 }
 
 export function getById(db: SupabaseClient, id: string) {
-  return db.from("service_requests").select("*").eq("id", id).maybeSingle();
+  return db
+    .from("service_requests")
+    .select("*, cohort:cohorts(handle, name)")
+    .eq("id", id)
+    .maybeSingle();
+}
+
+export function insertComment(
+  db: SupabaseClient,
+  args: { requestId: string; userId: string; body: string }
+) {
+  return db.from("request_comments").insert({
+    request_id: args.requestId,
+    user_id: args.userId,
+    body: args.body,
+  });
+}
+
+export function commentsFeed(db: SupabaseClient, requestId: string) {
+  return db.rpc("request_comments_feed", { p_request: requestId });
 }
 
 export function listMyParticipations(db: SupabaseClient, userId: string) {

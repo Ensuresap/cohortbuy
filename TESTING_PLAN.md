@@ -98,6 +98,14 @@
 - ☐ (integration) RLS: quotes visible/insertable only within the request's cohort.
 - ◐ (manual) comparison sorts by price ascending; currency formats per code.
 
+## Project detail page
+- ☐ (unit) `AddCommentInput` requires non-empty body ≤ 2000 chars.
+- ☐ (integration) RLS: `request_comments` readable by the request's cohort members; insert only own row as approved member.
+- ☐ (integration) `request_comments_feed` returns author name/avatar for each comment.
+- ◐ (manual) sections render: About + "Why now — the driver", Scope, Vendors & quotes (lowest flagged "Best price", vendor count), Discussion thread, Details/Participants rail.
+- ◐ (manual) driver entered in Add-project form persists and shows under "Why now".
+- ◐ (e2e) member posts a comment → appears in Discussion with their name/avatar and relative time.
+
 ## Dashboard
 - ☐ (integration) `listMyProjects` returns only projects the user participates in, with cohort + stage.
 - ☐ (integration) join-approval writes a notification row for the approved user (service-role).

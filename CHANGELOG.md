@@ -6,6 +6,7 @@ Update the `[Unreleased]` section with **every** feature (see `CLAUDE.md` → "K
 ## [Unreleased]
 
 ### Added
+- **Rich project detail page** — redesigned `/requests/[id]` into authentic, scannable sections: header (status badge, category, start month, participant count), progress (stage bar + advance control), **About this project** with a distinct **"Why now — the driver"** block, **Scope**, **Vendors & quotes** (vendor count summary, lowest-price flagged "Best price"), **Discussion** (threaded comments = correspondence, with avatars/names/relative time), and a side rail of **Details** + **Participants**. Adds `service_requests.driver` and a `request_comments` table (RLS: cohort members read, own-row insert) with a `request_comments_feed` SECURITY DEFINER fn exposing author names. New `addComment`/`listComments` service + `addCommentAction`; `create_service_request` now takes `p_driver`; Add-project form captures the driver. Migration `20260616230000_project_detail.sql`.
 - **Landing page** — Next.js 14 (App Router, TS) + Tailwind; hero, chat mockup, how-it-works, waitlist.
 - **Waitlist** — Supabase-backed signup; reused across UI form, `/api/waitlist` route, and `join_waitlist` tool.
 - **Supabase CLI migrations** — schema managed as migrations under `supabase/migrations/`.

@@ -30,9 +30,25 @@ export const CreateRequestInput = z.object({
   title: z.string().trim().min(2).max(120),
   category: z.string().trim().max(60).optional(),
   description: z.string().trim().max(2000).optional(),
+  driver: z.string().trim().max(1000).optional(),
   minSize: z.number().int().min(1).max(100).default(2),
 });
 export type CreateRequestInput = z.infer<typeof CreateRequestInput>;
+
+export const AddCommentInput = z.object({
+  requestId: z.string().uuid(),
+  body: z.string().trim().min(1).max(2000),
+});
+export type AddCommentInput = z.infer<typeof AddCommentInput>;
+
+export interface ProjectComment {
+  id: string;
+  body: string;
+  created_at: string;
+  user_id: string;
+  author_name: string | null;
+  author_avatar: string | null;
+}
 
 export const RequestIdInput = z.object({ requestId: z.string().uuid() });
 export const ListByCohortInput = z.object({ cohortId: z.string().uuid() });
@@ -50,10 +66,12 @@ export interface ServiceRequest {
   title: string;
   category: string | null;
   description: string | null;
+  driver: string | null;
   status: RequestStatus;
   min_size: number;
   last_activity_at: string;
   created_at: string;
+  cohort?: { handle: string; name: string } | null;
 }
 
 export interface Participant {

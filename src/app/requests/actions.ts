@@ -7,6 +7,7 @@ import {
   createServiceRequest,
   joinServiceRequest,
   advanceStatus,
+  addComment,
 } from "@/core/requests/services/requestService";
 import { addScopeItem } from "@/core/scope/services/scopeService";
 import { addQuote } from "@/core/quotes/services/quoteService";
@@ -28,6 +29,7 @@ export async function createRequestAction(formData: FormData) {
     title: String(formData.get("title") ?? ""),
     category: String(formData.get("category") ?? "") || undefined,
     description: String(formData.get("description") ?? "") || undefined,
+    driver: String(formData.get("driver") ?? "") || undefined,
   });
   if (!res.ok) {
     redirect(`/${handle}?error=${encodeURIComponent(res.error.message)}`);
@@ -61,6 +63,13 @@ export async function advanceRequestAction(formData: FormData) {
     requestId,
     status: String(formData.get("status") ?? ""),
   });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function addCommentAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await addComment(ctx, { requestId, body: String(formData.get("body") ?? "") });
   revalidatePath(`/requests/${requestId}`);
 }
 

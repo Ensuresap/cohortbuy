@@ -40,7 +40,8 @@ export default function AddProjectButton({
               <input type="hidden" name="handle" value={handle} />
               <input name="title" required placeholder="e.g. Backyard fence replacement" className={fieldClass} />
               <input name="category" placeholder="Category (e.g. Fencing)" className={fieldClass} />
-              <textarea name="description" rows={2} placeholder="What needs doing?" className={fieldClass} />
+              <textarea name="description" rows={2} placeholder="What is this project? What needs doing?" className={fieldClass} />
+              <textarea name="driver" rows={2} placeholder="Why now? The driver / motivation (e.g. fences are failing, storm damage)" className={fieldClass} />
               <div className="flex justify-end gap-2 pt-1">
                 <button
                   type="button"
