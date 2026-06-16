@@ -1,4 +1,10 @@
+import Image from "next/image";
 import WaitlistForm from "@/components/WaitlistForm";
+
+// Hero photo — swap this for your own:
+//  • Local file: drop an image into /public and set HERO_PHOTO = "/your-file.jpg"
+//  • Hosted URL: use an Unsplash/Pexels link (hosts allowed in next.config.mjs)
+const HERO_PHOTO = "/hero.jpg";
 
 const steps = [
   {
@@ -108,7 +114,7 @@ export default function Home() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
+      <section className="relative">
         <div className="container-prose grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-2">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-forest/20 bg-forest-light px-3 py-1 text-sm font-medium text-forest-dark">
@@ -135,7 +141,20 @@ export default function Home() {
           </div>
 
           <div className="relative">
-            <ChatPreview />
+            <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] border border-ink/5 shadow-soft">
+              <Image
+                src={HERO_PHOTO}
+                alt="Neighbors on a tree-lined street planning a shared home project"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 520px"
+                className="object-cover"
+              />
+            </div>
+            {/* Floating product mockup over the photo */}
+            <div className="absolute -bottom-10 -left-4 hidden w-64 sm:block lg:w-72">
+              <ChatPreview />
+            </div>
           </div>
         </div>
       </section>

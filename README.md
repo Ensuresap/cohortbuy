@@ -61,6 +61,21 @@ and table are in place.
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL (already set to the cohortbuy project in `.env.example`). |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The anon/public API key from Supabase. |
 
+## Images
+
+The hero uses Next.js `<Image>`. To use your own photo:
+
+- **Local file (simplest):** replace `public/hero.jpg` with your image (keep the
+  name), or add a new file and set `HERO_PHOTO` at the top of `src/app/page.tsx`
+  to `"/your-file.jpg"`.
+- **Hosted URL:** set `HERO_PHOTO` to an Unsplash/Pexels link. Those hosts are
+  allowed in `next.config.mjs` (restart the dev server after changing that file).
+
+`public/hero.jpg` ships as a branded placeholder — swap it for a real photo.
+Free, license-friendly sources: [Unsplash](https://unsplash.com),
+[Pexels](https://pexels.com). Avoid generic stock; lean authentic (real homes,
+real neighbors).
+
 ## Deploy
 
 Deploys cleanly to Vercel: import the repo, add the two env vars, and ship.
