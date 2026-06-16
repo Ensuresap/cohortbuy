@@ -13,6 +13,35 @@ CohortBuy lets neighbors pool demand on home projects. An AI agent forms the coh
 - **Supabase** (Postgres, Auth, RLS) — see `supabase/` and use the CLI for migrations
 - Server Components by default; add `"use client"` only when a component needs state/effects/events.
 
+## Modular architecture — write once, expose many ways
+
+Business logic lives in **one place** and is reused by every entry point — the web UI, REST API routes, the AI agent (tool-calling), and a future MCP server. Add a capability once; it's available everywhere. This is what makes "enhance the agent / build an API / add an MCP server" easy later.
+
+Layers live in `src/core/`; each depends only on the layer below:
+
+| Layer | Folder | Responsibility | Must NOT |
+|---|---|---|---|
+| Domain | `core/domain/` | Entities + **Zod schemas** (single source of truth). Reused for API validation and tool input schemas (Zod → JSON Schema). | contain logic or DB calls |
+| Repositories | `core/repositories/` | Data access only (Supabase queries). | contain business rules |
+| Services | `core/services/` | Business logic as `(ctx, input) => Result<T>`. The reusable unit. | import `next/*` or React |
+| Tools | `core/tools/` | Thin wrappers exposing services as named, schema'd tools in a **registry**. | contain logic |
+| Shared | `core/context.ts`, `core/result.ts` | `Ctx` (db + actor) and `Result<T>` for uniform errors. | — |
+
+Entry points are thin adapters that call services/tools:
+- **Web UI** → `fetch('/api/...')`
+- **REST** → `app/api/**/route.ts` → service
+- **AI agent** → tool registry → service
+- **MCP server** (future) → same tool registry → service
+
+Rules:
+- Business logic only in `services/`. DB access only in `repositories/`. Never in components, routes, or tools.
+- Define each input/output shape **once** in `domain/` with Zod; reuse for validation AND tool schemas.
+- Services receive a `Ctx` (db client, actor/role) — never read env or build clients inside a service (keeps them testable and reusable from any entry point).
+- Keep `core/` free of framework code so the agent and MCP can import it directly.
+
+**Reference slice — the waitlist (mirror this shape for every capability):**
+`domain/waitlist.ts` → `repositories/waitlistRepo.ts` → `services/waitlistService.ts`, exposed via `tools/waitlistTools.ts` (in `tools/registry.ts`) **and** `app/api/waitlist/route.ts`, and called from the UI form. One service, four reuse paths.
+
 ## Design system (read before touching UI)
 
 ### Colors — never hard-code

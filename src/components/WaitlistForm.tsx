@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -19,35 +18,44 @@ export default function WaitlistForm() {
     setStatus("loading");
     setMessage("");
 
-    if (!isSupabaseConfigured || !supabase) {
+    let res: Response;
+    try {
+      res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, zip }),
+      });
+    } catch {
+      setStatus("error");
+      setMessage("Network error. Please try again.");
+      return;
+    }
+
+    const json: { error?: { code?: string } } = await res
+      .json()
+      .catch(() => ({}));
+
+    if (res.ok) {
+      setStatus("success");
+      setMessage("You're on the list! We'll reach out as we open up neighborhoods.");
+      setEmail("");
+      setZip("");
+      return;
+    }
+
+    // Not configured yet (no Supabase key) — succeed gracefully for local dev.
+    if (json.error?.code === "not_configured") {
       setStatus("success");
       setMessage(
-        "You're on the list! (Dev note: add your Supabase anon key to .env.local to persist signups.)"
+        "You're on the list! (Dev note: configure Supabase to persist signups.)"
       );
       setEmail("");
       setZip("");
       return;
     }
 
-    const { error } = await supabase
-      .from("waitlist")
-      .insert({ email, zip: zip || null, source: "landing" });
-
-    if (error) {
-      if (error.code === "23505") {
-        setStatus("success");
-        setMessage("You're already on the list — we'll be in touch soon.");
-      } else {
-        setStatus("error");
-        setMessage("Something went wrong. Please try again.");
-      }
-      return;
-    }
-
-    setStatus("success");
-    setMessage("You're on the list! We'll reach out as we open up neighborhoods.");
-    setEmail("");
-    setZip("");
+    setStatus("error");
+    setMessage("Something went wrong. Please try again.");
   }
 
   if (status === "success") {
