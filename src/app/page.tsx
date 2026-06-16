@@ -1,5 +1,6 @@
 import Image from "next/image";
 import WaitlistForm from "@/components/WaitlistForm";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // Hero photo — swap this for your own:
 //  • Local file: drop an image into /public and set HERO_PHOTO = "/your-file.jpg"
@@ -33,9 +34,7 @@ const values = [
   {
     title: "Volume pricing, finally",
     body: "Vendors discount when they can serve several homes at once. The savings were always there — the coordination was the hard part.",
-    icon: (
-      <path d="M3 12h18M3 6h18M3 18h12" strokeLinecap="round" strokeWidth="2" />
-    ),
+    icon: <path d="M3 12h18M3 6h18M3 18h12" strokeLinecap="round" strokeWidth="2" />,
   },
   {
     title: "An AI agent does the work",
@@ -93,47 +92,50 @@ export default function Home() {
       <header className="container-prose flex items-center justify-between py-6">
         <div className="flex items-center gap-2">
           <Logo />
-          <span className="font-display text-xl font-semibold text-forest-dark">
+          <span className="font-display text-xl font-semibold text-primary">
             CohortBuy
           </span>
         </div>
-        <nav className="hidden items-center gap-8 text-sm font-medium text-ink/70 sm:flex">
-          <a href="#how" className="hover:text-forest">
-            How it works
-          </a>
-          <a href="#why" className="hover:text-forest">
-            Why CohortBuy
-          </a>
+        <div className="flex items-center gap-3">
+          <nav className="hidden items-center gap-8 text-sm font-medium text-muted sm:flex">
+            <a href="#how" className="hover:text-primary">
+              How it works
+            </a>
+            <a href="#why" className="hover:text-primary">
+              Why CohortBuy
+            </a>
+          </nav>
+          <ThemeToggle />
           <a
             href="#waitlist"
-            className="rounded-full bg-forest px-4 py-2 font-semibold text-cream hover:bg-forest-dark"
+            className="hidden rounded-full bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary-hover sm:inline-block"
           >
             Join waitlist
           </a>
-        </nav>
+        </div>
       </header>
 
       {/* Hero */}
       <section className="relative">
         <div className="container-prose grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-2">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-forest/20 bg-forest-light px-3 py-1 text-sm font-medium text-forest-dark">
-              <span className="h-2 w-2 rounded-full bg-clay" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-surface-2 px-3 py-1 text-sm font-medium text-primary">
+              <span className="h-2 w-2 rounded-full bg-accent" />
               Now forming neighborhood cohorts
             </span>
-            <h1 className="mt-5 font-display text-5xl font-semibold leading-[1.05] text-ink sm:text-6xl">
+            <h1 className="mt-5 font-display text-5xl font-semibold leading-[1.05] text-text sm:text-6xl">
               Neighbors pool.
               <br />
-              <span className="text-forest">Prices drop.</span>
+              <span className="text-primary">Prices drop.</span>
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink/75">
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
               CohortBuy turns one neighbor&rsquo;s home project into a group deal.
               An AI agent forms the cohort, scopes the work, gathers real quotes,
               and splits the cost fairly — all from a simple chat.
             </p>
             <div id="waitlist" className="mt-8 max-w-xl scroll-mt-24">
               <WaitlistForm />
-              <p className="mt-3 text-sm text-ink/50">
+              <p className="mt-3 text-sm text-subtle">
                 Be first in your neighborhood. No spam — just an invite when we
                 open your area.
               </p>
@@ -141,7 +143,7 @@ export default function Home() {
           </div>
 
           <div className="relative">
-            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[2rem] border border-ink/5 shadow-soft">
+            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[2rem] border border-border shadow-soft">
               <Image
                 src={HERO_PHOTO}
                 alt="Neighbors gathered around laptops and paperwork, planning a project together"
@@ -156,12 +158,12 @@ export default function Home() {
       </section>
 
       {/* Trust strip */}
-      <section className="border-y border-ink/5 bg-white/50">
-        <div className="container-prose flex flex-wrap items-center justify-center gap-x-10 gap-y-3 py-6 text-center text-sm font-medium text-ink/60">
+      <section className="border-y border-border bg-surface/60">
+        <div className="container-prose flex flex-wrap items-center justify-center gap-x-10 gap-y-3 py-6 text-center text-sm font-medium text-muted">
           <span>Up to ~30% off through group pricing</span>
-          <span className="hidden h-1 w-1 rounded-full bg-ink/20 sm:inline-block" />
+          <span className="hidden h-1 w-1 rounded-full bg-border sm:inline-block" />
           <span>One contract, fair split</span>
-          <span className="hidden h-1 w-1 rounded-full bg-ink/20 sm:inline-block" />
+          <span className="hidden h-1 w-1 rounded-full bg-border sm:inline-block" />
           <span>We never hold your money</span>
         </div>
       </section>
@@ -173,25 +175,25 @@ export default function Home() {
             <ChatPreview />
           </div>
           <div className="order-1 lg:order-2">
-            <h2 className="font-display text-4xl font-semibold text-ink">
+            <h2 className="font-display text-4xl font-semibold text-text">
               A conversation, not a checkout
             </h2>
-            <p className="mt-4 text-lg text-ink/70">
+            <p className="mt-4 text-lg text-muted">
               No forms, no app to learn. You chat with the CohortBuy agent the
               way you&rsquo;d text a neighbor — it forms the group, scopes the
               work, and lines up quotes in the background.
             </p>
-            <ul className="mt-6 space-y-3 text-ink/80">
+            <ul className="mt-6 space-y-3 text-muted">
               <li className="flex gap-3">
-                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-clay" />
+                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" />
                 Start a project in one message
               </li>
               <li className="flex gap-3">
-                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-clay" />
+                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" />
                 Neighbors join with a tap
               </li>
               <li className="flex gap-3">
-                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-clay" />
+                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" />
                 The agent handles the busywork
               </li>
             </ul>
@@ -202,10 +204,10 @@ export default function Home() {
       {/* How it works */}
       <section id="how" className="container-prose scroll-mt-20 py-20 sm:py-28">
         <div className="max-w-2xl">
-          <h2 className="font-display text-4xl font-semibold text-ink">
+          <h2 className="font-display text-4xl font-semibold text-text">
             From &ldquo;I need this done&rdquo; to done — together
           </h2>
-          <p className="mt-4 text-lg text-ink/70">
+          <p className="mt-4 text-lg text-muted">
             The agent runs the whole project. You and your neighbors just make
             the calls that matter.
           </p>
@@ -214,28 +216,28 @@ export default function Home() {
           {steps.map((s) => (
             <div
               key={s.n}
-              className="rounded-2xl border border-ink/5 bg-white p-6 shadow-sm transition hover:shadow-soft"
+              className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition hover:shadow-soft"
             >
-              <div className="font-display text-3xl font-semibold text-clay">
+              <div className="font-display text-3xl font-semibold text-accent">
                 {s.n}
               </div>
-              <h3 className="mt-3 font-display text-xl font-semibold text-ink">
+              <h3 className="mt-3 font-display text-xl font-semibold text-text">
                 {s.title}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink/70">{s.body}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Why */}
-      <section id="why" className="scroll-mt-20 bg-forest-light/50 py-20 sm:py-28">
+      <section id="why" className="scroll-mt-20 bg-surface-2 py-20 sm:py-28">
         <div className="container-prose">
           <div className="max-w-2xl">
-            <h2 className="font-display text-4xl font-semibold text-ink">
+            <h2 className="font-display text-4xl font-semibold text-text">
               The discount was never the hard part
             </h2>
-            <p className="mt-4 text-lg text-ink/70">
+            <p className="mt-4 text-lg text-muted">
               Organizing the group was. CohortBuy does the organizing, so the
               savings actually happen.
             </p>
@@ -244,9 +246,9 @@ export default function Home() {
             {values.map((v) => (
               <div
                 key={v.title}
-                className="flex gap-4 rounded-2xl border border-ink/5 bg-white p-6 shadow-sm"
+                className="flex gap-4 rounded-2xl border border-border bg-surface p-6 shadow-sm"
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-forest-light text-forest">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-primary">
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -257,10 +259,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-display text-xl font-semibold text-ink">
+                  <h3 className="font-display text-xl font-semibold text-text">
                     {v.title}
                   </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink/70">
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted">
                     {v.body}
                   </p>
                 </div>
@@ -272,18 +274,18 @@ export default function Home() {
 
       {/* Projects */}
       <section className="container-prose py-20 sm:py-28">
-        <div className="rounded-3xl bg-forest px-8 py-14 text-center shadow-soft sm:px-16">
-          <h2 className="font-display text-3xl font-semibold text-cream sm:text-4xl">
+        <div className="rounded-3xl bg-brand-forest px-8 py-14 text-center shadow-soft sm:px-16">
+          <h2 className="font-display text-3xl font-semibold text-brand-cream sm:text-4xl">
             What will your block do first?
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-forest-light">
+          <p className="mx-auto mt-3 max-w-xl text-brand-cream/80">
             Any project where doing it together beats going it alone.
           </p>
           <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-3">
             {projects.map((p) => (
               <span
                 key={p}
-                className="rounded-full border border-cream/20 bg-forest-dark/40 px-4 py-2 text-sm font-medium text-cream"
+                className="rounded-full border border-brand-cream/20 bg-brand-forest-dark/40 px-4 py-2 text-sm font-medium text-brand-cream"
               >
                 {p}
               </span>
@@ -296,15 +298,15 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-ink/5">
+      <footer className="border-t border-border">
         <div className="container-prose flex flex-col items-center justify-between gap-4 py-10 sm:flex-row">
           <div className="flex items-center gap-2">
             <Logo />
-            <span className="font-display font-semibold text-forest-dark">
+            <span className="font-display font-semibold text-primary">
               CohortBuy
             </span>
           </div>
-          <p className="text-sm text-ink/50">
+          <p className="text-sm text-subtle">
             Neighbors, pooled. &copy; {new Date().getFullYear()} CohortBuy. A
             facilitator — not a party to your contracts.
           </p>
@@ -327,12 +329,12 @@ function Logo() {
 
 function ChatPreview() {
   return (
-    <div className="mx-auto w-full max-w-sm rounded-[2rem] border border-ink/5 bg-white p-4 shadow-soft">
-      <div className="flex items-center gap-2 border-b border-ink/5 pb-3">
+    <div className="mx-auto w-full max-w-sm rounded-[2rem] border border-border bg-surface p-4 shadow-soft">
+      <div className="flex items-center gap-2 border-b border-border pb-3">
         <Logo />
         <div>
-          <p className="text-sm font-semibold text-ink">CohortBuy Agent</p>
-          <p className="text-xs text-forest">online</p>
+          <p className="text-sm font-semibold text-text">CohortBuy Agent</p>
+          <p className="text-xs text-primary">online</p>
         </div>
       </div>
       <div className="space-y-3 py-4 text-sm">
@@ -349,7 +351,7 @@ function ChatPreview() {
           vetted vendors and show you a fair split.
         </Bubble>
       </div>
-      <div className="rounded-xl bg-cream/70 px-4 py-2.5 text-sm text-ink/40">
+      <div className="rounded-xl bg-surface-2 px-4 py-2.5 text-sm text-subtle">
         Message CohortBuy…
       </div>
     </div>
@@ -370,8 +372,8 @@ function Bubble({
         className={
           "max-w-[85%] rounded-2xl px-3.5 py-2.5 leading-snug " +
           (isLeft
-            ? "rounded-tl-sm bg-forest-light text-ink"
-            : "rounded-tr-sm bg-forest text-cream")
+            ? "rounded-tl-sm bg-surface-2 text-text"
+            : "rounded-tr-sm bg-primary text-primary-foreground")
         }
       >
         {children}
