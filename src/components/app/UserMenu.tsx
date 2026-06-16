@@ -3,16 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signOutAction } from "@/app/actions";
-import { LayoutDashboard, UserRound, SquarePen, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, UserRound, SquarePen, Users, LogOut, ShieldCheck } from "lucide-react";
 
 export default function UserMenu({
   name,
   email,
   initials,
+  isStaff = false,
 }: {
   name: string;
   email: string;
   initials: string;
+  isStaff?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -56,6 +58,11 @@ export default function UserMenu({
           <MenuLink href="/cohorts" onClick={() => setOpen(false)}>
             <Users className="h-4 w-4 text-muted" /> Cohorts
           </MenuLink>
+          {isStaff && (
+            <MenuLink href="/admin" onClick={() => setOpen(false)}>
+              <ShieldCheck className="h-4 w-4 text-muted" /> Platform admin
+            </MenuLink>
+          )}
           <div className="my-1 h-px bg-border" />
           <form action={signOutAction}>
             <button

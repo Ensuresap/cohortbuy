@@ -60,7 +60,12 @@ export default async function AppShell({ children }: { children: React.ReactNode
               Cohorts
             </Link>
             <ThemeToggle />
-            <UserMenu name={name} email={email} initials={initials} />
+            <UserMenu
+              name={name}
+              email={email}
+              initials={initials}
+              isStaff={profile?.role === "staff" || profile?.role === "admin"}
+            />
           </div>
         </div>
       </header>
