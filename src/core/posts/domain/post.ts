@@ -15,6 +15,12 @@ export const SetPostVisibilityInput = z.object({
   postId: z.string().uuid(),
   visibility: PostVisibility,
 });
+
+export const UpdatePostInput = z.object({
+  postId: z.string().uuid(),
+  body: z.string().trim().min(1).max(5000),
+});
+export type UpdatePostInput = z.infer<typeof UpdatePostInput>;
 export type SetPostVisibilityInput = z.infer<typeof SetPostVisibilityInput>;
 
 export interface FeedPost {

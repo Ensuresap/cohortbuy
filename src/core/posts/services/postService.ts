@@ -1,5 +1,10 @@
 import type { Ctx } from "../../context";
-import { CreatePostInput, SetPostVisibilityInput, type FeedPost } from "../domain/post";
+import {
+  CreatePostInput,
+  SetPostVisibilityInput,
+  UpdatePostInput,
+  type FeedPost,
+} from "../domain/post";
 import * as repo from "../repositories/postRepo";
 import { ok, err, type Result } from "../../result";
 
@@ -31,6 +36,31 @@ export async function setPostVisibility(ctx: Ctx, raw: unknown): Promise<Result<
     if (error.message?.includes("forbidden")) return err("forbidden", "Not allowed");
     return err("db_error", error.message);
   }
+  return ok(true);
+}
+
+/** Edit a post's body (author or manager — enforced by RLS). */
+export async function updatePost(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const parsed = UpdatePostInput.safeParse(raw);
+  if (!parsed.success) return err("invalid_input", parsed.error.issues[0]?.message ?? "Invalid");
+  const { data, error } = await repo.updatePost(ctx.db, {
+    postId: parsed.data.postId,
+    body: parsed.data.body,
+  });
+  if (error) return err("db_error", error.message);
+  if (!data || data.length === 0) return err("forbidden", "Not allowed");
+  return ok(true);
+}
+
+/** Delete a post (author or manager — enforced by RLS). */
+export async function deletePost(ctx: Ctx, postId: string): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.deletePost(ctx.db, postId);
+  if (error) return err("db_error", error.message);
+  if (!data || data.length === 0) return err("forbidden", "Not allowed");
   return ok(true);
 }
 

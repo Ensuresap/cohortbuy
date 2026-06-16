@@ -15,7 +15,12 @@ import {
 } from "@/core/cohorts/services/cohortService";
 import { createServerClient } from "@/core/db/serverClient";
 import { notifyActionDue } from "@/core/services/notificationService";
-import { createPost, setPostVisibility } from "@/core/posts/services/postService";
+import {
+  createPost,
+  setPostVisibility,
+  updatePost,
+  deletePost,
+} from "@/core/posts/services/postService";
 
 async function getCtx() {
   const supabase = createClient();
@@ -142,14 +147,35 @@ export async function submitPost(input: {
   return { ok: true as const };
 }
 
-export async function setPostVisibilityAction(formData: FormData) {
+export async function editPost(input: { postId: string; handle: string; body: string }) {
   const ctx = await getCtx();
-  const handle = String(formData.get("handle") ?? "");
-  await setPostVisibility(ctx, {
-    postId: String(formData.get("postId") ?? ""),
-    visibility: String(formData.get("visibility") ?? "members") as "members" | "public",
+  const res = await updatePost(ctx, { postId: input.postId, body: input.body });
+  if (!res.ok) return { ok: false as const, error: res.error.message };
+  revalidatePath(`/${input.handle}`);
+  return { ok: true as const };
+}
+
+export async function removePost(input: { postId: string; handle: string }) {
+  const ctx = await getCtx();
+  const res = await deletePost(ctx, input.postId);
+  if (!res.ok) return { ok: false as const, error: res.error.message };
+  revalidatePath(`/${input.handle}`);
+  return { ok: true as const };
+}
+
+export async function changePostVisibility(input: {
+  postId: string;
+  handle: string;
+  visibility: "members" | "public";
+}) {
+  const ctx = await getCtx();
+  const res = await setPostVisibility(ctx, {
+    postId: input.postId,
+    visibility: input.visibility,
   });
-  revalidatePath(`/${handle}`);
+  if (!res.ok) return { ok: false as const, error: res.error.message };
+  revalidatePath(`/${input.handle}`);
+  return { ok: true as const };
 }
 
 export async function setComanagerAction(formData: FormData) {

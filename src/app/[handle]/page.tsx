@@ -19,13 +19,13 @@ import {
   setTitleAction,
   setComanagerAction,
   respondInfoAction,
-  setPostVisibilityAction,
 } from "../cohorts/actions";
-import { createRequestAction } from "../requests/actions";
 import PostComposer from "@/components/app/PostComposer";
 import CohortHeaderActions from "@/components/app/CohortHeaderActions";
 import JoinButton from "@/components/app/JoinButton";
 import SafetyNote from "@/components/app/SafetyNote";
+import PostActions from "@/components/app/PostActions";
+import AddProjectButton from "@/components/app/AddProjectButton";
 
 const fieldClass =
   "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
@@ -156,9 +156,14 @@ export default async function CohortPage({ params }: { params: { handle: string 
           <div className="space-y-6 lg:col-span-2">
             {isApproved && (
               <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-                <h2 className="font-display text-lg font-semibold text-text">Active projects</h2>
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-display text-lg font-semibold text-text">Active projects</h2>
+                  {isManager && <AddProjectButton cohortId={cohort.id} handle={cohort.handle} />}
+                </div>
                 {projects.length === 0 ? (
-                  <p className="mt-2 text-muted">No projects yet. Start one below.</p>
+                  <p className="mt-3 text-muted">
+                    {isManager ? "No projects yet — add one." : "No projects yet."}
+                  </p>
                 ) : (
                   <ul className="mt-3 space-y-2">
                     {projects.map((p) => (
@@ -171,14 +176,6 @@ export default async function CohortPage({ params }: { params: { handle: string 
                     ))}
                   </ul>
                 )}
-                <form action={createRequestAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
-                  <p className="text-sm font-medium text-text">Start a project</p>
-                  <input type="hidden" name="cohortId" value={cohort.id} />
-                  <input type="hidden" name="handle" value={cohort.handle} />
-                  <input name="title" required placeholder="e.g. Backyard fence replacement" className={fieldClass} />
-                  <input name="category" placeholder="Category (e.g. Fencing)" className={fieldClass} />
-                  <Button type="submit">Create project</Button>
-                </form>
               </section>
             )}
 
@@ -204,14 +201,10 @@ export default async function CohortPage({ params }: { params: { handle: string 
                               {po.visibility === "public" ? "Public" : "Members"}
                             </span>
                             {(isManager || po.author_id === user.id) && (
-                              <form action={setPostVisibilityAction}>
-                                <input type="hidden" name="postId" value={po.id} />
-                                <input type="hidden" name="handle" value={cohort.handle} />
-                                <input type="hidden" name="visibility" value={po.visibility === "public" ? "members" : "public"} />
-                                <button type="submit" className="text-xs font-medium text-primary hover:underline">
-                                  {po.visibility === "public" ? "Make members-only" : "Make public"}
-                                </button>
-                              </form>
+                              <PostActions
+                                post={{ id: po.id, body: po.body, visibility: po.visibility }}
+                                handle={cohort.handle}
+                              />
                             )}
                           </div>
                         </div>
