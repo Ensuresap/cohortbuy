@@ -35,7 +35,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
   return (
     <div className="min-h-screen">
       <Presence />
-      <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
           <Link href="/dashboard" className="flex items-center gap-2">
             <svg viewBox="0 0 32 32" className="h-7 w-7" aria-hidden="true">
