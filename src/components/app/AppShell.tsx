@@ -35,7 +35,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Link href="/cohorts" className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2">
             <svg viewBox="0 0 32 32" className="h-7 w-7" aria-hidden="true">
               <circle cx="16" cy="16" r="15" fill="#1F6F5C" />
               <circle cx="12" cy="13" r="3.2" fill="#FBF7F0" />
@@ -45,6 +45,12 @@ export default async function AppShell({ children }: { children: React.ReactNode
             <span className="font-display text-lg font-semibold text-primary">CohortBuy</span>
           </Link>
           <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard"
+              className="hidden rounded-full px-3 py-2 text-sm font-medium text-muted hover:text-primary sm:block"
+            >
+              Dashboard
+            </Link>
             <Link
               href="/cohorts"
               className="hidden rounded-full px-3 py-2 text-sm font-medium text-muted hover:text-primary sm:block"

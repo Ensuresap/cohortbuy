@@ -16,7 +16,7 @@ export default async function OnboardingPage({
 
   const res = await getMyProfile({ db: supabase, actor: { id: user.id } });
   const profile = res.ok ? res.data : null;
-  if (profile?.display_name) redirect("/account");
+  if (profile?.display_name) redirect("/dashboard");
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">

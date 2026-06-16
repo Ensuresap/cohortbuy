@@ -43,6 +43,7 @@ export default function UserMenu({
             <p className="truncate text-xs text-subtle">{email}</p>
           </div>
           <div className="my-1 h-px bg-border" />
+          <MenuLink href="/dashboard" onClick={() => setOpen(false)}>Dashboard</MenuLink>
           <MenuLink href="/account" onClick={() => setOpen(false)}>Account</MenuLink>
           <MenuLink href="/account/profile" onClick={() => setOpen(false)}>Edit profile</MenuLink>
           <MenuLink href="/cohorts" onClick={() => setOpen(false)}>Cohorts</MenuLink>

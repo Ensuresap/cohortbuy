@@ -23,6 +23,15 @@ export function getById(db: SupabaseClient, id: string) {
   return db.from("service_requests").select("*").eq("id", id).maybeSingle();
 }
 
+export function listMyParticipations(db: SupabaseClient, userId: string) {
+  return db
+    .from("request_participants")
+    .select("role, request:service_requests(id, title, status, cohort:cohorts(handle, name))")
+    .eq("user_id", userId)
+    .eq("status", "joined")
+    .order("created_at", { ascending: false });
+}
+
 export function joinRequest(
   db: SupabaseClient,
   args: { requestId: string; userId: string }

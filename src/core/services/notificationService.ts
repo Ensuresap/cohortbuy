@@ -8,6 +8,18 @@ import * as repo from "../repositories/notificationRepo";
 import { getChannel } from "../notifications";
 import { ok, err, type Result } from "../result";
 
+/** Recent notifications for the signed-in user (for the dashboard). */
+export async function listMyNotifications(
+  ctx: Ctx,
+  limit = 10
+): Promise<Result<unknown[]>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.listForUser(ctx.db, ctx.actor.id, limit);
+  if (error) return err("db_error", error.message);
+  return ok(data ?? []);
+}
+
 /**
  * Send an "action due" notification to a user via their preferred, CONSENTED
  * channel. Consent is enforced here: SMS/WhatsApp require sms_opt_in. If no

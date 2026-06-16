@@ -16,6 +16,15 @@ export function getNotifyProfile(db: SupabaseClient, userId: string) {
     .single();
 }
 
+export function listForUser(db: SupabaseClient, userId: string, limit: number) {
+  return db
+    .from("notifications")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+}
+
 export function logNotification(
   db: SupabaseClient,
   row: {

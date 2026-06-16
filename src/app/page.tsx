@@ -106,7 +106,7 @@ export default function Home() {
             </a>
           </nav>
           <a
-            href="/account"
+            href="/dashboard"
             className="hidden text-sm font-medium text-muted hover:text-primary sm:inline-block"
           >
             Sign in

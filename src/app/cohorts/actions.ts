@@ -8,6 +8,8 @@ import {
   requestToJoin,
   reviewJoinRequest,
 } from "@/core/cohorts/services/cohortService";
+import { createServerClient } from "@/core/db/serverClient";
+import { notifyActionDue } from "@/core/services/notificationService";
 
 async function getCtx() {
   const supabase = createClient();
@@ -48,13 +50,30 @@ export async function requestJoinAction(formData: FormData) {
 export async function reviewAction(formData: FormData) {
   const ctx = await getCtx();
   const handle = String(formData.get("handle") ?? "");
-  await reviewJoinRequest(ctx, {
-    cohortId: String(formData.get("cohortId") ?? ""),
-    userId: String(formData.get("userId") ?? ""),
-    decision: String(formData.get("decision") ?? "approve") as
-      | "approve"
-      | "reject"
-      | "needs_info",
-  });
+  const cohortId = String(formData.get("cohortId") ?? "");
+  const userId = String(formData.get("userId") ?? "");
+  const decision = String(formData.get("decision") ?? "approve") as
+    | "approve"
+    | "reject"
+    | "needs_info";
+
+  const res = await reviewJoinRequest(ctx, { cohortId, userId, decision });
+
+  // Notify the member of the decision (service-role: system-generated).
+  if (res.ok) {
+    const adminDb = createServerClient();
+    if (adminDb) {
+      const message =
+        decision === "approve"
+          ? `You're approved to join /${handle}.`
+          : decision === "needs_info"
+            ? `A manager asked for more info on your request to join /${handle}.`
+            : `Your request to join /${handle} was declined.`;
+      await notifyActionDue(
+        { db: adminDb, actor: { role: "agent" } },
+        { userId, event: "generic_action", message, link: `/${handle}` }
+      );
+    }
+  }
   revalidatePath(`/${handle}`);
 }

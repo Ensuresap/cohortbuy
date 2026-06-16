@@ -39,6 +39,15 @@ export async function listCohortRequests(
   return ok((data ?? []) as ServiceRequest[]);
 }
 
+/** Projects the signed-in user participates in (with cohort + stage). */
+export async function listMyProjects(ctx: Ctx): Promise<Result<unknown[]>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.listMyParticipations(ctx.db, ctx.actor.id);
+  if (error) return err("db_error", error.message);
+  return ok(data ?? []);
+}
+
 export async function getRequest(ctx: Ctx, raw: unknown): Promise<Result<ServiceRequest | null>> {
   if (!ctx.db) return err("not_configured", "Database is not configured");
   const parsed = RequestIdInput.safeParse(raw);

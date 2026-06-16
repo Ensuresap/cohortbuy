@@ -24,5 +24,5 @@ export async function completeOnboardingAction(formData: FormData) {
   if (!res.ok) {
     redirect(`/onboarding?error=${encodeURIComponent(res.error.message)}`);
   }
-  redirect("/account");
+  redirect("/dashboard");
 }

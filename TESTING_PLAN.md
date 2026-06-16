@@ -98,6 +98,12 @@
 - ☐ (integration) RLS: quotes visible/insertable only within the request's cohort.
 - ◐ (manual) comparison sorts by price ascending; currency formats per code.
 
+## Dashboard
+- ☐ (integration) `listMyProjects` returns only projects the user participates in, with cohort + stage.
+- ☐ (integration) join-approval writes a notification row for the approved user (service-role).
+- ◐ (manual) progress bar reflects pipeline position; empty states render when no projects/activity.
+- ◐ (e2e) login → /dashboard; active project shows with correct stage.
+
 ## Cross-cutting
 - ☐ (unit) architecture guard: no `.from(`/`.rpc(` outside `repositories/` (grep test in CI).
 - ☐ (integration) admin-only services all enforce `isStaff` (table-driven negative tests).
