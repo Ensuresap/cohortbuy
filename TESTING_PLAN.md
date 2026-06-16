@@ -77,6 +77,14 @@
 - ☐ (integration) RLS: public cohorts visible to all authed; private only to members/managers.
 - ◐ (e2e) create cohort → appears under "your cohorts" as manager; second user requests → manager approves → second user shows approved.
 
+## Service requests (projects)
+- ☐ (unit) `CreateRequestInput` validates title length; `minSize` default 2.
+- ☐ (integration) `create_service_request` by a non-member → `not_a_member`/`forbidden`.
+- ☐ (integration) creator is added as `coordinator` participant.
+- ☐ (integration) join inserts a `participant`; duplicate → `already_joined`.
+- ☐ (integration) RLS: requests visible only to approved members of the cohort (and managers).
+- ◐ (e2e) approved member creates a project → appears in cohort list → opens `/requests/[id]` with stage bar; a second member joins.
+
 ## Cross-cutting
 - ☐ (unit) architecture guard: no `.from(`/`.rpc(` outside `repositories/` (grep test in CI).
 - ☐ (integration) admin-only services all enforce `isStaff` (table-driven negative tests).

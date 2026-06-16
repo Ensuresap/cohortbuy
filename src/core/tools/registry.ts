@@ -15,6 +15,10 @@ import {
   reviewJoinRequestTool,
   searchPublicCohortsTool,
 } from "./cohortTools";
+import {
+  createServiceRequestTool,
+  joinServiceRequestTool,
+} from "./requestTools";
 
 /**
  * Central tool registry. Add a capability's tool here and it becomes
@@ -38,6 +42,8 @@ export const tools: Tool[] = [
   requestToJoinTool,
   reviewJoinRequestTool,
   searchPublicCohortsTool,
+  createServiceRequestTool,
+  joinServiceRequestTool,
 ];
 
 export const toolMap: Record<string, Tool> = Object.fromEntries(
