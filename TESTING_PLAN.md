@@ -67,6 +67,16 @@
 - ◐ (e2e) login → email link → onboarding → account; account shows tokens + tier.
 - ◐ (e2e) unauthenticated `/account` and `/onboarding` redirect to `/login`.
 
+## Cohorts & membership
+- ☐ (unit) `CreateCohortInput` handle regex (3–30, `[a-z0-9-]`); reserved handles rejected.
+- ☐ (integration) `create_cohort` makes the creator an approved **manager**.
+- ☐ (integration) duplicate handle → `handle_taken`.
+- ☐ (integration) request to join inserts a `requested` member row; duplicate → `already_requested`.
+- ☐ (integration) RLS: a user **cannot** self-update their `status`/`access_level` (no escalation); only managers can via `reviewJoinRequest`.
+- ☐ (integration) non-manager `reviewJoinRequest` → `forbidden` (RLS returns no rows).
+- ☐ (integration) RLS: public cohorts visible to all authed; private only to members/managers.
+- ◐ (e2e) create cohort → appears under "your cohorts" as manager; second user requests → manager approves → second user shows approved.
+
 ## Cross-cutting
 - ☐ (unit) architecture guard: no `.from(`/`.rpc(` outside `repositories/` (grep test in CI).
 - ☐ (integration) admin-only services all enforce `isStaff` (table-driven negative tests).

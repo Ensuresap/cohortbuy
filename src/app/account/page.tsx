@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/core/profiles/services/profileService";
@@ -28,9 +29,14 @@ export default async function AccountPage() {
         <h1 className="font-display text-3xl font-semibold text-text">
           Hi, {profile.display_name}
         </h1>
-        <form action={signOutAction}>
-          <Button variant="secondary" type="submit">Sign out</Button>
-        </form>
+        <div className="flex items-center gap-2">
+          <Link href="/cohorts">
+            <Button variant="secondary">Cohorts</Button>
+          </Link>
+          <form action={signOutAction}>
+            <Button variant="secondary" type="submit">Sign out</Button>
+          </form>
+        </div>
       </div>
 
       {/* Tokens */}

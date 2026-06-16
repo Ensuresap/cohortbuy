@@ -9,6 +9,12 @@ import {
   spendTokensTool,
   getTokenBalanceTool,
 } from "./tokenTools";
+import {
+  createCohortTool,
+  requestToJoinTool,
+  reviewJoinRequestTool,
+  searchPublicCohortsTool,
+} from "./cohortTools";
 
 /**
  * Central tool registry. Add a capability's tool here and it becomes
@@ -28,6 +34,10 @@ export const tools: Tool[] = [
   grantTokensTool,
   spendTokensTool,
   getTokenBalanceTool,
+  createCohortTool,
+  requestToJoinTool,
+  reviewJoinRequestTool,
+  searchPublicCohortsTool,
 ];
 
 export const toolMap: Record<string, Tool> = Object.fromEntries(
