@@ -98,7 +98,7 @@ export default async function CohortPage({ params }: { params: { handle: string 
               <img src={cohort.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
             )}
           </div>
-          <div className="px-6 pb-6">
+          <div className="relative z-10 px-6 pb-6">
             <div className="-mt-10 flex items-end justify-between gap-4">
               <Avatar url={cohort.avatar_url} name={cohort.name} big ring />
               <div className="mb-1 flex flex-col items-end gap-2">
