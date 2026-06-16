@@ -11,6 +11,7 @@ import {
   setMemberTitle,
   setComanager,
   leaveCohort,
+  respondJoinInfo,
 } from "@/core/cohorts/services/cohortService";
 import { createServerClient } from "@/core/db/serverClient";
 import { notifyActionDue } from "@/core/services/notificationService";
@@ -42,12 +43,27 @@ export async function createCohortAction(formData: FormData) {
   redirect(`/${handle}`);
 }
 
-export async function requestJoinAction(formData: FormData) {
+export async function submitJoinRequest(input: {
+  cohortId: string;
+  handle: string;
+  answers: { question: string; answer: string }[];
+}) {
+  const ctx = await getCtx();
+  const res = await requestToJoin(ctx, {
+    cohortId: input.cohortId,
+    answers: input.answers,
+  });
+  if (!res.ok) return { ok: false as const, error: res.error.message };
+  revalidatePath(`/${input.handle}`);
+  return { ok: true as const };
+}
+
+export async function respondInfoAction(formData: FormData) {
   const ctx = await getCtx();
   const handle = String(formData.get("handle") ?? "");
-  await requestToJoin(ctx, {
+  await respondJoinInfo(ctx, {
     cohortId: String(formData.get("cohortId") ?? ""),
-    note: String(formData.get("note") ?? "") || undefined,
+    response: String(formData.get("response") ?? ""),
   });
   revalidatePath(`/${handle}`);
 }
@@ -73,6 +89,7 @@ export async function saveCohortSettings(input: {
   description?: string;
   avatarUrl?: string;
   coverUrl?: string;
+  joinQuestions?: { text: string; expected?: string }[];
 }) {
   const ctx = await getCtx();
   const res = await updateCohortProfile(ctx, {
@@ -82,6 +99,7 @@ export async function saveCohortSettings(input: {
     description: input.description ?? "",
     avatarUrl: input.avatarUrl ?? "",
     coverUrl: input.coverUrl ?? "",
+    joinQuestions: input.joinQuestions,
   });
   if (!res.ok) return { ok: false as const, error: res.error.message };
   revalidatePath(`/${input.handle}`);
@@ -142,8 +160,14 @@ export async function reviewAction(formData: FormData) {
     | "approve"
     | "reject"
     | "needs_info";
+  const askMessage = String(formData.get("message") ?? "");
 
-  const res = await reviewJoinRequest(ctx, { cohortId, userId, decision });
+  const res = await reviewJoinRequest(ctx, {
+    cohortId,
+    userId,
+    decision,
+    message: askMessage || undefined,
+  });
 
   // Notify the member of the decision (service-role: system-generated).
   if (res.ok) {
@@ -153,7 +177,7 @@ export async function reviewAction(formData: FormData) {
         decision === "approve"
           ? `You're approved to join /${handle}.`
           : decision === "needs_info"
-            ? `A manager asked for more info on your request to join /${handle}.`
+            ? `A manager needs more info for /${handle}${askMessage ? `: ${askMessage}` : "."}`
             : `Your request to join /${handle} was declined.`;
       await notifyActionDue(
         { db: adminDb, actor: { role: "agent" } },

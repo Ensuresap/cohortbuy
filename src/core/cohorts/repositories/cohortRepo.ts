@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CreateCohortInput, MemberStatus } from "../domain/cohort";
+import type { CreateCohortInput } from "../domain/cohort";
 
 export function createCohort(db: SupabaseClient, input: CreateCohortInput) {
   return db.rpc("create_cohort", {
@@ -25,35 +25,39 @@ export function searchPublic(
   return q.order("last_activity_at", { ascending: false }).limit(args.limit);
 }
 
-export function insertJoinRequest(
+export function requestJoin(
   db: SupabaseClient,
-  args: { cohortId: string; userId: string; note?: string }
+  args: { cohortId: string; answers: unknown }
 ) {
-  return db.from("cohort_members").insert({
-    cohort_id: args.cohortId,
-    user_id: args.userId,
-    access_level: "member",
-    status: "requested",
-    note: args.note ?? null,
+  return db.rpc("request_join", { p_cohort: args.cohortId, p_answers: args.answers });
+}
+
+export function reviewJoin(
+  db: SupabaseClient,
+  args: { cohortId: string; userId: string; decision: string; message?: string }
+) {
+  return db.rpc("review_join", {
+    p_cohort: args.cohortId,
+    p_user: args.userId,
+    p_decision: args.decision,
+    p_message: args.message ?? null,
   });
 }
 
-export function updateMemberStatus(
+export function respondInfo(
   db: SupabaseClient,
-  args: { cohortId: string; userId: string; status: MemberStatus; note?: string }
+  args: { cohortId: string; response: string }
 ) {
-  return db
-    .from("cohort_members")
-    .update({ status: args.status, note: args.note ?? null, updated_at: new Date().toISOString() })
-    .eq("cohort_id", args.cohortId)
-    .eq("user_id", args.userId)
-    .select();
+  return db.rpc("respond_join_info", {
+    p_cohort: args.cohortId,
+    p_response: args.response,
+  });
 }
 
 export function listMyMemberships(db: SupabaseClient, userId: string) {
   return db
     .from("cohort_members")
-    .select("status, access_level, cohort:cohorts(*)")
+    .select("status, access_level, info_request, cohort:cohorts(*)")
     .eq("user_id", userId);
 }
 

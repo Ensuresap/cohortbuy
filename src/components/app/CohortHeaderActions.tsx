@@ -28,6 +28,7 @@ type CohortLite = {
   cover_url: string | null;
   visibility: "public" | "private";
   created_at: string;
+  join_questions: { text: string; expected?: string }[] | null;
 };
 
 async function uploadTo(folder: string, cohortId: string, file: File): Promise<string> {
@@ -125,6 +126,9 @@ function SettingsModal({
   const [description, setDescription] = useState(cohort.description ?? "");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [questions, setQuestions] = useState<{ text: string; expected?: string }[]>(
+    cohort.join_questions ?? []
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const coverRef = useRef<HTMLInputElement>(null);
@@ -146,6 +150,7 @@ function SettingsModal({
       }
       const res = await saveCohortSettings({
         cohortId: cohort.id, handle: cohort.handle, name, tagline, description, avatarUrl, coverUrl,
+        joinQuestions: questions.filter((q) => q.text.trim()),
       });
       if (!res.ok) throw new Error(res.error);
       onSaved();
@@ -193,6 +198,23 @@ function SettingsModal({
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={fieldClass} />
         <input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Slogan / tagline" className={fieldClass} />
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Description" className={fieldClass} />
+
+        <div>
+          <p className="text-sm font-medium text-text">Join questions</p>
+          <p className="mb-2 text-xs text-subtle">Asked when someone requests to join. Expected answer is optional (for your screening).</p>
+          <div className="space-y-2">
+            {questions.map((q, i) => (
+              <div key={i} className="rounded-xl border border-border p-2">
+                <input value={q.text} onChange={(e) => setQuestions((qs) => qs.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))} placeholder="Question" className="mb-1 w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-sm text-text outline-none focus:ring-2 focus:ring-ring" />
+                <div className="flex gap-1">
+                  <input value={q.expected ?? ""} onChange={(e) => setQuestions((qs) => qs.map((x, j) => (j === i ? { ...x, expected: e.target.value } : x)))} placeholder="Expected answer (optional)" className="w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-sm text-text outline-none focus:ring-2 focus:ring-ring" />
+                  <button type="button" onClick={() => setQuestions((qs) => qs.filter((_, j) => j !== i))} aria-label="Remove question" className="rounded-lg border border-border px-2 text-sm text-accent hover:bg-surface-2">×</button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={() => setQuestions((qs) => [...qs, { text: "", expected: "" }])} className="mt-2 rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-2">+ Add question</button>
+        </div>
 
         {error && <p className="text-sm text-accent">{error}</p>}
         <div className="flex justify-end gap-2">

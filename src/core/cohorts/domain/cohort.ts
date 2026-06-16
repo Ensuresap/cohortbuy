@@ -22,17 +22,35 @@ export const CreateCohortInput = z.object({
 });
 export type CreateCohortInput = z.infer<typeof CreateCohortInput>;
 
+export const JoinQuestion = z.object({
+  text: z.string().trim().min(1).max(300),
+  expected: z.string().trim().max(300).optional(),
+});
+export type JoinQuestion = z.infer<typeof JoinQuestion>;
+
+export const JoinAnswer = z.object({
+  question: z.string().max(300),
+  answer: z.string().max(2000),
+});
+export type JoinAnswer = z.infer<typeof JoinAnswer>;
+
 export const RequestToJoinInput = z.object({
   cohortId: z.string().uuid(),
-  note: z.string().max(500).optional(),
+  answers: z.array(JoinAnswer).max(20).optional(),
 });
 export type RequestToJoinInput = z.infer<typeof RequestToJoinInput>;
+
+export const RespondInfoInput = z.object({
+  cohortId: z.string().uuid(),
+  response: z.string().trim().min(1).max(2000),
+});
+export type RespondInfoInput = z.infer<typeof RespondInfoInput>;
 
 export const ReviewJoinInput = z.object({
   cohortId: z.string().uuid(),
   userId: z.string().uuid(),
   decision: z.enum(["approve", "reject", "needs_info"]),
-  note: z.string().max(500).optional(),
+  message: z.string().max(1000).optional(),
 });
 export type ReviewJoinInput = z.infer<typeof ReviewJoinInput>;
 
@@ -51,6 +69,7 @@ export const UpdateCohortProfileInput = z.object({
   description: z.string().trim().max(500).optional(),
   avatarUrl: z.union([z.string().url().max(500), z.literal("")]).optional(),
   coverUrl: z.union([z.string().url().max(500), z.literal("")]).optional(),
+  joinQuestions: z.array(JoinQuestion).max(20).optional(),
 });
 export type UpdateCohortProfileInput = z.infer<typeof UpdateCohortProfileInput>;
 
@@ -95,6 +114,7 @@ export interface Cohort {
   created_by: string | null;
   last_activity_at: string;
   created_at: string;
+  join_questions: JoinQuestion[];
 }
 
 const DECISION_TO_STATUS: Record<ReviewJoinInput["decision"], MemberStatus> = {

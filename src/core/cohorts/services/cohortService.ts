@@ -8,8 +8,8 @@ import {
   UpdateCohortProfileInput,
   SetTitleInput,
   SetComanagerInput,
+  RespondInfoInput,
   RESERVED_HANDLES,
-  decisionToStatus,
   type Cohort,
   type DirectoryMember,
 } from "../domain/cohort";
@@ -50,15 +50,11 @@ export async function requestToJoin(ctx: Ctx, raw: unknown): Promise<Result<true
   const parsed = RequestToJoinInput.safeParse(raw);
   if (!parsed.success) return err("invalid_input", parsed.error.issues[0]?.message ?? "Invalid");
 
-  const { error } = await repo.insertJoinRequest(ctx.db, {
+  const { error } = await repo.requestJoin(ctx.db, {
     cohortId: parsed.data.cohortId,
-    userId: ctx.actor.id,
-    note: parsed.data.note,
+    answers: parsed.data.answers ?? [],
   });
-  if (error) {
-    if (dup(error)) return err("already_requested", "You've already requested or joined this cohort");
-    return err("db_error", error.message);
-  }
+  if (error) return err("db_error", error.message);
   return ok(true);
 }
 
@@ -70,15 +66,32 @@ export async function reviewJoinRequest(ctx: Ctx, raw: unknown): Promise<Result<
   const parsed = ReviewJoinInput.safeParse(raw);
   if (!parsed.success) return err("invalid_input", parsed.error.issues[0]?.message ?? "Invalid");
 
-  const { data, error } = await repo.updateMemberStatus(ctx.db, {
+  const { error } = await repo.reviewJoin(ctx.db, {
     cohortId: parsed.data.cohortId,
     userId: parsed.data.userId,
-    status: decisionToStatus(parsed.data.decision),
-    note: parsed.data.note,
+    decision: parsed.data.decision,
+    message: parsed.data.message,
+  });
+  if (error) {
+    if (error.message?.includes("forbidden")) {
+      return err("forbidden", "Only the cohort manager can review requests");
+    }
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** Requestor replies to a manager's "need more info" request. */
+export async function respondJoinInfo(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const parsed = RespondInfoInput.safeParse(raw);
+  if (!parsed.success) return err("invalid_input", parsed.error.issues[0]?.message ?? "Invalid");
+  const { error } = await repo.respondInfo(ctx.db, {
+    cohortId: parsed.data.cohortId,
+    response: parsed.data.response,
   });
   if (error) return err("db_error", error.message);
-  // RLS lets only managers update; empty result means not permitted / not found.
-  if (!data || data.length === 0) return err("forbidden", "Only the cohort manager can review requests");
   return ok(true);
 }
 
@@ -171,6 +184,7 @@ export async function updateCohortProfile(ctx: Ctx, raw: unknown): Promise<Resul
   if (p.data.description !== undefined) fields.description = p.data.description || null;
   if (p.data.avatarUrl !== undefined) fields.avatar_url = p.data.avatarUrl || null;
   if (p.data.coverUrl !== undefined) fields.cover_url = p.data.coverUrl || null;
+  if (p.data.joinQuestions !== undefined) fields.join_questions = p.data.joinQuestions;
   if (Object.keys(fields).length === 0) return ok(true);
 
   const { data, error } = await repo.updateCohort(ctx.db, p.data.cohortId, fields);

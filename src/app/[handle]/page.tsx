@@ -15,14 +15,16 @@ import type { FeedPost } from "@/core/posts/domain/post";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import {
-  requestJoinAction,
   reviewAction,
   setTitleAction,
   setComanagerAction,
+  respondInfoAction,
 } from "../cohorts/actions";
 import { createRequestAction } from "../requests/actions";
 import PostComposer from "@/components/app/PostComposer";
 import CohortHeaderActions from "@/components/app/CohortHeaderActions";
+import JoinButton from "@/components/app/JoinButton";
+import SafetyNote from "@/components/app/SafetyNote";
 
 const fieldClass =
   "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
@@ -61,6 +63,7 @@ export default async function CohortPage({ params }: { params: { handle: string 
   const mine = (mineRes.ok ? mineRes.data : []) as Array<{
     status: string;
     access_level: string;
+    info_request: string | null;
     cohort: { id: string } | null;
   }>;
   const membership = mine.find((m) => m.cohort?.id === cohort.id);
@@ -77,7 +80,12 @@ export default async function CohortPage({ params }: { params: { handle: string 
   const projects = (projRes.ok ? projRes.data : []) as Array<{ id: string; title: string; status: keyof typeof STAGE_LABELS }>;
   const posts = (feedRes.ok ? feedRes.data : []) as FeedPost[];
 
-  let requests: Array<{ user_id: string; display_name: string | null; note: string | null }> = [];
+  let requests: Array<{
+    user_id: string;
+    display_name: string | null;
+    answers: { question: string; answer: string }[] | null;
+    info_response: string | null;
+  }> = [];
   if (isManager) {
     const r = await listJoinRequests(ctx, cohort.id);
     requests = (r.ok ? r.data : []) as typeof requests;
@@ -104,11 +112,7 @@ export default async function CohortPage({ params }: { params: { handle: string 
               <div className="mb-1 flex flex-col items-end gap-2">
                 <CohortHeaderActions cohort={cohort} isManager={isManager} isMember={isApproved} isOwner={isOwner} />
                 {!membership && (
-                  <form action={requestJoinAction}>
-                    <input type="hidden" name="cohortId" value={cohort.id} />
-                    <input type="hidden" name="handle" value={cohort.handle} />
-                    <Button type="submit">Request to join</Button>
-                  </form>
+                  <JoinButton cohortId={cohort.id} handle={cohort.handle} questions={cohort.join_questions ?? []} />
                 )}
                 {membership && membership.status !== "approved" && (
                   <span className="rounded-full bg-surface-2 px-3 py-1.5 text-sm text-muted capitalize">{membership.status}</span>
@@ -129,6 +133,22 @@ export default async function CohortPage({ params }: { params: { handle: string 
             </p>
           </div>
         </section>
+
+        {membership?.status === "needs_info" && (
+          <section className="mt-6 rounded-2xl border border-accent/40 bg-surface p-5 shadow-soft">
+            <h2 className="font-display text-lg font-semibold text-text">More info requested</h2>
+            {membership.info_request && <p className="mt-1 text-muted">{membership.info_request}</p>}
+            <div className="mt-3">
+              <SafetyNote />
+            </div>
+            <form action={respondInfoAction} className="mt-3 space-y-2">
+              <input type="hidden" name="cohortId" value={cohort.id} />
+              <input type="hidden" name="handle" value={cohort.handle} />
+              <textarea name="response" required rows={3} placeholder="Your response…" className={fieldClass} />
+              <Button type="submit">Send response</Button>
+            </form>
+          </section>
+        )}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Main: feed + projects */}
@@ -257,22 +277,43 @@ export default async function CohortPage({ params }: { params: { handle: string 
                   ) : (
                     <ul className="mt-2 space-y-2">
                       {requests.map((req) => (
-                        <li key={req.user_id} className="rounded-xl border border-border px-3 py-2">
+                        <li key={req.user_id} className="rounded-xl border border-border px-3 py-2.5">
                           <p className="text-sm font-medium text-text">{req.display_name ?? "Member"}</p>
-                          {req.note && <p className="text-xs text-muted">&ldquo;{req.note}&rdquo;</p>}
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {(["approve", "reject", "needs_info"] as const).map((d) => (
+                          {req.answers && req.answers.length > 0 && (
+                            <dl className="mt-1.5 space-y-1.5">
+                              {req.answers.map((a, i) => (
+                                <div key={i}>
+                                  <dt className="text-xs font-medium text-muted">{a.question}</dt>
+                                  <dd className="text-sm text-text">{a.answer || "—"}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          )}
+                          {req.info_response && (
+                            <p className="mt-1.5 text-xs text-muted">Follow-up: {req.info_response}</p>
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {(["approve", "reject"] as const).map((d) => (
                               <form key={d} action={reviewAction}>
                                 <input type="hidden" name="cohortId" value={cohort.id} />
                                 <input type="hidden" name="userId" value={req.user_id} />
                                 <input type="hidden" name="handle" value={cohort.handle} />
                                 <input type="hidden" name="decision" value={d} />
-                                <Button type="submit" size="md" variant={d === "approve" ? "primary" : "secondary"}>
-                                  {d === "needs_info" ? "Info" : d}
-                                </Button>
+                                <Button type="submit" size="md" variant={d === "approve" ? "primary" : "secondary"}>{d}</Button>
                               </form>
                             ))}
                           </div>
+                          <details className="mt-2">
+                            <summary className="cursor-pointer text-xs font-medium text-primary">Ask for more info</summary>
+                            <form action={reviewAction} className="mt-2 space-y-1.5">
+                              <input type="hidden" name="cohortId" value={cohort.id} />
+                              <input type="hidden" name="userId" value={req.user_id} />
+                              <input type="hidden" name="handle" value={cohort.handle} />
+                              <input type="hidden" name="decision" value="needs_info" />
+                              <textarea name="message" required rows={2} placeholder="What should they clarify?" className="w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-sm text-text outline-none focus:ring-2 focus:ring-ring" />
+                              <Button type="submit" size="md" variant="secondary">Send request</Button>
+                            </form>
+                          </details>
                         </li>
                       ))}
                     </ul>
