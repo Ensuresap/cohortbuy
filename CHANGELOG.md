@@ -6,6 +6,7 @@ Update the `[Unreleased]` section with **every** feature (see `CLAUDE.md` → "K
 ## [Unreleased]
 
 ### Added
+- **Google sign-in** — "Continue with Google" on `/login` (`signInWithOAuth`, returns via the existing `/auth/callback`); gives a login path that doesn't depend on email delivery. SETUP.md documents enabling the Supabase Google provider + redirect URLs, and clarifies that magic-link login requires custom SMTP (Resend) — the missing SMTP is the cause of the "session keeps dropping to /login" symptom (the email never arrives).
 - **Platform admin panel** — `/admin` (staff/admin only) with an operations overview: KPI cards (cohorts, approved members, projects, completed, waitlist, total value coordinated), projects-by-stage breakdown, recent project activity, and inactive-cohort flags (30d+). Backed by `is_platform_staff()`-gated `SECURITY DEFINER` RPCs (`admin_overview`, `admin_recent_projects`, `admin_inactive_cohorts`) in a new `core/admin` slice. Staff-only "Platform admin" link added to the user menu. Migration `20260617120000_admin_overview.sql`.
 - **Edit project** — coordinator/manager can edit a project's title, category, description and driver from a modal on the project page (`editProject` service, RLS-gated; `EditProjectButton`).
 - **Demo seed for cohort SA** — `supabase/seeds/demo_sa.sql`: six `[DEMO]` projects spanning the lifecycle (forming → rfq → deciding → contracting → funding → completed) with vendors, quotes, scope, discussion and cost shares, plus four demo members. Idempotent; run manually against a dev DB.

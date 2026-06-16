@@ -44,12 +44,19 @@ Used for: the agent runtime. We're **provider-agnostic** (`{ provider, model }`)
 2. OpenAI (optional): create a key at the OpenAI dashboard → set `OPENAI_API_KEY`.
 3. Optional default override via `AI_DEFAULT_PROVIDER` / `AI_DEFAULT_MODEL` (otherwise the code default `DEFAULT_MODEL` applies).
 
-## 3. Resend — transactional email  *(Soon)*
-Used for: email notifications and (optionally) Supabase Auth magic-link emails.
+## 3. Resend — transactional email  *(Now — required for magic-link login)*
+Used for: email notifications and Supabase Auth magic-link emails.
+
+> **Login depends on this.** Supabase's built-in email sender is heavily rate-limited and
+> often does not deliver, which looks like "the session keeps dropping to /login" — the
+> magic-link email simply never arrives, so the login can't complete or refresh. Either
+> configure SMTP below **or** use **Google sign-in** (§6), which needs no email at all.
 
 1. Create a Resend account; **verify your sending domain** (DNS records).
 2. Create an API key → set `RESEND_API_KEY`; set `EMAIL_FROM` to a verified address.
-3. (Optional) Point **Supabase Auth → SMTP** at Resend so auth emails send from your domain.
+3. Point **Supabase → Authentication → Emails → SMTP Settings** at Resend:
+   host `smtp.resend.com`, port `465`, user `resend`, password = your Resend API key,
+   sender = your verified `EMAIL_FROM`. Enable "Custom SMTP".
 
 ## 4. Twilio — SMS notifications  *(Soon)*
 Used for: the SMS `NotificationChannel`. **US texting needs A2P 10DLC registration** before scale.
@@ -61,13 +68,24 @@ Used for: the SMS `NotificationChannel`. **US texting needs A2P 10DLC registrati
 ## 5. WhatsApp Business API (BSP)  *(Later)*
 Used for: the WhatsApp conversational channel + notifications. Reach it via a BSP (Twilio, AiSensy, Respond.io). Requires a WhatsApp-enabled number and **message template approvals**. Add env vars per the chosen BSP.
 
-## 6. Google OAuth + Drive API  *(Later)*
-Used for: Google sign-in and per-project document folders.
+## 6. Google sign-in  *(Now — recommended)* + Drive API *(Later)*
+Used for: Google sign-in (the "Continue with Google" button on `/login`) and, later, per-project
+document folders. The app already calls `signInWithOAuth({ provider: 'google' })` and handles the
+return at `/auth/callback`; you just need to enable the provider in Supabase.
 
-1. Create a Google Cloud project; configure the **OAuth consent screen**.
-2. Enable the **Google Drive API**.
-3. Create **OAuth client credentials** → set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (or configure the Google provider in **Supabase Auth**).
-4. Request minimal Drive scopes; disclose access in the privacy policy.
+**Enable Google sign-in (no email/SMTP needed):**
+1. Google Cloud → create a project → configure the **OAuth consent screen** (External; add your
+   email as a test user while in testing).
+2. **APIs & Services → Credentials → Create OAuth client ID → Web application**.
+   - Authorized redirect URI: `https://qerbvrenpdmoegebkdki.supabase.co/auth/v1/callback`
+     (Supabase's callback — copy the exact one shown in the Supabase Google provider screen).
+3. Copy the Client ID + Secret into **Supabase → Authentication → Providers → Google**, and enable it.
+4. **Supabase → Authentication → URL Configuration:** set **Site URL** to your app origin
+   (e.g. `http://localhost:3000` for dev) and add `…/auth/callback` to **Redirect URLs**
+   (e.g. `http://localhost:3000/auth/callback`). This must match `redirectTo` in `login/page.tsx`.
+
+**Drive API (later):** enable the **Google Drive API**, request minimal scopes, set
+`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, and disclose access in the privacy policy.
 
 ## 7. E-signature  *(Later)*
 Used for: member↔vendor contracts. Pick a provider (Dropbox Sign / DocuSign), create an API key, add its env vars.
