@@ -1,0 +1,71 @@
+# CohortBuy — Testing Plan
+
+> **Living document.** Update with **every** feature (see `CLAUDE.md` → "Keeping docs current").
+> Each capability lists test cases with **type** (unit / integration / e2e / manual) and **status** (☐ planned · ◐ manual · ☑ automated).
+
+## Test approach
+
+- **Unit** — pure functions & service logic (Zod validation, token math, status tiers). Recommended: **Vitest**.
+- **Integration** — services against a Supabase test DB / API routes. Recommended: Vitest + a seeded test project (or `supabase start`).
+- **E2E** — user flows in the browser. Recommended: **Playwright**.
+- **Manual** — visual/responsive/theme checks until automated.
+
+> Harness not yet wired (no test deps installed). Cases below are mostly ☐/◐ until Vitest + Playwright are added — see "Next" at the bottom.
+
+## Conventions
+
+- Every service path returns a `Result`; tests assert both `ok` and `error.code`.
+- Test the **invalid input**, **unauthorized**, and **edge** cases, not just the happy path.
+- Money/consent/permission logic must have explicit negative tests.
+
+---
+
+## Design system & theming
+- ☐ (unit) tokens resolve: no hard-coded hex/`bg-white` in `src/**` (lint/grep guard).
+- ◐ (manual) Light and dark both render correctly across all sections.
+- ◐ (manual) No theme flash on load (no-flash script).
+- ◐ (manual) Touch targets ≥ 44px on primitives; layout works at 360px width.
+- ◐ (manual) Keyboard focus rings visible on Button/Input/Checkbox/ThemeToggle.
+
+## Waitlist (reference slice)
+- ☐ (unit) `joinWaitlist` rejects invalid email → `invalid_input`.
+- ☐ (unit) returns `not_configured` when no DB.
+- ☐ (integration) inserts a row; duplicate email is treated as success (23505).
+- ☐ (integration) `POST /api/waitlist` → 400 invalid, 503 not configured, 200 success.
+- ◐ (manual) Form shows success and graceful dev message without Supabase key.
+
+## Notifications
+- ☐ (unit) `notifyActionDue` rejects invalid input.
+- ☐ (integration) SMS skipped when `sms_opt_in = false`; falls back to email if present.
+- ☐ (integration) preferred channel honored; status logged (`sent`/`skipped`) to `notifications`.
+- ☐ (unit) consent rule: never dispatch SMS/WhatsApp without opt-in (negative test).
+
+## AI configuration
+- ☐ (unit) `resolveModel` order: cohort override → global default → `DEFAULT_MODEL`.
+- ☐ (unit) `setCohortModel` / `setGlobalModel` → `forbidden` when not staff/admin.
+- ☐ (integration) override persists and is returned by `resolveModel`.
+
+## Agent memory
+- ☐ (unit) work-scoped record requires `workItemId` (Zod refine).
+- ☐ (integration) `recallMemory(cohortId, workItemId)` returns that work item's + cohort-level memory.
+- ☐ (integration) ordering is most-recent-first; `limit` respected.
+
+## In-app tokens (Web2)
+- ☐ (unit) `statusTier` thresholds (0→Newcomer, 100→Neighbor, 500→Connector, 1500→Pillar).
+- ☐ (unit) `grant_tokens` → `forbidden` when not staff/admin.
+- ☐ (integration) `awardForEvent` adds the rule amount; updates `balance` + `lifetime_earned`.
+- ☐ (integration) **overspend blocked**: `spendTokens` beyond balance → `insufficient_tokens`, no ledger row committed (atomic RPC).
+- ☐ (integration) ledger ↔ balance consistency after mixed earn/spend.
+- ☐ (unit) tokens are non-cash: no service path converts tokens to money/transfers (guard test).
+
+## Cross-cutting
+- ☐ (unit) architecture guard: no `.from(`/`.rpc(` outside `repositories/` (grep test in CI).
+- ☐ (integration) admin-only services all enforce `isStaff` (table-driven negative tests).
+
+---
+
+## Next (to make this real)
+1. Add **Vitest** + a couple of pure unit tests (token `statusTier`, `resolveModel` order) to seed the harness.
+2. Add a Supabase **test project**/local stack for integration tests of services & migrations.
+3. Add **Playwright** for the waitlist e2e and theme toggle.
+4. Wire the architecture grep guards into CI.

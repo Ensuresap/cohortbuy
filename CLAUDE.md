@@ -131,6 +131,16 @@ This must feel like an app on a phone and be trivial to wrap as a native app lat
 - Internal points ledger in `core/tokens/` — **non-cash, never redeemable or tradeable**. Spend only on in-app perks/status. Don't add cash-out/transfer without counsel (money-transmitter/stored-value risk).
 - Append-only: all changes go through the atomic `apply_token_tx` RPC (via `tokenRepo.applyTx`) — never update `token_accounts.balance` directly. Earn via system rules (`awardForEvent`) + admin grants (`adminGrant`, `isStaff`-gated); spend via `spendTokens` (overspend blocked in the DB function).
 
+## Keeping docs current (do this with EVERY feature)
+
+A feature isn't "done" until all three are updated — treat this as part of the definition of done:
+
+1. **`CHANGELOG.md`** — add an entry under `[Unreleased]` (Keep a Changelog format: Added / Changed / Fixed / Removed). One concise line per change.
+2. **The plan — `../Product_Spec.md`** — reflect the feature (update the relevant capability/convention text **and** add a dated Changelog line) so the spec stays the single source of truth.
+3. **`TESTING_PLAN.md`** — add/append test cases for the feature: happy path, input validation, auth/consent/permissions, and edge cases, each with a type (unit/integration/e2e/manual) and status.
+
+Keep commits and these docs in step — ideally update them in the same commit as the code.
+
 ## Conventions
 - Keep it **seamless** — match the existing warm, calm visual language; don't introduce competing styles.
 - TypeScript everywhere; prefer Server Components; colocate components under `src/components`.
