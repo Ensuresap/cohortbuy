@@ -75,18 +75,21 @@ export async function setTitleAction(formData: FormData) {
   revalidatePath(`/${handle}`);
 }
 
-export async function createPostAction(formData: FormData) {
+export async function submitPost(input: {
+  cohortId: string;
+  handle: string;
+  body: string;
+  imageUrl?: string;
+}) {
   const ctx = await getCtx();
-  const handle = String(formData.get("handle") ?? "");
   const res = await createPost(ctx, {
-    cohortId: String(formData.get("cohortId") ?? ""),
-    body: String(formData.get("body") ?? ""),
-    imageUrl: String(formData.get("imageUrl") ?? "").trim(),
+    cohortId: input.cohortId,
+    body: input.body,
+    imageUrl: input.imageUrl || undefined,
   });
-  if (!res.ok) {
-    redirect(`/${handle}?perror=${encodeURIComponent(res.error.message)}`);
-  }
-  revalidatePath(`/${handle}`);
+  if (!res.ok) return { ok: false as const, error: res.error.message };
+  revalidatePath(`/${input.handle}`);
+  return { ok: true as const };
 }
 
 export async function setComanagerAction(formData: FormData) {

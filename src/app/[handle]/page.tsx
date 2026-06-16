@@ -20,9 +20,9 @@ import {
   updateCohortProfileAction,
   setTitleAction,
   setComanagerAction,
-  createPostAction,
 } from "../cohorts/actions";
 import { createRequestAction } from "../requests/actions";
+import PostComposer from "@/components/app/PostComposer";
 
 const fieldClass =
   "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
@@ -45,13 +45,7 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default async function CohortPage({
-  params,
-  searchParams,
-}: {
-  params: { handle: string };
-  searchParams: { perror?: string };
-}) {
+export default async function CohortPage({ params }: { params: { handle: string } }) {
   const supabase = createClient();
   const {
     data: { user },
@@ -134,22 +128,7 @@ export default async function CohortPage({
           {/* Main: feed + projects */}
           <div className="space-y-6 lg:col-span-2">
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              {searchParams.perror && (
-                <p className="mb-4 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-accent">
-                  Couldn&rsquo;t post: {searchParams.perror}
-                </p>
-              )}
-              {isManager && (
-                <form action={createPostAction} className="space-y-2 border-b border-border pb-5">
-                  <input type="hidden" name="cohortId" value={cohort.id} />
-                  <input type="hidden" name="handle" value={cohort.handle} />
-                  <textarea name="body" required rows={3} placeholder="Share an update with this cohort…" className={fieldClass} />
-                  <div className="flex items-center gap-2">
-                    <input name="imageUrl" placeholder="Image URL (optional)" className={`${fieldClass} flex-1`} />
-                    <Button type="submit">Post</Button>
-                  </div>
-                </form>
-              )}
+              {isManager && <PostComposer cohortId={cohort.id} handle={cohort.handle} />}
               <div className={isManager ? "mt-5" : ""}>
                 {posts.length === 0 ? (
                   <p className="text-muted">No posts yet{isManager ? " — share the first update." : "."}</p>
