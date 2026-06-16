@@ -133,6 +133,34 @@ export default async function CohortPage({ params }: { params: { handle: string 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Main: feed + projects */}
           <div className="space-y-6 lg:col-span-2">
+            {isApproved && (
+              <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+                <h2 className="font-display text-lg font-semibold text-text">Active projects</h2>
+                {projects.length === 0 ? (
+                  <p className="mt-2 text-muted">No projects yet. Start one below.</p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {projects.map((p) => (
+                      <li key={p.id}>
+                        <Link href={`/requests/${p.id}`} className="flex items-center justify-between rounded-xl border border-border px-4 py-3 hover:bg-surface-2">
+                          <span className="font-medium text-text">{p.title}</span>
+                          <span className="text-xs text-subtle">{STAGE_LABELS[p.status]}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <form action={createRequestAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
+                  <p className="text-sm font-medium text-text">Start a project</p>
+                  <input type="hidden" name="cohortId" value={cohort.id} />
+                  <input type="hidden" name="handle" value={cohort.handle} />
+                  <input name="title" required placeholder="e.g. Backyard fence replacement" className={fieldClass} />
+                  <input name="category" placeholder="Category (e.g. Fencing)" className={fieldClass} />
+                  <Button type="submit">Create project</Button>
+                </form>
+              </section>
+            )}
+
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
               {isManager && <PostComposer cohortId={cohort.id} handle={cohort.handle} />}
               <div className={isManager ? "mt-5" : ""}>
@@ -160,34 +188,6 @@ export default async function CohortPage({ params }: { params: { handle: string 
                 )}
               </div>
             </section>
-
-            {isApproved && (
-              <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-                <h2 className="font-display text-lg font-semibold text-text">Projects</h2>
-                {projects.length === 0 ? (
-                  <p className="mt-2 text-muted">No projects yet. Start one below.</p>
-                ) : (
-                  <ul className="mt-3 space-y-2">
-                    {projects.map((p) => (
-                      <li key={p.id}>
-                        <Link href={`/requests/${p.id}`} className="flex items-center justify-between rounded-xl border border-border px-4 py-3 hover:bg-surface-2">
-                          <span className="font-medium text-text">{p.title}</span>
-                          <span className="text-xs text-subtle">{STAGE_LABELS[p.status]}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <form action={createRequestAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
-                  <p className="text-sm font-medium text-text">Start a project</p>
-                  <input type="hidden" name="cohortId" value={cohort.id} />
-                  <input type="hidden" name="handle" value={cohort.handle} />
-                  <input name="title" required placeholder="e.g. Backyard fence replacement" className={fieldClass} />
-                  <input name="category" placeholder="Category (e.g. Fencing)" className={fieldClass} />
-                  <Button type="submit">Create project</Button>
-                </form>
-              </section>
-            )}
           </div>
 
           {/* Side: members + manage */}
