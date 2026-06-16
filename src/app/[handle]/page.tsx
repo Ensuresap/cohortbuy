@@ -45,7 +45,13 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default async function CohortPage({ params }: { params: { handle: string } }) {
+export default async function CohortPage({
+  params,
+  searchParams,
+}: {
+  params: { handle: string };
+  searchParams: { perror?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -128,6 +134,11 @@ export default async function CohortPage({ params }: { params: { handle: string 
           {/* Main: feed + projects */}
           <div className="space-y-6 lg:col-span-2">
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+              {searchParams.perror && (
+                <p className="mb-4 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-accent">
+                  Couldn&rsquo;t post: {searchParams.perror}
+                </p>
+              )}
               {isManager && (
                 <form action={createPostAction} className="space-y-2 border-b border-border pb-5">
                   <input type="hidden" name="cohortId" value={cohort.id} />

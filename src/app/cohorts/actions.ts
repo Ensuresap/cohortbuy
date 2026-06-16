@@ -78,11 +78,14 @@ export async function setTitleAction(formData: FormData) {
 export async function createPostAction(formData: FormData) {
   const ctx = await getCtx();
   const handle = String(formData.get("handle") ?? "");
-  await createPost(ctx, {
+  const res = await createPost(ctx, {
     cohortId: String(formData.get("cohortId") ?? ""),
     body: String(formData.get("body") ?? ""),
     imageUrl: String(formData.get("imageUrl") ?? "").trim(),
   });
+  if (!res.ok) {
+    redirect(`/${handle}?perror=${encodeURIComponent(res.error.message)}`);
+  }
   revalidatePath(`/${handle}`);
 }
 
