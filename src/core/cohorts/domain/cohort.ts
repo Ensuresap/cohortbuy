@@ -44,6 +44,39 @@ export type SearchCohortsInput = z.infer<typeof SearchCohortsInput>;
 
 export const HandleInput = z.object({ handle: Handle });
 
+export const UpdateCohortProfileInput = z.object({
+  cohortId: z.string().uuid(),
+  name: z.string().trim().min(2).max(80).optional(),
+  tagline: z.string().trim().max(140).optional(),
+  description: z.string().trim().max(500).optional(),
+  avatarUrl: z.union([z.string().url().max(500), z.literal("")]).optional(),
+});
+export type UpdateCohortProfileInput = z.infer<typeof UpdateCohortProfileInput>;
+
+export const SetTitleInput = z.object({
+  cohortId: z.string().uuid(),
+  userId: z.string().uuid(),
+  title: z.string().trim().max(60),
+});
+export type SetTitleInput = z.infer<typeof SetTitleInput>;
+
+export const SetComanagerInput = z.object({
+  cohortId: z.string().uuid(),
+  userId: z.string().uuid(),
+  make: z.boolean(),
+});
+export type SetComanagerInput = z.infer<typeof SetComanagerInput>;
+
+export interface DirectoryMember {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  last_seen_at: string | null;
+  access_level: "member" | "manager";
+  title: string | null;
+  member_since: string;
+}
+
 export type MemberStatus = "requested" | "approved" | "rejected" | "needs_info";
 export type AccessLevel = "member" | "manager";
 
@@ -52,6 +85,8 @@ export interface Cohort {
   handle: string;
   name: string;
   description: string | null;
+  tagline: string | null;
+  avatar_url: string | null;
   visibility: z.infer<typeof Visibility>;
   category: string | null;
   country: string;

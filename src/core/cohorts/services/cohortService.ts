@@ -5,9 +5,13 @@ import {
   ReviewJoinInput,
   SearchCohortsInput,
   HandleInput,
+  UpdateCohortProfileInput,
+  SetTitleInput,
+  SetComanagerInput,
   RESERVED_HANDLES,
   decisionToStatus,
   type Cohort,
+  type DirectoryMember,
 } from "../domain/cohort";
 import * as repo from "../repositories/cohortRepo";
 import { ok, err, type Result } from "../../result";
@@ -99,6 +103,65 @@ export async function getCohortByHandle(ctx: Ctx, raw: unknown): Promise<Result<
   const { data, error } = await repo.getByHandle(ctx.db, parsed.data.handle);
   if (error) return err("db_error", error.message);
   return ok((data as Cohort) ?? null);
+}
+
+/** Member directory of a cohort (names, role, title, presence) for its members. */
+export async function getMemberDirectory(
+  ctx: Ctx,
+  cohortId: string
+): Promise<Result<DirectoryMember[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.memberDirectory(ctx.db, cohortId);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as DirectoryMember[]);
+}
+
+/** Manager: assign or clear a member's title (e.g. Treasurer). */
+export async function setMemberTitle(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = SetTitleInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", p.error.issues[0]?.message ?? "Invalid");
+  const { error } = await repo.setTitle(ctx.db, p.data);
+  if (error) {
+    if (error.message?.includes("forbidden")) return err("forbidden", "Only a manager can set titles");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** Owner: promote/demote a member to/from co-admin (co-manager). */
+export async function setComanager(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = SetComanagerInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", "Invalid input");
+  const { error } = await repo.setComanager(ctx.db, p.data);
+  if (error) {
+    if (error.message?.includes("forbidden")) return err("forbidden", "Only the owner can change co-admins");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** Manager: edit cohort profile (name, tagline, description, avatar). */
+export async function updateCohortProfile(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = UpdateCohortProfileInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", p.error.issues[0]?.message ?? "Invalid");
+
+  const fields: Record<string, unknown> = {};
+  if (p.data.name !== undefined) fields.name = p.data.name;
+  if (p.data.tagline !== undefined) fields.tagline = p.data.tagline || null;
+  if (p.data.description !== undefined) fields.description = p.data.description || null;
+  if (p.data.avatarUrl !== undefined) fields.avatar_url = p.data.avatarUrl || null;
+  if (Object.keys(fields).length === 0) return ok(true);
+
+  const { data, error } = await repo.updateCohort(ctx.db, p.data.cohortId, fields);
+  if (error) return err("db_error", error.message);
+  if (!data || data.length === 0) return err("forbidden", "Only a manager can edit the cohort");
+  return ok(true);
 }
 
 /** Pending join requests for a cohort (RLS returns rows only to its managers). */

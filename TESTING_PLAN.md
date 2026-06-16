@@ -104,6 +104,12 @@
 - ◐ (manual) progress bar reflects pipeline position; empty states render when no projects/activity.
 - ◐ (e2e) login → /dashboard; active project shows with correct stage.
 
+## Cohort profile & directory
+- ☐ (integration) `cohort_member_directory` returns rows only to approved members of that cohort.
+- ☐ (integration) `set_cohort_comanager` → forbidden unless caller is the owner; `set_member_title` → forbidden unless manager.
+- ☐ (integration) `updateCohortProfile` → forbidden for non-managers (RLS no rows).
+- ◐ (manual) online dot reflects last_seen < 5 min; member-since + Est. year render; owner/co-admin/member badges correct.
+
 ## Cross-cutting
 - ☐ (unit) architecture guard: no `.from(`/`.rpc(` outside `repositories/` (grep test in CI).
 - ☐ (integration) admin-only services all enforce `isStaff` (table-driven negative tests).

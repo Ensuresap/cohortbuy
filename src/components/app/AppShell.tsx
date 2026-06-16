@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/core/profiles/services/profileService";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserMenu from "./UserMenu";
+import Presence from "./Presence";
 
 function initialsFrom(name: string): string {
   return (
@@ -33,6 +34,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
 
   return (
     <div className="min-h-screen">
+      <Presence />
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
           <Link href="/dashboard" className="flex items-center gap-2">

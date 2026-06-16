@@ -57,6 +57,40 @@ export function listMyMemberships(db: SupabaseClient, userId: string) {
     .eq("user_id", userId);
 }
 
+export function memberDirectory(db: SupabaseClient, cohortId: string) {
+  return db.rpc("cohort_member_directory", { p_cohort: cohortId });
+}
+
+export function setTitle(
+  db: SupabaseClient,
+  args: { cohortId: string; userId: string; title: string }
+) {
+  return db.rpc("set_member_title", {
+    p_cohort: args.cohortId,
+    p_user: args.userId,
+    p_title: args.title,
+  });
+}
+
+export function setComanager(
+  db: SupabaseClient,
+  args: { cohortId: string; userId: string; make: boolean }
+) {
+  return db.rpc("set_cohort_comanager", {
+    p_cohort: args.cohortId,
+    p_user: args.userId,
+    p_make_manager: args.make,
+  });
+}
+
+export function updateCohort(
+  db: SupabaseClient,
+  cohortId: string,
+  fields: Record<string, unknown>
+) {
+  return db.from("cohorts").update(fields).eq("id", cohortId).select();
+}
+
 export function listRequests(db: SupabaseClient, cohortId: string) {
   return db
     .from("cohort_members")

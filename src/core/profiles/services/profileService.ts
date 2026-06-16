@@ -12,6 +12,15 @@ export async function getMyProfile(ctx: Ctx): Promise<Result<Profile | null>> {
   return ok((data as Profile) ?? null);
 }
 
+/** Update the signed-in user's last-seen timestamp (presence heartbeat). */
+export async function touchPresence(ctx: Ctx): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.touchLastSeen(ctx.db, ctx.actor.id);
+  if (error) return err("db_error", error.message);
+  return ok(true);
+}
+
 /** Save onboarding details for the signed-in user. */
 export async function completeOnboarding(
   ctx: Ctx,

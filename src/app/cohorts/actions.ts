@@ -7,6 +7,9 @@ import {
   createCohort,
   requestToJoin,
   reviewJoinRequest,
+  updateCohortProfile,
+  setMemberTitle,
+  setComanager,
 } from "@/core/cohorts/services/cohortService";
 import { createServerClient } from "@/core/db/serverClient";
 import { notifyActionDue } from "@/core/services/notificationService";
@@ -43,6 +46,41 @@ export async function requestJoinAction(formData: FormData) {
   await requestToJoin(ctx, {
     cohortId: String(formData.get("cohortId") ?? ""),
     note: String(formData.get("note") ?? "") || undefined,
+  });
+  revalidatePath(`/${handle}`);
+}
+
+export async function updateCohortProfileAction(formData: FormData) {
+  const ctx = await getCtx();
+  const handle = String(formData.get("handle") ?? "");
+  await updateCohortProfile(ctx, {
+    cohortId: String(formData.get("cohortId") ?? ""),
+    name: String(formData.get("name") ?? "").trim() || undefined,
+    tagline: String(formData.get("tagline") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    avatarUrl: String(formData.get("avatarUrl") ?? "").trim(),
+  });
+  redirect(`/${handle}`);
+}
+
+export async function setTitleAction(formData: FormData) {
+  const ctx = await getCtx();
+  const handle = String(formData.get("handle") ?? "");
+  await setMemberTitle(ctx, {
+    cohortId: String(formData.get("cohortId") ?? ""),
+    userId: String(formData.get("userId") ?? ""),
+    title: String(formData.get("title") ?? ""),
+  });
+  revalidatePath(`/${handle}`);
+}
+
+export async function setComanagerAction(formData: FormData) {
+  const ctx = await getCtx();
+  const handle = String(formData.get("handle") ?? "");
+  await setComanager(ctx, {
+    cohortId: String(formData.get("cohortId") ?? ""),
+    userId: String(formData.get("userId") ?? ""),
+    make: String(formData.get("make") ?? "") === "true",
   });
   revalidatePath(`/${handle}`);
 }
