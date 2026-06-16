@@ -3,6 +3,12 @@ import { joinWaitlistTool } from "./waitlistTools";
 import { notifyActionDueTool } from "./notificationTools";
 import { setCohortModelTool } from "./aiConfigTools";
 import { recordMemoryTool, recallMemoryTool } from "./memoryTools";
+import {
+  awardTokensTool,
+  grantTokensTool,
+  spendTokensTool,
+  getTokenBalanceTool,
+} from "./tokenTools";
 
 /**
  * Central tool registry. Add a capability's tool here and it becomes
@@ -18,6 +24,10 @@ export const tools: Tool[] = [
   setCohortModelTool,
   recordMemoryTool,
   recallMemoryTool,
+  awardTokensTool,
+  grantTokensTool,
+  spendTokensTool,
+  getTokenBalanceTool,
 ];
 
 export const toolMap: Record<string, Tool> = Object.fromEntries(

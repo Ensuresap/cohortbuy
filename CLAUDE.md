@@ -127,6 +127,10 @@ This must feel like an app on a phone and be trivial to wrap as a native app lat
 - **Scoped memory:** store agent memory at **cohort** and **work-item** scope. `recordMemory` saves salient facts; `recallMemory(cohortId, workItemId?)` returns work-item + cohort memory to load into context. Table: `agent_memory` (add pgvector embeddings later for semantic recall). Don't dump raw transcripts — record durable, useful facts.
 - **Admin gating pattern:** any operator-only mutation (`set_*`, boosting, etc.) checks `isStaff(ctx)` inside the service. Entry points never decide authorization alone.
 
+## In-app tokens (Web2)
+- Internal points ledger in `core/tokens/` — **non-cash, never redeemable or tradeable**. Spend only on in-app perks/status. Don't add cash-out/transfer without counsel (money-transmitter/stored-value risk).
+- Append-only: all changes go through the atomic `apply_token_tx` RPC (via `tokenRepo.applyTx`) — never update `token_accounts.balance` directly. Earn via system rules (`awardForEvent`) + admin grants (`adminGrant`, `isStaff`-gated); spend via `spendTokens` (overspend blocked in the DB function).
+
 ## Conventions
 - Keep it **seamless** — match the existing warm, calm visual language; don't introduce competing styles.
 - TypeScript everywhere; prefer Server Components; colocate components under `src/components`.
