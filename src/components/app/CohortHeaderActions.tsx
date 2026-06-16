@@ -10,7 +10,6 @@ import {
   Share2,
   SquarePen,
   MoreHorizontal,
-  Link2,
   LogOut,
   X,
   type LucideIcon,
@@ -71,27 +70,21 @@ export default function CohortHeaderActions({
       {isManager && (
         <IconButton label="Edit" onClick={() => setModal("settings")} Icon={SquarePen} />
       )}
-      <div className="relative">
-        <IconButton label="More" onClick={() => setMenu((o) => !o)} Icon={MoreHorizontal} />
-        {menu && (
-          <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl border border-border bg-surface p-1.5 shadow-soft">
-            <button onClick={copyLink} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2">
-              <Link2 className="h-4 w-4 text-muted" /> Copy link
-            </button>
-            <button onClick={() => { setModal("about"); setMenu(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2">
-              <Info className="h-4 w-4 text-muted" /> About this cohort
-            </button>
-            {isMember && !isOwner && (
+      {isMember && !isOwner && (
+        <div className="relative">
+          <IconButton label="More" onClick={() => setMenu((o) => !o)} Icon={MoreHorizontal} />
+          {menu && (
+            <div className="absolute right-0 z-30 mt-2 w-52 rounded-xl border border-border bg-surface p-1.5 shadow-soft">
               <form action={leaveCohortAction}>
                 <input type="hidden" name="cohortId" value={cohort.id} />
                 <button type="submit" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-accent hover:bg-surface-2">
-                  <LogOut className="h-4 w-4" /> Leave cohort
+                  <LogOut className="h-4 w-4" /> Leave this cohort
                 </button>
               </form>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {copied && <span className="ml-1 text-xs text-subtle">Copied</span>}
 
