@@ -16,6 +16,7 @@ Update the `[Unreleased]` section with **every** feature (see `CLAUDE.md` → "K
 - **AI configuration** — per-cohort model override + global default (`resolveModel`, admin-gated set); `ai_settings` / `cohort_ai_settings`.
 - **Agent memory** — cohort- and work-item-scoped memory (`recordMemory` / `recallMemory`); `agent_memory` table.
 - **In-app tokens (Web2)** — non-cash points ledger (`token_accounts` / `token_transactions` + atomic `apply_token_tx` RPC); earn rules, admin grant, spend (overspend-blocked), balance + status tier.
+- **Docs** — `CHANGELOG.md`, `TESTING_PLAN.md`, and `SETUP.md` (integration/setup guide for Supabase, AI, Resend, Twilio, Google, etc.); expanded `.env.example`.
 
 ### Notes
 - Dependency added: `zod` (run `npm install`).

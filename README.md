@@ -61,6 +61,8 @@ and table are in place.
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL (already set to the cohortbuy project in `.env.example`). |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The anon/public API key from Supabase. |
 
+For **all integrations and keys** (Supabase, AI models, Resend, Twilio, Google Drive, deploy), see **`SETUP.md`**.
+
 ## Images
 
 The hero uses Next.js `<Image>`. To use your own photo:
