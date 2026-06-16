@@ -20,13 +20,35 @@ npm install
 cp .env.example .env.local
 # then add your Supabase anon/public key (Supabase -> Project Settings -> API)
 
-# 3. Create the waitlist table
-# Paste supabase/schema.sql into the Supabase SQL editor and run it.
+# 3. Apply the database schema with the Supabase CLI (see below)
 
 # 4. Run the dev server
 npm run dev
 # open http://localhost:3000
 ```
+
+## Database (Supabase CLI)
+
+Project ref: `qerbvrenpdmoegebkdki`
+
+```bash
+# Install the CLI (macOS)
+brew install supabase/tap/supabase
+
+# One-time: create supabase/config.toml (keeps existing migrations)
+supabase init
+
+# Authenticate and link to the cohortbuy project
+supabase login
+supabase link --project-ref qerbvrenpdmoegebkdki
+
+# Push migrations to the hosted database
+supabase db push
+```
+
+Add a new migration later with `supabase migration new <name>`, edit the
+generated SQL file in `supabase/migrations/`, then `supabase db push` again.
+To work fully locally, `supabase start` spins up a local stack (requires Docker).
 
 The waitlist form degrades gracefully: with no Supabase key set it still shows a
 success state (handy for local UI work) but won't persist signups until the key
@@ -56,7 +78,7 @@ src/
   lib/
     supabaseClient.ts
 supabase/
-  schema.sql         # waitlist table + RLS policy
+  migrations/        # SQL migrations (waitlist table + RLS)
 ```
 
 ---

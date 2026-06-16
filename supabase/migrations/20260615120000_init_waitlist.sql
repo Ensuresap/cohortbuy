@@ -1,5 +1,4 @@
 -- CohortBuy — waitlist table
--- Run this in the Supabase SQL editor (Project: cohortbuy).
 
 create table if not exists public.waitlist (
   id uuid primary key default gen_random_uuid(),

@@ -29,3 +29,8 @@ next-env.d.ts
 
 # vercel
 .vercel
+
+# supabase cli
+/supabase/.branches
+/supabase/.temp
+/supabase/.env
