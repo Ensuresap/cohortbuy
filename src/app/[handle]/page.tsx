@@ -17,12 +17,12 @@ import { Button } from "@/components/ui/Button";
 import {
   requestJoinAction,
   reviewAction,
-  updateCohortProfileAction,
   setTitleAction,
   setComanagerAction,
 } from "../cohorts/actions";
 import { createRequestAction } from "../requests/actions";
 import PostComposer from "@/components/app/PostComposer";
+import CohortHeaderActions from "@/components/app/CohortHeaderActions";
 
 const fieldClass =
   "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
@@ -92,11 +92,17 @@ export default async function CohortPage({ params }: { params: { handle: string 
       <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
         {/* Identity */}
         <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-soft">
-          <div className="h-24 bg-gradient-to-br from-brand-forest to-brand-forest-dark sm:h-28" />
+          <div className="relative h-24 bg-gradient-to-br from-brand-forest to-brand-forest-dark sm:h-32">
+            {cohort.cover_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={cohort.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            )}
+          </div>
           <div className="px-6 pb-6">
             <div className="-mt-10 flex items-end justify-between gap-4">
               <Avatar url={cohort.avatar_url} name={cohort.name} big ring />
-              <div className="mb-1">
+              <div className="mb-1 flex flex-col items-end gap-2">
+                <CohortHeaderActions cohort={cohort} isManager={isManager} isMember={isApproved} isOwner={isOwner} />
                 {!membership && (
                   <form action={requestJoinAction}>
                     <input type="hidden" name="cohortId" value={cohort.id} />
@@ -271,18 +277,6 @@ export default async function CohortPage({ params }: { params: { handle: string 
                     </ul>
                   )}
                 </div>
-                <details className="mt-4">
-                  <summary className="cursor-pointer text-sm font-medium text-primary">Cohort settings</summary>
-                  <form action={updateCohortProfileAction} className="mt-3 space-y-2">
-                    <input type="hidden" name="cohortId" value={cohort.id} />
-                    <input type="hidden" name="handle" value={cohort.handle} />
-                    <input name="name" defaultValue={cohort.name} placeholder="Name" className={fieldClass} />
-                    <input name="tagline" defaultValue={cohort.tagline ?? ""} placeholder="Slogan / tagline" className={fieldClass} />
-                    <input name="avatarUrl" defaultValue={cohort.avatar_url ?? ""} placeholder="Logo image URL" className={fieldClass} />
-                    <textarea name="description" defaultValue={cohort.description ?? ""} rows={2} placeholder="Description" className={fieldClass} />
-                    <Button type="submit">Save</Button>
-                  </form>
-                </details>
               </section>
             )}
           </div>

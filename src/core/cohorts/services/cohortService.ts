@@ -105,6 +105,20 @@ export async function getCohortByHandle(ctx: Ctx, raw: unknown): Promise<Result<
   return ok((data as Cohort) ?? null);
 }
 
+/** Leave a cohort (owner must transfer first). */
+export async function leaveCohort(ctx: Ctx, cohortId: string): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.leaveCohort(ctx.db, cohortId);
+  if (error) {
+    if (error.message?.includes("owner_cannot_leave")) {
+      return err("forbidden", "The owner can't leave; transfer ownership first");
+    }
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
 /** Member directory of a cohort (names, role, title, presence) for its members. */
 export async function getMemberDirectory(
   ctx: Ctx,
@@ -156,6 +170,7 @@ export async function updateCohortProfile(ctx: Ctx, raw: unknown): Promise<Resul
   if (p.data.tagline !== undefined) fields.tagline = p.data.tagline || null;
   if (p.data.description !== undefined) fields.description = p.data.description || null;
   if (p.data.avatarUrl !== undefined) fields.avatar_url = p.data.avatarUrl || null;
+  if (p.data.coverUrl !== undefined) fields.cover_url = p.data.coverUrl || null;
   if (Object.keys(fields).length === 0) return ok(true);
 
   const { data, error } = await repo.updateCohort(ctx.db, p.data.cohortId, fields);

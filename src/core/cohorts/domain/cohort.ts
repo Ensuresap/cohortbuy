@@ -50,6 +50,7 @@ export const UpdateCohortProfileInput = z.object({
   tagline: z.string().trim().max(140).optional(),
   description: z.string().trim().max(500).optional(),
   avatarUrl: z.union([z.string().url().max(500), z.literal("")]).optional(),
+  coverUrl: z.union([z.string().url().max(500), z.literal("")]).optional(),
 });
 export type UpdateCohortProfileInput = z.infer<typeof UpdateCohortProfileInput>;
 
@@ -87,6 +88,7 @@ export interface Cohort {
   description: string | null;
   tagline: string | null;
   avatar_url: string | null;
+  cover_url: string | null;
   visibility: z.infer<typeof Visibility>;
   category: string | null;
   country: string;

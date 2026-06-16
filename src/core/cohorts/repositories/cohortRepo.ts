@@ -83,6 +83,10 @@ export function setComanager(
   });
 }
 
+export function leaveCohort(db: SupabaseClient, cohortId: string) {
+  return db.rpc("leave_cohort", { p_cohort: cohortId });
+}
+
 export function updateCohort(
   db: SupabaseClient,
   cohortId: string,

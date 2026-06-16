@@ -10,6 +10,7 @@ import {
   updateCohortProfile,
   setMemberTitle,
   setComanager,
+  leaveCohort,
 } from "@/core/cohorts/services/cohortService";
 import { createServerClient } from "@/core/db/serverClient";
 import { notifyActionDue } from "@/core/services/notificationService";
@@ -62,6 +63,35 @@ export async function updateCohortProfileAction(formData: FormData) {
     avatarUrl: String(formData.get("avatarUrl") ?? "").trim(),
   });
   redirect(`/${handle}`);
+}
+
+export async function saveCohortSettings(input: {
+  cohortId: string;
+  handle: string;
+  name?: string;
+  tagline?: string;
+  description?: string;
+  avatarUrl?: string;
+  coverUrl?: string;
+}) {
+  const ctx = await getCtx();
+  const res = await updateCohortProfile(ctx, {
+    cohortId: input.cohortId,
+    name: input.name || undefined,
+    tagline: input.tagline ?? "",
+    description: input.description ?? "",
+    avatarUrl: input.avatarUrl ?? "",
+    coverUrl: input.coverUrl ?? "",
+  });
+  if (!res.ok) return { ok: false as const, error: res.error.message };
+  revalidatePath(`/${input.handle}`);
+  return { ok: true as const };
+}
+
+export async function leaveCohortAction(formData: FormData) {
+  const ctx = await getCtx();
+  await leaveCohort(ctx, String(formData.get("cohortId") ?? ""));
+  redirect("/cohorts");
 }
 
 export async function setTitleAction(formData: FormData) {
