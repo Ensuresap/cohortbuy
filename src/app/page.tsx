@@ -141,19 +141,15 @@ export default function Home() {
           </div>
 
           <div className="relative">
-            <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] border border-ink/5 shadow-soft">
+            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[2rem] border border-ink/5 shadow-soft">
               <Image
                 src={HERO_PHOTO}
-                alt="Neighbors on a tree-lined street planning a shared home project"
+                alt="Neighbors gathered around laptops and paperwork, planning a project together"
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 520px"
                 className="object-cover"
               />
-            </div>
-            {/* Floating product mockup over the photo */}
-            <div className="absolute -bottom-10 -left-4 hidden w-64 sm:block lg:w-72">
-              <ChatPreview />
             </div>
           </div>
         </div>
@@ -167,6 +163,39 @@ export default function Home() {
           <span>One contract, fair split</span>
           <span className="hidden h-1 w-1 rounded-full bg-ink/20 sm:inline-block" />
           <span>We never hold your money</span>
+        </div>
+      </section>
+
+      {/* Conversation */}
+      <section className="container-prose py-20 sm:py-24">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <div className="order-2 lg:order-1">
+            <ChatPreview />
+          </div>
+          <div className="order-1 lg:order-2">
+            <h2 className="font-display text-4xl font-semibold text-ink">
+              A conversation, not a checkout
+            </h2>
+            <p className="mt-4 text-lg text-ink/70">
+              No forms, no app to learn. You chat with the CohortBuy agent the
+              way you&rsquo;d text a neighbor — it forms the group, scopes the
+              work, and lines up quotes in the background.
+            </p>
+            <ul className="mt-6 space-y-3 text-ink/80">
+              <li className="flex gap-3">
+                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-clay" />
+                Start a project in one message
+              </li>
+              <li className="flex gap-3">
+                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-clay" />
+                Neighbors join with a tap
+              </li>
+              <li className="flex gap-3">
+                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-clay" />
+                The agent handles the busywork
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
