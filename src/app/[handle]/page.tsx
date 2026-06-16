@@ -19,6 +19,7 @@ import {
   setTitleAction,
   setComanagerAction,
   respondInfoAction,
+  setPostVisibilityAction,
 } from "../cohorts/actions";
 import { createRequestAction } from "../requests/actions";
 import PostComposer from "@/components/app/PostComposer";
@@ -190,11 +191,28 @@ export default async function CohortPage({ params }: { params: { handle: string 
                   <ul className="space-y-5">
                     {posts.map((po) => (
                       <li key={po.id} className="border-b border-border pb-5 last:border-0 last:pb-0">
-                        <div className="flex items-center gap-3">
-                          <Avatar url={po.author_avatar} name={po.author_name} />
-                          <div>
-                            <p className="text-sm font-medium text-text">{po.author_name ?? "Admin"}</p>
-                            <p className="text-xs text-subtle">{timeAgo(po.created_at)}</p>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar url={po.author_avatar} name={po.author_name} />
+                            <div>
+                              <p className="text-sm font-medium text-text">{po.author_name ?? "Admin"}</p>
+                              <p className="text-xs text-subtle">{timeAgo(po.created_at)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={"rounded-full px-2 py-0.5 text-[11px] font-medium " + (po.visibility === "public" ? "bg-primary/10 text-primary" : "bg-surface-2 text-subtle")}>
+                              {po.visibility === "public" ? "Public" : "Members"}
+                            </span>
+                            {(isManager || po.author_id === user.id) && (
+                              <form action={setPostVisibilityAction}>
+                                <input type="hidden" name="postId" value={po.id} />
+                                <input type="hidden" name="handle" value={cohort.handle} />
+                                <input type="hidden" name="visibility" value={po.visibility === "public" ? "members" : "public"} />
+                                <button type="submit" className="text-xs font-medium text-primary hover:underline">
+                                  {po.visibility === "public" ? "Make members-only" : "Make public"}
+                                </button>
+                              </form>
+                            )}
                           </div>
                         </div>
                         <p className="mt-3 whitespace-pre-wrap text-text">{po.body}</p>

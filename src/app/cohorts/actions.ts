@@ -15,7 +15,7 @@ import {
 } from "@/core/cohorts/services/cohortService";
 import { createServerClient } from "@/core/db/serverClient";
 import { notifyActionDue } from "@/core/services/notificationService";
-import { createPost } from "@/core/posts/services/postService";
+import { createPost, setPostVisibility } from "@/core/posts/services/postService";
 
 async function getCtx() {
   const supabase = createClient();
@@ -128,16 +128,28 @@ export async function submitPost(input: {
   handle: string;
   body: string;
   imageUrl?: string;
+  visibility?: "members" | "public";
 }) {
   const ctx = await getCtx();
   const res = await createPost(ctx, {
     cohortId: input.cohortId,
     body: input.body,
     imageUrl: input.imageUrl || undefined,
+    visibility: input.visibility ?? "members",
   });
   if (!res.ok) return { ok: false as const, error: res.error.message };
   revalidatePath(`/${input.handle}`);
   return { ok: true as const };
+}
+
+export async function setPostVisibilityAction(formData: FormData) {
+  const ctx = await getCtx();
+  const handle = String(formData.get("handle") ?? "");
+  await setPostVisibility(ctx, {
+    postId: String(formData.get("postId") ?? ""),
+    visibility: String(formData.get("visibility") ?? "members") as "members" | "public",
+  });
+  revalidatePath(`/${handle}`);
 }
 
 export async function setComanagerAction(formData: FormData) {

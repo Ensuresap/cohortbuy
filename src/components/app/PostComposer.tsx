@@ -21,6 +21,7 @@ export default function PostComposer({
 }) {
   const [body, setBody] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [visibility, setVisibility] = useState<"members" | "public">("members");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -53,7 +54,7 @@ export default function PostComposer({
         imageUrl = supabase.storage.from("cohort-media").getPublicUrl(path).data.publicUrl;
       }
 
-      const res = await submitPost({ cohortId, handle, body, imageUrl });
+      const res = await submitPost({ cohortId, handle, body, imageUrl, visibility });
       if (!res.ok) {
         setError(res.error || "Couldn't post.");
         setBusy(false);
@@ -94,6 +95,15 @@ export default function PostComposer({
           />
         </label>
         <div className="flex-1" />
+        <select
+          value={visibility}
+          onChange={(e) => setVisibility(e.target.value as "members" | "public")}
+          aria-label="Post visibility"
+          className="rounded-xl border border-border bg-surface-2 px-2 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="members">Members only</option>
+          <option value="public">Public</option>
+        </select>
         <Button type="submit" disabled={busy}>
           {busy ? "Posting…" : "Post"}
         </Button>

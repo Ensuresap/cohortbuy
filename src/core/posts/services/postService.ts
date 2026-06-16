@@ -1,5 +1,5 @@
 import type { Ctx } from "../../context";
-import { CreatePostInput, type FeedPost } from "../domain/post";
+import { CreatePostInput, SetPostVisibilityInput, type FeedPost } from "../domain/post";
 import * as repo from "../repositories/postRepo";
 import { ok, err, type Result } from "../../result";
 
@@ -15,6 +15,20 @@ export async function createPost(ctx: Ctx, raw: unknown): Promise<Result<true>> 
     if (error.message?.toLowerCase().includes("row-level security")) {
       return err("forbidden", "Only admins/co-admins can post");
     }
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** Change a post's visibility (author or cohort manager — enforced in the fn). */
+export async function setPostVisibility(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const parsed = SetPostVisibilityInput.safeParse(raw);
+  if (!parsed.success) return err("invalid_input", "Invalid input");
+  const { error } = await repo.setVisibility(ctx.db, parsed.data);
+  if (error) {
+    if (error.message?.includes("forbidden")) return err("forbidden", "Not allowed");
     return err("db_error", error.message);
   }
   return ok(true);
