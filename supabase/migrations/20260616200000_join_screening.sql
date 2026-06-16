@@ -5,6 +5,11 @@ alter table public.cohort_members add column if not exists answers jsonb;
 alter table public.cohort_members add column if not exists info_request text;   -- admin's "please clarify" message
 alter table public.cohort_members add column if not exists info_response text;  -- requestor's reply
 
+-- These existed with a different param name / return shape; CREATE OR REPLACE
+-- can't change those, so drop first, then recreate below.
+drop function if exists public.respond_join_info(uuid, text);
+drop function if exists public.cohort_join_requests(uuid);
+
 -- Request to join with screening answers (re-request allowed after reject/needs_info).
 create or replace function public.request_join(p_cohort uuid, p_answers jsonb)
 returns void language plpgsql security definer set search_path = public as $$
