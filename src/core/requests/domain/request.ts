@@ -37,6 +37,12 @@ export type CreateRequestInput = z.infer<typeof CreateRequestInput>;
 export const RequestIdInput = z.object({ requestId: z.string().uuid() });
 export const ListByCohortInput = z.object({ cohortId: z.string().uuid() });
 
+export const AdvanceStatusInput = z.object({
+  requestId: z.string().uuid(),
+  status: z.enum(REQUEST_STATUSES),
+});
+export type AdvanceStatusInput = z.infer<typeof AdvanceStatusInput>;
+
 export interface ServiceRequest {
   id: string;
   cohort_id: string;

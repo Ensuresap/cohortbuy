@@ -85,6 +85,13 @@
 - ☐ (integration) RLS: requests visible only to approved members of the cohort (and managers).
 - ◐ (e2e) approved member creates a project → appears in cohort list → opens `/requests/[id]` with stage bar; a second member joins.
 
+## Scope & stage transitions
+- ☐ (unit) `AddScopeInput` requires non-empty description.
+- ☐ (integration) a member can add scope; RLS: only approved cohort members; authors edit/delete own.
+- ☐ (integration) `advanceStatus` by a non-coordinator/non-manager → `forbidden` (RLS no rows).
+- ☐ (integration) `advanceStatus` rejects an invalid status value (Zod enum).
+- ◐ (e2e) coordinator advances forming → scoping; member adds a scope item; it appears for all members.
+
 ## Cross-cutting
 - ☐ (unit) architecture guard: no `.from(`/`.rpc(` outside `repositories/` (grep test in CI).
 - ☐ (integration) admin-only services all enforce `isStaff` (table-driven negative tests).

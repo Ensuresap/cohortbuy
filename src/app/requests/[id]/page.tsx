@@ -4,10 +4,18 @@ import {
   getRequest,
   listParticipants,
 } from "@/core/requests/services/requestService";
-import { PIPELINE, STAGE_LABELS, type RequestStatus } from "@/core/requests/domain/request";
+import { listScope } from "@/core/scope/services/scopeService";
+import {
+  PIPELINE,
+  STAGE_LABELS,
+  type RequestStatus,
+} from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
-import { joinRequestAction } from "../actions";
+import { joinRequestAction, addScopeAction, advanceRequestAction } from "../actions";
+
+const fieldClass =
+  "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
 
 export default async function RequestPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
@@ -24,16 +32,22 @@ export default async function RequestPage({ params }: { params: { id: string } }
   const partsRes = await listParticipants(ctx, { requestId: params.id });
   const participants = partsRes.ok ? partsRes.data : [];
   const isParticipant = participants.some((p) => p.user_id === user.id);
+  const isCoordinator = req.created_by === user.id;
+
+  const scopeRes = await listScope(ctx, params.id);
+  const scopeItems = scopeRes.ok ? scopeRes.data : [];
+
+  const currentIndex = PIPELINE.indexOf(req.status);
+  const nextStatus =
+    currentIndex >= 0 && currentIndex < PIPELINE.length - 1
+      ? PIPELINE[currentIndex + 1]
+      : null;
 
   return (
     <AppShell>
       <main className="mx-auto w-full max-w-2xl px-6 py-12">
-        <p className="text-sm text-subtle">
-          Project · {STAGE_LABELS[req.status]}
-        </p>
-        <h1 className="mt-1 font-display text-3xl font-semibold text-text">
-          {req.title}
-        </h1>
+        <p className="text-sm text-subtle">Project · {STAGE_LABELS[req.status]}</p>
+        <h1 className="mt-1 font-display text-3xl font-semibold text-text">{req.title}</h1>
         {req.category && (
           <span className="mt-2 inline-block rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-text">
             {req.category}
@@ -43,6 +57,17 @@ export default async function RequestPage({ params }: { params: { id: string } }
 
         <StageBar status={req.status} />
 
+        {isCoordinator && nextStatus && (
+          <form action={advanceRequestAction} className="mt-4">
+            <input type="hidden" name="requestId" value={req.id} />
+            <input type="hidden" name="status" value={nextStatus} />
+            <Button type="submit" size="md">
+              Advance to {STAGE_LABELS[nextStatus]}
+            </Button>
+          </form>
+        )}
+
+        {/* Participants */}
         <div className="mt-8 rounded-2xl border border-border bg-surface p-6">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-muted">
@@ -66,6 +91,45 @@ export default async function RequestPage({ params }: { params: { id: string } }
             ))}
           </ul>
         </div>
+
+        {/* Scope */}
+        <section className="mt-6">
+          <h2 className="text-sm font-medium text-muted">Scope</h2>
+          {scopeItems.length === 0 ? (
+            <p className="mt-2 text-muted">No scope captured yet. Add what you need below.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {scopeItems.map((s) => (
+                <li key={s.id} className="rounded-xl border border-border bg-surface px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-text">{s.description}</span>
+                    {s.quantity && (
+                      <span className="text-xs font-medium text-primary">{s.quantity}</span>
+                    )}
+                  </div>
+                  {s.notes && <p className="mt-1 text-sm text-muted">{s.notes}</p>}
+                  <p className="mt-1 text-xs text-subtle">
+                    by {s.user_id.slice(0, 8)}…
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {isParticipant && (
+            <form
+              action={addScopeAction}
+              className="mt-4 space-y-2 rounded-2xl border border-border bg-surface p-4"
+            >
+              <p className="text-sm font-medium text-text">Add your scope</p>
+              <input type="hidden" name="requestId" value={req.id} />
+              <input name="description" required placeholder="What you need (e.g. wood fence, back yard)" className={fieldClass} />
+              <input name="quantity" placeholder="Quantity (e.g. 120 ft)" className={fieldClass} />
+              <textarea name="notes" rows={2} placeholder="Any details or variations…" className={fieldClass} />
+              <Button type="submit">Add to scope</Button>
+            </form>
+          )}
+        </section>
       </main>
     </AppShell>
   );
@@ -82,9 +146,7 @@ function StageBar({ status }: { status: RequestStatus }) {
             key={s}
             className={
               "rounded-full px-2.5 py-1 text-xs font-medium " +
-              (done
-                ? "bg-primary text-primary-foreground"
-                : "bg-surface-2 text-subtle")
+              (done ? "bg-primary text-primary-foreground" : "bg-surface-2 text-subtle")
             }
           >
             {STAGE_LABELS[s]}

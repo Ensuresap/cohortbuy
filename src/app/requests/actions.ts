@@ -6,7 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import {
   createServiceRequest,
   joinServiceRequest,
+  advanceStatus,
 } from "@/core/requests/services/requestService";
+import { addScopeItem } from "@/core/scope/services/scopeService";
 
 async function getCtx() {
   const supabase = createClient();
@@ -36,5 +38,27 @@ export async function joinRequestAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
   await joinServiceRequest(ctx, { requestId });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function addScopeAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await addScopeItem(ctx, {
+    requestId,
+    description: String(formData.get("description") ?? ""),
+    quantity: String(formData.get("quantity") ?? "") || undefined,
+    notes: String(formData.get("notes") ?? "") || undefined,
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function advanceRequestAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await advanceStatus(ctx, {
+    requestId,
+    status: String(formData.get("status") ?? ""),
+  });
   revalidatePath(`/requests/${requestId}`);
 }

@@ -2,6 +2,7 @@ import type { Ctx } from "../../context";
 import {
   CreateRequestInput,
   RequestIdInput,
+  AdvanceStatusInput,
   type ServiceRequest,
   type Participant,
 } from "../domain/request";
@@ -60,6 +61,24 @@ export async function joinServiceRequest(ctx: Ctx, raw: unknown): Promise<Result
   if (error) {
     if (error.code === "23505") return err("already_joined", "You're already in this project");
     return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** Move a project to a new stage (coordinator/creator or cohort manager via RLS). */
+export async function advanceStatus(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const parsed = AdvanceStatusInput.safeParse(raw);
+  if (!parsed.success) return err("invalid_input", "Invalid status");
+
+  const { data, error } = await repo.updateStatus(ctx.db, {
+    requestId: parsed.data.requestId,
+    status: parsed.data.status,
+  });
+  if (error) return err("db_error", error.message);
+  if (!data || data.length === 0) {
+    return err("forbidden", "Only the coordinator or a cohort manager can change the stage");
   }
   return ok(true);
 }

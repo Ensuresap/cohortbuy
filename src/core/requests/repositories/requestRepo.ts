@@ -35,6 +35,17 @@ export function joinRequest(
   });
 }
 
+export function updateStatus(
+  db: SupabaseClient,
+  args: { requestId: string; status: string }
+) {
+  return db
+    .from("service_requests")
+    .update({ status: args.status, last_activity_at: new Date().toISOString() })
+    .eq("id", args.requestId)
+    .select();
+}
+
 export function listParticipants(db: SupabaseClient, requestId: string) {
   return db
     .from("request_participants")
