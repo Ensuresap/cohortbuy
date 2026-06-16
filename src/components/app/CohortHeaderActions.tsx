@@ -5,6 +5,16 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/Button";
 import { saveCohortSettings, leaveCohortAction } from "@/app/cohorts/actions";
+import {
+  Info,
+  Share2,
+  SquarePen,
+  MoreHorizontal,
+  Link2,
+  LogOut,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 
 const fieldClass =
   "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
@@ -55,35 +65,27 @@ export default function CohortHeaderActions({
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <IconButton label="About" onClick={() => setModal("about")}>
-        <circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.5v.5" strokeLinecap="round" />
-      </IconButton>
-      <IconButton label="Copy link" onClick={copyLink}>
-        <path d="M7 12h10M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-      </IconButton>
+    <div className="flex items-center gap-1.5">
+      <IconButton label="About" onClick={() => setModal("about")} Icon={Info} />
+      <IconButton label="Copy link" onClick={copyLink} Icon={Share2} />
       {isManager && (
-        <IconButton label="Edit" onClick={() => setModal("settings")}>
-          <path d="M4 20h4L18 10l-4-4L4 16v4Z M13 7l4 4" strokeLinecap="round" strokeLinejoin="round" />
-        </IconButton>
+        <IconButton label="Edit" onClick={() => setModal("settings")} Icon={SquarePen} />
       )}
       <div className="relative">
-        <IconButton label="More" onClick={() => setMenu((o) => !o)}>
-          <circle cx="6" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18" cy="12" r="1.4" />
-        </IconButton>
+        <IconButton label="More" onClick={() => setMenu((o) => !o)} Icon={MoreHorizontal} />
         {menu && (
           <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl border border-border bg-surface p-1.5 shadow-soft">
-            <button onClick={copyLink} className="block w-full rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2">
-              Copy link
+            <button onClick={copyLink} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2">
+              <Link2 className="h-4 w-4 text-muted" /> Copy link
             </button>
-            <button onClick={() => { setModal("about"); setMenu(false); }} className="block w-full rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2">
-              About this cohort
+            <button onClick={() => { setModal("about"); setMenu(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2">
+              <Info className="h-4 w-4 text-muted" /> About this cohort
             </button>
             {isMember && !isOwner && (
               <form action={leaveCohortAction}>
                 <input type="hidden" name="cohortId" value={cohort.id} />
-                <button type="submit" className="block w-full rounded-lg px-3 py-2 text-left text-sm text-accent hover:bg-surface-2">
-                  Leave cohort
+                <button type="submit" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-accent hover:bg-surface-2">
+                  <LogOut className="h-4 w-4" /> Leave cohort
                 </button>
               </form>
             )}
@@ -215,7 +217,9 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
       <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-surface p-6 shadow-soft" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold text-text">{title}</h3>
-          <button onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-muted hover:bg-surface-2">✕</button>
+          <button onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-muted hover:bg-surface-2 hover:text-text">
+            <X className="h-5 w-5" />
+          </button>
         </div>
         {children}
       </div>
@@ -232,17 +236,15 @@ function Detail({ term, desc }: { term: string; desc: string }) {
   );
 }
 
-function IconButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+function IconButton({ label, onClick, Icon }: { label: string; onClick: () => void; Icon: LucideIcon }) {
   return (
     <button
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-text transition hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition hover:bg-surface-2 hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-        {children}
-      </svg>
+      <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
     </button>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/Button";
 import { submitPost } from "@/app/cohorts/actions";
+import { ImagePlus } from "lucide-react";
 
 const fieldClass =
   "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
@@ -81,7 +82,8 @@ export default function PostComposer({
       />
       {file && <p className="text-xs text-subtle">Selected: {file.name}</p>}
       <div className="flex items-center gap-2">
-        <label className="cursor-pointer rounded-xl border border-border px-3 py-2 text-sm font-medium text-text hover:bg-surface-2">
+        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-text hover:bg-surface-2">
+          <ImagePlus className="h-4 w-4 text-muted" />
           {file ? "Change image" : "Add image"}
           <input
             ref={fileRef}

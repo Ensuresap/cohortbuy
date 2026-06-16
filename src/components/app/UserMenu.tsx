@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signOutAction } from "@/app/actions";
+import { LayoutDashboard, UserRound, SquarePen, Users, LogOut } from "lucide-react";
 
 export default function UserMenu({
   name,
@@ -43,17 +44,25 @@ export default function UserMenu({
             <p className="truncate text-xs text-subtle">{email}</p>
           </div>
           <div className="my-1 h-px bg-border" />
-          <MenuLink href="/dashboard" onClick={() => setOpen(false)}>Dashboard</MenuLink>
-          <MenuLink href="/account" onClick={() => setOpen(false)}>Account</MenuLink>
-          <MenuLink href="/account/profile" onClick={() => setOpen(false)}>Edit profile</MenuLink>
-          <MenuLink href="/cohorts" onClick={() => setOpen(false)}>Cohorts</MenuLink>
+          <MenuLink href="/dashboard" onClick={() => setOpen(false)}>
+            <LayoutDashboard className="h-4 w-4 text-muted" /> Dashboard
+          </MenuLink>
+          <MenuLink href="/account" onClick={() => setOpen(false)}>
+            <UserRound className="h-4 w-4 text-muted" /> Account
+          </MenuLink>
+          <MenuLink href="/account/profile" onClick={() => setOpen(false)}>
+            <SquarePen className="h-4 w-4 text-muted" /> Edit profile
+          </MenuLink>
+          <MenuLink href="/cohorts" onClick={() => setOpen(false)}>
+            <Users className="h-4 w-4 text-muted" /> Cohorts
+          </MenuLink>
           <div className="my-1 h-px bg-border" />
           <form action={signOutAction}>
             <button
               type="submit"
-              className="w-full rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2"
             >
-              Sign out
+              <LogOut className="h-4 w-4 text-muted" /> Sign out
             </button>
           </form>
         </div>
@@ -75,7 +84,7 @@ function MenuLink({
     <Link
       href={href}
       onClick={onClick}
-      className="block rounded-lg px-3 py-2 text-sm text-text hover:bg-surface-2"
+      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-text hover:bg-surface-2"
     >
       {children}
     </Link>
