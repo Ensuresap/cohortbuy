@@ -105,6 +105,12 @@ export default function Home() {
               Why CohortBuy
             </a>
           </nav>
+          <a
+            href="/account"
+            className="hidden text-sm font-medium text-muted hover:text-primary sm:inline-block"
+          >
+            Sign in
+          </a>
           <ThemeToggle />
           <a
             href="#waitlist"

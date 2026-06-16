@@ -16,10 +16,11 @@ Update the `[Unreleased]` section with **every** feature (see `CLAUDE.md` → "K
 - **AI configuration** — per-cohort model override + global default (`resolveModel`, admin-gated set); `ai_settings` / `cohort_ai_settings`.
 - **Agent memory** — cohort- and work-item-scoped memory (`recordMemory` / `recallMemory`); `agent_memory` table.
 - **In-app tokens (Web2)** — non-cash points ledger (`token_accounts` / `token_transactions` + atomic `apply_token_tx` RPC); earn rules, admin grant, spend (overspend-blocked), balance + status tier.
+- **Auth + profiles + onboarding** — Supabase Auth (magic link) via `@supabase/ssr` (server/browser clients + session middleware); `/login`, `/auth/callback`, `/onboarding` (captures name, phone, SMS opt-in, preferred channel, country), `/account` (profile + token balance/tier + sign out). Profile auto-created on signup (trigger); self-access RLS on profiles/tokens/notifications.
 - **Docs** — `CHANGELOG.md`, `TESTING_PLAN.md`, and `SETUP.md` (integration/setup guide for Supabase, AI, Resend, Twilio, Google, etc.); expanded `.env.example`.
 
 ### Notes
-- Dependency added: `zod` (run `npm install`).
+- Dependencies added: `zod`, `@supabase/ssr` (run `npm install`).
 - Migrations to apply via `supabase db push`: waitlist, profiles+notifications, ai_config+memory, tokens.
 
 <!-- On release, move [Unreleased] items under a versioned heading, e.g. ## [0.1.0] - YYYY-MM-DD -->

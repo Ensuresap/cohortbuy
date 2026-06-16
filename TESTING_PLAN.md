@@ -58,6 +58,15 @@
 - ☐ (integration) ledger ↔ balance consistency after mixed earn/spend.
 - ☐ (unit) tokens are non-cash: no service path converts tokens to money/transfers (guard test).
 
+## Auth, profiles & onboarding
+- ☐ (unit) `OnboardingInput` requires `phone` when `smsOptIn` is true (Zod refine).
+- ☐ (unit) `completeOnboarding` → `unauthenticated` with no actor.
+- ☐ (integration) magic-link sign-in creates a profile shell (trigger) with email.
+- ☐ (integration) onboarding upsert sets `sms_opt_in_at` only when opted in.
+- ☐ (integration) RLS: a user can read only their own profile/tokens/notifications.
+- ◐ (e2e) login → email link → onboarding → account; account shows tokens + tier.
+- ◐ (e2e) unauthenticated `/account` and `/onboarding` redirect to `/login`.
+
 ## Cross-cutting
 - ☐ (unit) architecture guard: no `.from(`/`.rpc(` outside `repositories/` (grep test in CI).
 - ☐ (integration) admin-only services all enforce `isStaff` (table-driven negative tests).
