@@ -202,8 +202,16 @@ export default async function CohortPage({ params }: { params: { handle: string 
                             </span>
                             {(isManager || po.author_id === user.id) && (
                               <PostActions
-                                post={{ id: po.id, body: po.body, visibility: po.visibility }}
+                                post={{
+                                  id: po.id,
+                                  body: po.body,
+                                  visibility: po.visibility,
+                                  image_url: po.image_url,
+                                  author_name: po.author_name,
+                                  author_avatar: po.author_avatar,
+                                }}
                                 handle={cohort.handle}
+                                cohortName={cohort.name}
                               />
                             )}
                           </div>

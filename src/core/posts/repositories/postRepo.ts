@@ -15,8 +15,14 @@ export function feed(db: SupabaseClient, cohortId: string) {
   return db.rpc("cohort_posts_feed", { p_cohort: cohortId });
 }
 
-export function updatePost(db: SupabaseClient, args: { postId: string; body: string }) {
-  return db.from("cohort_posts").update({ body: args.body }).eq("id", args.postId).select();
+export function updatePost(
+  db: SupabaseClient,
+  args: { postId: string; body: string; imageUrl?: string; visibility?: string }
+) {
+  const patch: Record<string, unknown> = { body: args.body };
+  if (args.imageUrl !== undefined) patch.image_url = args.imageUrl || null;
+  if (args.visibility !== undefined) patch.visibility = args.visibility;
+  return db.from("cohort_posts").update(patch).eq("id", args.postId).select();
 }
 
 export function deletePost(db: SupabaseClient, postId: string) {

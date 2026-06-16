@@ -147,9 +147,20 @@ export async function submitPost(input: {
   return { ok: true as const };
 }
 
-export async function editPost(input: { postId: string; handle: string; body: string }) {
+export async function editPost(input: {
+  postId: string;
+  handle: string;
+  body: string;
+  imageUrl?: string;
+  visibility?: "members" | "public";
+}) {
   const ctx = await getCtx();
-  const res = await updatePost(ctx, { postId: input.postId, body: input.body });
+  const res = await updatePost(ctx, {
+    postId: input.postId,
+    body: input.body,
+    imageUrl: input.imageUrl,
+    visibility: input.visibility,
+  });
   if (!res.ok) return { ok: false as const, error: res.error.message };
   revalidatePath(`/${input.handle}`);
   return { ok: true as const };

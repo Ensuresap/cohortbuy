@@ -48,6 +48,8 @@ export async function updatePost(ctx: Ctx, raw: unknown): Promise<Result<true>> 
   const { data, error } = await repo.updatePost(ctx.db, {
     postId: parsed.data.postId,
     body: parsed.data.body,
+    imageUrl: parsed.data.imageUrl,
+    visibility: parsed.data.visibility,
   });
   if (error) return err("db_error", error.message);
   if (!data || data.length === 0) return err("forbidden", "Not allowed");

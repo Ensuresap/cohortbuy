@@ -19,6 +19,8 @@ export const SetPostVisibilityInput = z.object({
 export const UpdatePostInput = z.object({
   postId: z.string().uuid(),
   body: z.string().trim().min(1).max(5000),
+  imageUrl: z.union([z.string().url().max(500), z.literal("")]).optional(),
+  visibility: PostVisibility.optional(),
 });
 export type UpdatePostInput = z.infer<typeof UpdatePostInput>;
 export type SetPostVisibilityInput = z.infer<typeof SetPostVisibilityInput>;
