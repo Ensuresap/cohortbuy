@@ -122,6 +122,11 @@ This must feel like an app on a phone and be trivial to wrap as a native app lat
 - Capability services call `notifyActionDue(ctx, { userId, event, message, link })` at **every approval gate** (a notification fires on each action-due event). All sends are logged to `notifications`.
 - Honor STOP/HELP and (later) quiet hours; phone numbers are PII — handle per the privacy policy.
 
+## AI configuration & memory
+- **Model selection:** call `resolveModel(ctx, { cohortId })` before each agent run. Resolution order: **per-cohort override → global default → fallback**. Admins set these via `setCohortModel` / `setGlobalModel` (gated by `isStaff(ctx)` — never client-only). Tables: `ai_settings` (global), `cohort_ai_settings` (override). Keep model IDs as `{ provider, model }` strings so we stay provider-agnostic.
+- **Scoped memory:** store agent memory at **cohort** and **work-item** scope. `recordMemory` saves salient facts; `recallMemory(cohortId, workItemId?)` returns work-item + cohort memory to load into context. Table: `agent_memory` (add pgvector embeddings later for semantic recall). Don't dump raw transcripts — record durable, useful facts.
+- **Admin gating pattern:** any operator-only mutation (`set_*`, boosting, etc.) checks `isStaff(ctx)` inside the service. Entry points never decide authorization alone.
+
 ## Conventions
 - Keep it **seamless** — match the existing warm, calm visual language; don't introduce competing styles.
 - TypeScript everywhere; prefer Server Components; colocate components under `src/components`.

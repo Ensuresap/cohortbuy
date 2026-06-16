@@ -1,6 +1,8 @@
 import type { Tool } from "./types";
 import { joinWaitlistTool } from "./waitlistTools";
 import { notifyActionDueTool } from "./notificationTools";
+import { setCohortModelTool } from "./aiConfigTools";
+import { recordMemoryTool, recallMemoryTool } from "./memoryTools";
 
 /**
  * Central tool registry. Add a capability's tool here and it becomes
@@ -10,7 +12,13 @@ import { notifyActionDueTool } from "./notificationTools";
  *                 and dispatch tool calls to `tool.handler(ctx, args)`.
  * MCP server:     expose `tools` as MCP tools, same handlers, same Ctx.
  */
-export const tools: Tool[] = [joinWaitlistTool, notifyActionDueTool];
+export const tools: Tool[] = [
+  joinWaitlistTool,
+  notifyActionDueTool,
+  setCohortModelTool,
+  recordMemoryTool,
+  recallMemoryTool,
+];
 
 export const toolMap: Record<string, Tool> = Object.fromEntries(
   tools.map((t) => [t.name, t])
