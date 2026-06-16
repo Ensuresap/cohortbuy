@@ -106,10 +106,10 @@ export default function Home() {
             </a>
           </nav>
           <a
-            href="/dashboard"
-            className="hidden text-sm font-medium text-muted hover:text-primary sm:inline-block"
+            href="/login"
+            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-text hover:bg-surface-2"
           >
-            Sign in
+            Log in
           </a>
           <ThemeToggle />
           <a
