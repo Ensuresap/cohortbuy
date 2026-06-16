@@ -5,6 +5,7 @@ import {
   listParticipants,
 } from "@/core/requests/services/requestService";
 import { listScope } from "@/core/scope/services/scopeService";
+import { listQuotes } from "@/core/quotes/services/quoteService";
 import {
   PIPELINE,
   STAGE_LABELS,
@@ -12,7 +13,12 @@ import {
 } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
-import { joinRequestAction, addScopeAction, advanceRequestAction } from "../actions";
+import {
+  joinRequestAction,
+  addScopeAction,
+  advanceRequestAction,
+  addQuoteAction,
+} from "../actions";
 
 const fieldClass =
   "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
@@ -36,6 +42,9 @@ export default async function RequestPage({ params }: { params: { id: string } }
 
   const scopeRes = await listScope(ctx, params.id);
   const scopeItems = scopeRes.ok ? scopeRes.data : [];
+
+  const quotesRes = await listQuotes(ctx, params.id);
+  const quotes = quotesRes.ok ? quotesRes.data : [];
 
   const currentIndex = PIPELINE.indexOf(req.status);
   const nextStatus =
@@ -130,9 +139,68 @@ export default async function RequestPage({ params }: { params: { id: string } }
             </form>
           )}
         </section>
+
+        {/* Quotes */}
+        <section className="mt-6">
+          <h2 className="text-sm font-medium text-muted">Quotes</h2>
+          {quotes.length === 0 ? (
+            <p className="mt-2 text-muted">No quotes recorded yet.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {quotes.map((q) => (
+                <li key={q.id} className="rounded-xl border border-border bg-surface px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-text">{q.vendor_name}</span>
+                    <span className="font-display text-lg font-semibold text-primary">
+                      {fmt(q.amount_cents, q.currency)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-subtle">
+                    {q.kind}
+                    {q.timeline ? ` · ${q.timeline}` : ""}
+                    {q.warranty ? ` · ${q.warranty}` : ""}
+                  </p>
+                  {q.notes && <p className="mt-1 text-sm text-muted">{q.notes}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+          {isParticipant && (
+            <form
+              action={addQuoteAction}
+              className="mt-4 space-y-2 rounded-2xl border border-border bg-surface p-4"
+            >
+              <p className="text-sm font-medium text-text">Record a quote</p>
+              <input type="hidden" name="requestId" value={req.id} />
+              <input name="vendorName" required placeholder="Vendor name" className={fieldClass} />
+              <div className="grid grid-cols-3 gap-2">
+                <input name="amount" type="number" step="0.01" min="0" required placeholder="Amount" className={`${fieldClass} col-span-2`} />
+                <input name="currency" defaultValue="USD" maxLength={3} placeholder="USD" className={fieldClass} />
+              </div>
+              <input name="timeline" placeholder="Timeline (e.g. 2 weeks)" className={fieldClass} />
+              <input name="warranty" placeholder="Warranty (e.g. 5 years)" className={fieldClass} />
+              <textarea name="notes" rows={2} placeholder="Notes / exclusions…" className={fieldClass} />
+              <select name="kind" defaultValue="indicative" className={fieldClass}>
+                <option value="indicative">Indicative</option>
+                <option value="final">Final</option>
+              </select>
+              <Button type="submit">Add quote</Button>
+            </form>
+          )}
+        </section>
       </main>
     </AppShell>
   );
+}
+
+function fmt(cents: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
+      cents / 100
+    );
+  } catch {
+    return `${(cents / 100).toFixed(2)} ${currency}`;
+  }
 }
 
 function StageBar({ status }: { status: RequestStatus }) {

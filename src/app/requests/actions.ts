@@ -9,6 +9,7 @@ import {
   advanceStatus,
 } from "@/core/requests/services/requestService";
 import { addScopeItem } from "@/core/scope/services/scopeService";
+import { addQuote } from "@/core/quotes/services/quoteService";
 
 async function getCtx() {
   const supabase = createClient();
@@ -59,6 +60,22 @@ export async function advanceRequestAction(formData: FormData) {
   await advanceStatus(ctx, {
     requestId,
     status: String(formData.get("status") ?? ""),
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function addQuoteAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await addQuote(ctx, {
+    requestId,
+    vendorName: String(formData.get("vendorName") ?? ""),
+    amount: String(formData.get("amount") ?? "0"),
+    currency: String(formData.get("currency") ?? "USD").toUpperCase(),
+    timeline: String(formData.get("timeline") ?? "") || undefined,
+    warranty: String(formData.get("warranty") ?? "") || undefined,
+    notes: String(formData.get("notes") ?? "") || undefined,
+    kind: String(formData.get("kind") ?? "indicative"),
   });
   revalidatePath(`/requests/${requestId}`);
 }

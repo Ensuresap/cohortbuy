@@ -92,6 +92,12 @@
 - ☐ (integration) `advanceStatus` rejects an invalid status value (Zod enum).
 - ◐ (e2e) coordinator advances forming → scoping; member adds a scope item; it appears for all members.
 
+## Quotes
+- ☐ (unit) `AddQuoteInput` coerces amount; rejects negative; currency length 3.
+- ☐ (unit) amount → `amount_cents` rounding (e.g. 1234.5 → 123450).
+- ☐ (integration) RLS: quotes visible/insertable only within the request's cohort.
+- ◐ (manual) comparison sorts by price ascending; currency formats per code.
+
 ## Cross-cutting
 - ☐ (unit) architecture guard: no `.from(`/`.rpc(` outside `repositories/` (grep test in CI).
 - ☐ (integration) admin-only services all enforce `isStaff` (table-driven negative tests).
