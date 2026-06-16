@@ -77,7 +77,7 @@ export default async function CohortPage({ params }: { params: { handle: string 
   const projects = (projRes.ok ? projRes.data : []) as Array<{ id: string; title: string; status: keyof typeof STAGE_LABELS }>;
   const posts = (feedRes.ok ? feedRes.data : []) as FeedPost[];
 
-  let requests: Array<{ id: string; user_id: string; note: string | null }> = [];
+  let requests: Array<{ user_id: string; display_name: string | null; note: string | null }> = [];
   if (isManager) {
     const r = await listJoinRequests(ctx, cohort.id);
     requests = (r.ok ? r.data : []) as typeof requests;
@@ -257,9 +257,10 @@ export default async function CohortPage({ params }: { params: { handle: string 
                   ) : (
                     <ul className="mt-2 space-y-2">
                       {requests.map((req) => (
-                        <li key={req.id} className="rounded-xl border border-border px-3 py-2">
-                          <p className="text-xs text-subtle">{req.user_id.slice(0, 8)}…</p>
-                          <div className="mt-1 flex flex-wrap gap-1.5">
+                        <li key={req.user_id} className="rounded-xl border border-border px-3 py-2">
+                          <p className="text-sm font-medium text-text">{req.display_name ?? "Member"}</p>
+                          {req.note && <p className="text-xs text-muted">&ldquo;{req.note}&rdquo;</p>}
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
                             {(["approve", "reject", "needs_info"] as const).map((d) => (
                               <form key={d} action={reviewAction}>
                                 <input type="hidden" name="cohortId" value={cohort.id} />

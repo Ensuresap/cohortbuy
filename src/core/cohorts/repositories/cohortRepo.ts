@@ -96,10 +96,6 @@ export function updateCohort(
 }
 
 export function listRequests(db: SupabaseClient, cohortId: string) {
-  return db
-    .from("cohort_members")
-    .select("*")
-    .eq("cohort_id", cohortId)
-    .eq("status", "requested")
-    .order("created_at", { ascending: true });
+  // SECURITY DEFINER fn returns requester display_name/avatar (managers only).
+  return db.rpc("cohort_join_requests", { p_cohort: cohortId });
 }
