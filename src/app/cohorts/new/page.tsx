@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CreateCohortForm from "./CreateCohortForm";
+import AppShell from "@/components/app/AppShell";
 
 export default async function NewCohortPage({
   searchParams,
@@ -14,6 +15,7 @@ export default async function NewCohortPage({
   if (!user) redirect("/login");
 
   return (
+    <AppShell>
     <main className="mx-auto w-full max-w-lg px-6 py-12">
       <h1 className="font-display text-3xl font-semibold text-text">Create a cohort</h1>
       <p className="mt-2 text-muted">
@@ -21,5 +23,6 @@ export default async function NewCohortPage({
       </p>
       <CreateCohortForm error={searchParams.error} />
     </main>
+    </AppShell>
   );
 }

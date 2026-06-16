@@ -6,6 +6,7 @@ import {
   listJoinRequests,
 } from "@/core/cohorts/services/cohortService";
 import { Button } from "@/components/ui/Button";
+import AppShell from "@/components/app/AppShell";
 import { requestJoinAction, reviewAction } from "../cohorts/actions";
 
 export default async function CohortPage({
@@ -41,6 +42,7 @@ export default async function CohortPage({
   }
 
   return (
+    <AppShell>
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <p className="text-sm text-subtle">
         /{cohort.handle} · {cohort.visibility}
@@ -115,5 +117,6 @@ export default async function CohortPage({
         </section>
       )}
     </main>
+    </AppShell>
   );
 }

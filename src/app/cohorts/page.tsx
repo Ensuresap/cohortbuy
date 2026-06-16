@@ -6,6 +6,7 @@ import {
   searchPublicCohorts,
 } from "@/core/cohorts/services/cohortService";
 import { Button } from "@/components/ui/Button";
+import AppShell from "@/components/app/AppShell";
 
 export default async function CohortsPage({
   searchParams,
@@ -38,6 +39,7 @@ export default async function CohortsPage({
   }>;
 
   return (
+    <AppShell>
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl font-semibold text-text">Cohorts</h1>
@@ -105,5 +107,6 @@ export default async function CohortsPage({
         </ul>
       </section>
     </main>
+    </AppShell>
   );
 }
