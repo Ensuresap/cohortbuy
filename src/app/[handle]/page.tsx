@@ -6,8 +6,9 @@ import {
   listMyCohorts,
   listJoinRequests,
   getMemberDirectory,
+  getTagCatalog,
 } from "@/core/cohorts/services/cohortService";
-import type { DirectoryMember } from "@/core/cohorts/domain/cohort";
+import type { DirectoryMember, TagCatalogItem } from "@/core/cohorts/domain/cohort";
 import { listCohortRequests } from "@/core/requests/services/requestService";
 import { STAGE_LABELS } from "@/core/requests/domain/request";
 import { listFeed } from "@/core/posts/services/postService";
@@ -72,12 +73,14 @@ export default async function CohortPage({ params }: { params: { handle: string 
   const isManager = isApproved && membership?.access_level === "manager";
   const isOwner = cohort.created_by === user.id;
 
-  const [dirRes, projRes, feedRes] = await Promise.all([
+  const [dirRes, projRes, feedRes, catRes] = await Promise.all([
     isApproved ? getMemberDirectory(ctx, cohort.id) : Promise.resolve({ ok: true, data: [] as DirectoryMember[] }),
     isApproved ? listCohortRequests(ctx, cohort.id) : Promise.resolve({ ok: true, data: [] }),
     listFeed(ctx, cohort.id),
+    isManager ? getTagCatalog(ctx) : Promise.resolve({ ok: true, data: [] as TagCatalogItem[] }),
   ]);
   const directory = (dirRes.ok ? dirRes.data : []) as DirectoryMember[];
+  const tagCatalog = (catRes.ok ? catRes.data : []) as TagCatalogItem[];
   const projects = (projRes.ok ? projRes.data : []) as Array<{ id: string; title: string; status: keyof typeof STAGE_LABELS }>;
   const posts = (feedRes.ok ? feedRes.data : []) as FeedPost[];
 
@@ -111,7 +114,7 @@ export default async function CohortPage({ params }: { params: { handle: string 
             <div className="-mt-10 flex items-end justify-between gap-4">
               <Avatar url={cohort.avatar_url} name={cohort.name} big ring />
               <div className="mb-1 flex flex-col items-end gap-2">
-                <CohortHeaderActions cohort={cohort} isManager={isManager} isMember={isApproved} isOwner={isOwner} />
+                <CohortHeaderActions cohort={cohort} isManager={isManager} isMember={isApproved} isOwner={isOwner} tagCatalog={tagCatalog} />
                 {!membership && (
                   <JoinButton cohortId={cohort.id} handle={cohort.handle} questions={cohort.join_questions ?? []} />
                 )}

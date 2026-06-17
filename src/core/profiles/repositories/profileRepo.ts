@@ -17,3 +17,11 @@ export function upsertProfile(
 ) {
   return db.from("profiles").upsert(row);
 }
+
+export function setLocation(
+  db: SupabaseClient,
+  userId: string,
+  fields: { postal_code: string; city?: string | null; country?: string }
+) {
+  return db.from("profiles").update(fields).eq("id", userId);
+}

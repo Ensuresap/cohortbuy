@@ -13,6 +13,7 @@ import {
   leaveCohort,
   respondJoinInfo,
 } from "@/core/cohorts/services/cohortService";
+import { setMyLocation } from "@/core/profiles/services/profileService";
 import { createServerClient } from "@/core/db/serverClient";
 import { notifyActionDue } from "@/core/services/notificationService";
 import {
@@ -39,13 +40,28 @@ export async function createCohortAction(formData: FormData) {
     handle,
     description: String(formData.get("description") ?? "") || undefined,
     visibility: String(formData.get("visibility") ?? "public"),
-    category: String(formData.get("category") ?? "") || undefined,
+    tags: formData.getAll("tags").map(String),
     country: String(formData.get("country") ?? "US"),
+    kind: String(formData.get("kind") ?? "service"),
+    coverageZips: formData.getAll("coverageZips").map(String),
+    city: String(formData.get("city") ?? "") || undefined,
+    region: String(formData.get("region") ?? "") || undefined,
   });
   if (!res.ok) {
     redirect(`/cohorts/new?error=${encodeURIComponent(res.error.message)}`);
   }
   redirect(`/${handle}`);
+}
+
+export async function saveMyLocation(input: {
+  postalCode: string;
+  city?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const ctx = await getCtx();
+  const res = await setMyLocation(ctx, { postalCode: input.postalCode, city: input.city });
+  if (!res.ok) return { ok: false as const, error: res.error.message };
+  revalidatePath("/cohorts");
+  return { ok: true as const };
 }
 
 export async function submitJoinRequest(input: {
@@ -95,6 +111,11 @@ export async function saveCohortSettings(input: {
   avatarUrl?: string;
   coverUrl?: string;
   joinQuestions?: { text: string; expected?: string }[];
+  tags?: string[];
+  kind?: "service" | "group_buy";
+  city?: string;
+  region?: string;
+  coverageZips?: string[];
 }) {
   const ctx = await getCtx();
   const res = await updateCohortProfile(ctx, {
@@ -105,6 +126,11 @@ export async function saveCohortSettings(input: {
     avatarUrl: input.avatarUrl ?? "",
     coverUrl: input.coverUrl ?? "",
     joinQuestions: input.joinQuestions,
+    tags: input.tags,
+    kind: input.kind,
+    city: input.city ?? "",
+    region: input.region ?? "",
+    coverageZips: input.coverageZips,
   });
   if (!res.ok) return { ok: false as const, error: res.error.message };
   revalidatePath(`/${input.handle}`);

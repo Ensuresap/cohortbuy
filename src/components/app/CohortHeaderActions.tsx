@@ -4,6 +4,9 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/Button";
+import TagPicker from "@/components/app/TagPicker";
+import ZipCoverageField from "@/components/app/ZipCoverageField";
+import type { TagCatalogItem } from "@/core/cohorts/domain/cohort";
 import { saveCohortSettings, leaveCohortAction } from "@/app/cohorts/actions";
 import {
   Info,
@@ -27,6 +30,11 @@ type CohortLite = {
   avatar_url: string | null;
   cover_url: string | null;
   visibility: "public" | "private";
+  kind: "service" | "group_buy";
+  tags: string[] | null;
+  city: string | null;
+  region: string | null;
+  coverage_zips: string[] | null;
   created_at: string;
   join_questions: { text: string; expected?: string }[] | null;
 };
@@ -45,11 +53,13 @@ export default function CohortHeaderActions({
   isManager,
   isMember,
   isOwner,
+  tagCatalog,
 }: {
   cohort: CohortLite;
   isManager: boolean;
   isMember: boolean;
   isOwner: boolean;
+  tagCatalog: TagCatalogItem[];
 }) {
   const router = useRouter();
   const [modal, setModal] = useState<null | "about" | "settings">(null);
@@ -106,7 +116,7 @@ export default function CohortHeaderActions({
       )}
 
       {modal === "settings" && (
-        <SettingsModal cohort={cohort} onClose={() => setModal(null)} onSaved={() => { setModal(null); router.refresh(); }} />
+        <SettingsModal cohort={cohort} tagCatalog={tagCatalog} onClose={() => setModal(null)} onSaved={() => { setModal(null); router.refresh(); }} />
       )}
     </div>
   );
@@ -114,16 +124,23 @@ export default function CohortHeaderActions({
 
 function SettingsModal({
   cohort,
+  tagCatalog,
   onClose,
   onSaved,
 }: {
   cohort: CohortLite;
+  tagCatalog: TagCatalogItem[];
   onClose: () => void;
   onSaved: () => void;
 }) {
   const [name, setName] = useState(cohort.name);
   const [tagline, setTagline] = useState(cohort.tagline ?? "");
   const [description, setDescription] = useState(cohort.description ?? "");
+  const [tags, setTags] = useState<string[]>(cohort.tags ?? []);
+  const [kind, setKind] = useState<"service" | "group_buy">(cohort.kind);
+  const [city, setCity] = useState(cohort.city ?? "");
+  const [region, setRegion] = useState(cohort.region ?? "");
+  const [coverageZips, setCoverageZips] = useState<string[]>(cohort.coverage_zips ?? []);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [questions, setQuestions] = useState<{ text: string; expected?: string }[]>(
@@ -151,6 +168,11 @@ function SettingsModal({
       const res = await saveCohortSettings({
         cohortId: cohort.id, handle: cohort.handle, name, tagline, description, avatarUrl, coverUrl,
         joinQuestions: questions.filter((q) => q.text.trim()),
+        tags,
+        kind,
+        city,
+        region,
+        coverageZips,
       });
       if (!res.ok) throw new Error(res.error);
       onSaved();
@@ -195,9 +217,98 @@ function SettingsModal({
           <p className="mt-1 text-xs text-subtle">Square works best (e.g. 300×300). ≤5MB.</p>
         </div>
 
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={fieldClass} />
-        <input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Slogan / tagline" className={fieldClass} />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Description" className={fieldClass} />
+        <div>
+          <label htmlFor="cohort-name" className="mb-1.5 block text-sm font-medium text-text">
+            Name
+          </label>
+          <input
+            id="cohort-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Maple St Fence Project"
+            className={fieldClass}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="cohort-tagline" className="mb-1.5 block text-sm font-medium text-text">
+            Tagline <span className="font-normal text-subtle">(optional)</span>
+          </label>
+          <input
+            id="cohort-tagline"
+            value={tagline}
+            onChange={(e) => setTagline(e.target.value)}
+            placeholder="Short slogan shown under the name"
+            className={fieldClass}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="cohort-description" className="mb-1.5 block text-sm font-medium text-text">
+            Description
+          </label>
+          <textarea
+            id="cohort-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            placeholder="What is this cohort organizing?"
+            className={fieldClass}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="cohort-kind" className="mb-1.5 block text-sm font-medium text-text">
+            Cohort type
+          </label>
+          <select
+            id="cohort-kind"
+            value={kind}
+            onChange={(e) => setKind(e.target.value as "service" | "group_buy")}
+            className={fieldClass}
+          >
+            <option value="service">Service — work done per home</option>
+            <option value="group_buy">Group buy — volume product order</option>
+          </select>
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-text">Tags</p>
+          <TagPicker catalog={tagCatalog} defaultValue={cohort.tags ?? []} kind={kind} onChange={setTags} />
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <div className="col-span-2">
+            <label htmlFor="cohort-city" className="mb-1.5 block text-sm font-medium text-text">
+              City
+            </label>
+            <input
+              id="cohort-city"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Austin"
+              className={fieldClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="cohort-region" className="mb-1.5 block text-sm font-medium text-text">
+              State
+            </label>
+            <input
+              id="cohort-region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              placeholder="TX"
+              className={fieldClass}
+            />
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-text">Coverage area (ZIP codes)</p>
+          <ZipCoverageField defaultValue={cohort.coverage_zips ?? []} onChange={setCoverageZips} />
+          <p className="mt-1 text-xs text-subtle">The ZIP codes this cohort serves.</p>
+        </div>
 
         <div>
           <p className="text-sm font-medium text-text">Join questions</p>
@@ -205,9 +316,9 @@ function SettingsModal({
           <div className="space-y-2">
             {questions.map((q, i) => (
               <div key={i} className="rounded-xl border border-border p-2">
-                <input value={q.text} onChange={(e) => setQuestions((qs) => qs.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))} placeholder="Question" className="mb-1 w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-sm text-text outline-none focus:ring-2 focus:ring-ring" />
+                <input aria-label={`Join question ${i + 1}`} value={q.text} onChange={(e) => setQuestions((qs) => qs.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))} placeholder="Question" className="mb-1 w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-sm text-text outline-none focus:ring-2 focus:ring-ring" />
                 <div className="flex gap-1">
-                  <input value={q.expected ?? ""} onChange={(e) => setQuestions((qs) => qs.map((x, j) => (j === i ? { ...x, expected: e.target.value } : x)))} placeholder="Expected answer (optional)" className="w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-sm text-text outline-none focus:ring-2 focus:ring-ring" />
+                  <input aria-label={`Expected answer for question ${i + 1}`} value={q.expected ?? ""} onChange={(e) => setQuestions((qs) => qs.map((x, j) => (j === i ? { ...x, expected: e.target.value } : x)))} placeholder="Expected answer (optional)" className="w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-sm text-text outline-none focus:ring-2 focus:ring-ring" />
                   <button type="button" onClick={() => setQuestions((qs) => qs.filter((_, j) => j !== i))} aria-label="Remove question" className="rounded-lg border border-border px-2 text-sm text-accent hover:bg-surface-2">×</button>
                 </div>
               </div>

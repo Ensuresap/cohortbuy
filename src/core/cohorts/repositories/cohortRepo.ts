@@ -7,9 +7,21 @@ export function createCohort(db: SupabaseClient, input: CreateCohortInput) {
     p_handle: input.handle,
     p_description: input.description ?? null,
     p_visibility: input.visibility,
-    p_category: input.category ?? null,
     p_country: input.country,
+    p_kind: input.kind,
+    p_tags: input.tags,
+    p_coverage_zips: input.coverageZips,
+    p_city: input.city ?? null,
+    p_region: input.region ?? null,
   });
+}
+
+export function listTagCatalog(db: SupabaseClient) {
+  return db.from("tag_catalog").select("slug, label, kind, sort").order("sort").order("label");
+}
+
+export function listMyCohortCards(db: SupabaseClient) {
+  return db.rpc("my_cohort_cards");
 }
 
 export function getByHandle(db: SupabaseClient, handle: string) {
@@ -23,6 +35,20 @@ export function searchPublic(
   let q = db.from("cohorts").select("*").eq("visibility", "public");
   if (args.query) q = q.ilike("name", `%${args.query}%`);
   return q.order("last_activity_at", { ascending: false }).limit(args.limit);
+}
+
+export function discover(
+  db: SupabaseClient,
+  args: { query?: string; country?: string; zip?: string; tag?: string; scope?: string; limit: number }
+) {
+  return db.rpc("discover_cohorts", {
+    p_query: args.query ?? null,
+    p_country: args.country ?? null,
+    p_zip: args.zip ?? null,
+    p_tag: args.tag ?? null,
+    p_scope: args.scope ?? "all",
+    p_limit: args.limit,
+  });
 }
 
 export function requestJoin(

@@ -1,5 +1,5 @@
 import type { Ctx } from "../../context";
-import { OnboardingInput, type Profile } from "../domain/profile";
+import { OnboardingInput, SetLocationInput, type Profile } from "../domain/profile";
 import * as repo from "../repositories/profileRepo";
 import { ok, err, type Result } from "../../result";
 
@@ -10,6 +10,21 @@ export async function getMyProfile(ctx: Ctx): Promise<Result<Profile | null>> {
   const { data, error } = await repo.getById(ctx.db, ctx.actor.id);
   if (error) return err("db_error", error.message);
   return ok((data as Profile) ?? null);
+}
+
+/** Save the signed-in user's location (ZIP-based) for local discovery. */
+export async function setMyLocation(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const parsed = SetLocationInput.safeParse(raw);
+  if (!parsed.success) return err("invalid_input", parsed.error.issues[0]?.message ?? "Invalid");
+  const { error } = await repo.setLocation(ctx.db, ctx.actor.id, {
+    postal_code: parsed.data.postalCode,
+    city: parsed.data.city ?? null,
+    ...(parsed.data.country ? { country: parsed.data.country } : {}),
+  });
+  if (error) return err("db_error", error.message);
+  return ok(true);
 }
 
 /** Update the signed-in user's last-seen timestamp (presence heartbeat). */

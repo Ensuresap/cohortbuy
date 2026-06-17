@@ -4,6 +4,7 @@ import {
   RequestToJoinInput,
   ReviewJoinInput,
   SearchCohortsInput,
+  DiscoverCohortsInput,
   HandleInput,
   UpdateCohortProfileInput,
   SetTitleInput,
@@ -12,6 +13,9 @@ import {
   RESERVED_HANDLES,
   type Cohort,
   type DirectoryMember,
+  type PublicCohortCard,
+  type MyCohortCard,
+  type TagCatalogItem,
 } from "../domain/cohort";
 import * as repo from "../repositories/cohortRepo";
 import { ok, err, type Result } from "../../result";
@@ -108,6 +112,40 @@ export async function searchPublicCohorts(
   return ok((data ?? []) as Cohort[]);
 }
 
+/**
+ * Discover public cohorts enriched with aggregates (members, value coordinated,
+ * projects) and ordered "near you" first, then by popularity. The viewer's
+ * country is supplied by the entry point (resolved from their profile).
+ */
+export async function discoverCohorts(
+  ctx: Ctx,
+  raw: unknown
+): Promise<Result<PublicCohortCard[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const parsed = DiscoverCohortsInput.safeParse(raw ?? {});
+  if (!parsed.success) return err("invalid_input", "Invalid input");
+  const { data, error } = await repo.discover(ctx.db, parsed.data);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as PublicCohortCard[]);
+}
+
+/** The caller's own cohorts as cards (with aggregates + membership status). */
+export async function getMyCohortCards(ctx: Ctx): Promise<Result<MyCohortCard[]>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.listMyCohortCards(ctx.db);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as MyCohortCard[]);
+}
+
+/** Platform-managed common tags (for suggestions + discover filter chips). */
+export async function getTagCatalog(ctx: Ctx): Promise<Result<TagCatalogItem[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.listTagCatalog(ctx.db);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as TagCatalogItem[]);
+}
+
 /** Resolve a cohort by its vanity handle (RLS limits to public or member). */
 export async function getCohortByHandle(ctx: Ctx, raw: unknown): Promise<Result<Cohort | null>> {
   if (!ctx.db) return err("not_configured", "Database is not configured");
@@ -185,6 +223,11 @@ export async function updateCohortProfile(ctx: Ctx, raw: unknown): Promise<Resul
   if (p.data.avatarUrl !== undefined) fields.avatar_url = p.data.avatarUrl || null;
   if (p.data.coverUrl !== undefined) fields.cover_url = p.data.coverUrl || null;
   if (p.data.joinQuestions !== undefined) fields.join_questions = p.data.joinQuestions;
+  if (p.data.tags !== undefined) fields.tags = p.data.tags;
+  if (p.data.kind !== undefined) fields.kind = p.data.kind;
+  if (p.data.city !== undefined) fields.city = p.data.city || null;
+  if (p.data.region !== undefined) fields.region = p.data.region || null;
+  if (p.data.coverageZips !== undefined) fields.coverage_zips = p.data.coverageZips;
   if (Object.keys(fields).length === 0) return ok(true);
 
   const { data, error } = await repo.updateCohort(ctx.db, p.data.cohortId, fields);
