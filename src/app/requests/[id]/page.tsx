@@ -28,6 +28,11 @@ import {
 import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { listScope } from "@/core/scope/services/scopeService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
+import { listCandidates } from "@/core/research/services/researchService";
+import {
+  CANDIDATE_STATUS_LABELS,
+  CANDIDATE_SOURCE_LABELS,
+} from "@/core/research/domain/research";
 import {
   STAGE_LABELS,
   JOINABLE_STATUSES,
@@ -55,6 +60,11 @@ import {
   addCommentAction,
   updateCommentAction,
   deleteCommentAction,
+  addCandidateAction,
+  setCandidateStatusAction,
+  deleteCandidateAction,
+  setResearchAction,
+  approveShortlistAction,
   selectQuoteAction,
   recordContractAction,
   setTermsAction,
@@ -123,12 +133,13 @@ export default async function RequestPage({
   const req = reqRes.ok ? reqRes.data : null;
   if (!req) notFound();
 
-  const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes, mineRes] = await Promise.all([
+  const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes, candRes, mineRes] = await Promise.all([
     listParticipantsFeed(ctx, params.id),
     listScope(ctx, params.id),
     listQuotes(ctx, params.id),
     listComments(ctx, params.id),
     listCostShares(ctx, params.id),
+    listCandidates(ctx, params.id),
     listMyCohorts(ctx),
   ]);
   const participants = partsRes.ok ? partsRes.data : [];
@@ -136,6 +147,7 @@ export default async function RequestPage({
   const quotes = quotesRes.ok ? quotesRes.data : [];
   const comments = commentsRes.ok ? commentsRes.data : [];
   const shares = sharesRes.ok ? sharesRes.data : [];
+  const candidates = candRes.ok ? candRes.data : [];
 
   const isParticipant = participants.some((p) => p.user_id === user.id);
   const isCoordinator = req.created_by === user.id;
@@ -174,6 +186,7 @@ export default async function RequestPage({
     hasSelection,
     shares: shares.length,
     agreedAmount: req.agreed_amount_cents != null,
+    shortlistApproved: req.shortlist_approved,
   });
 
   const joinableStage = JOINABLE_STATUSES.includes(req.status);
@@ -195,8 +208,14 @@ export default async function RequestPage({
         ? fmt(bestQuote.amount_cents, bestQuote.currency)
         : "—";
 
-  const showQuotes = type === "service" && (viewedStep === "research" || viewedStep === "rfq" || viewedStep === "deciding");
+  const showResearch = type === "service" && viewedStep === "research";
+  const showQuotes = type === "service" && (viewedStep === "rfq" || viewedStep === "deciding");
   const showPrice = type === "group_buy" && viewedStep === "research";
+  const shortlisted = candidates.filter((c) => c.status === "shortlisted");
+  const benchmark =
+    req.benchmark_low_cents != null && req.benchmark_high_cents != null
+      ? `${fmt(req.benchmark_low_cents, req.benchmark_currency ?? "USD")} – ${fmt(req.benchmark_high_cents, req.benchmark_currency ?? "USD")}`
+      : null;
 
   return (
     <AppShell>
@@ -439,6 +458,121 @@ export default async function RequestPage({
               </Panel>
             )}
 
+            {/* Market research (service): benchmark + vendor shortlist */}
+            {showResearch && (
+              <Panel title="Market research">
+                {/* Benchmark */}
+                <div className="mt-2 rounded-xl border border-border p-4">
+                  <p className="text-xs text-subtle">Estimated price range</p>
+                  <p className="font-display text-lg font-semibold text-primary">{benchmark ?? "Not set yet"}</p>
+                  {req.research_notes && <p className="mt-1 text-sm text-muted">{req.research_notes}</p>}
+                  {(isCoordinator || isManager) && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-xs font-medium text-primary hover:underline">Set benchmark & notes</summary>
+                      <form action={setResearchAction} className="mt-2 space-y-2">
+                        <input type="hidden" name="requestId" value={req.id} />
+                        <div className="grid grid-cols-3 gap-2">
+                          <input name="low" type="number" step="0.01" min="0" placeholder="Low" defaultValue={req.benchmark_low_cents != null ? (req.benchmark_low_cents / 100).toFixed(0) : ""} className={`${fieldClass} col-span-1`} />
+                          <input name="high" type="number" step="0.01" min="0" placeholder="High" defaultValue={req.benchmark_high_cents != null ? (req.benchmark_high_cents / 100).toFixed(0) : ""} className={`${fieldClass} col-span-1`} />
+                          <input name="currency" defaultValue={req.benchmark_currency ?? "USD"} maxLength={3} className={fieldClass} />
+                        </div>
+                        <textarea name="notes" rows={2} defaultValue={req.research_notes ?? ""} placeholder="Permit / HOA / vetting notes…" className={fieldClass} />
+                        <Button type="submit" size="md">Save</Button>
+                      </form>
+                    </details>
+                  )}
+                </div>
+
+                {/* Vendor shortlist */}
+                <div className="mt-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-text">Vendor shortlist</h3>
+                  <span className="text-xs text-subtle">{shortlisted.length} shortlisted · {candidates.length} candidates</span>
+                </div>
+                {candidates.length === 0 ? (
+                  <p className="mt-2 text-muted">No vendors added yet. Add candidates to research and shortlist.</p>
+                ) : (
+                  <ul className="mt-2 space-y-2">
+                    {candidates.map((c) => {
+                      const canManageCand = (c.suggested_by === user.id || isCoordinator || isManager) && !isCompleted;
+                      const statusTone =
+                        c.status === "shortlisted" ? "bg-primary/10 text-primary"
+                        : c.status === "declined" ? "bg-surface-2 text-subtle"
+                        : c.status === "contacted" ? "bg-accent/10 text-accent"
+                        : "bg-surface-2 text-text";
+                      return (
+                        <li key={c.id} className="rounded-xl border border-border px-4 py-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-medium text-text">
+                                {c.website ? (
+                                  <a href={c.website} target="_blank" rel="noopener noreferrer" className="hover:underline">{c.name}</a>
+                                ) : c.name}
+                              </p>
+                              <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-subtle">
+                                <span className="rounded-full bg-surface-2 px-2 py-0.5">{CANDIDATE_SOURCE_LABELS[c.source]}</span>
+                                {c.vetting_status === "unverified" && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-accent">Not vetted</span>}
+                                {c.contact && <span>· {c.contact}</span>}
+                              </p>
+                              {c.notes && <p className="mt-1 text-sm text-muted">{c.notes}</p>}
+                            </div>
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${statusTone}`}>{CANDIDATE_STATUS_LABELS[c.status]}</span>
+                          </div>
+                          {canManageCand && (
+                            <div className="mt-2 flex items-center gap-3 text-xs">
+                              {(["considering", "shortlisted", "contacted", "declined"] as const)
+                                .filter((s) => s !== c.status)
+                                .map((s) => (
+                                  <form key={s} action={setCandidateStatusAction}>
+                                    <input type="hidden" name="requestId" value={req.id} />
+                                    <input type="hidden" name="id" value={c.id} />
+                                    <input type="hidden" name="status" value={s} />
+                                    <button type="submit" className="text-primary hover:underline">{CANDIDATE_STATUS_LABELS[s]}</button>
+                                  </form>
+                                ))}
+                              <form action={deleteCandidateAction}>
+                                <input type="hidden" name="requestId" value={req.id} />
+                                <input type="hidden" name="id" value={c.id} />
+                                <button type="submit" className="text-accent hover:underline">Delete</button>
+                              </form>
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                {at("research") && isParticipant && !req.shortlist_approved && (
+                  <form action={addCandidateAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
+                    <p className="text-sm font-medium text-text">Add a vendor to research</p>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <input type="hidden" name="source" value="member" />
+                    <input name="name" required placeholder="Vendor name" className={fieldClass} />
+                    <input name="contact" placeholder="Contact (email / phone)" className={fieldClass} />
+                    <input name="website" type="url" placeholder="Website (optional)" className={fieldClass} />
+                    <textarea name="notes" rows={2} placeholder="Why this vendor / notes…" className={fieldClass} />
+                    <Button type="submit">Add candidate</Button>
+                  </form>
+                )}
+
+                {at("research") && (isCoordinator || isManager) && !req.shortlist_approved && (
+                  <form action={approveShortlistAction} className="mt-3">
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <Button type="submit" size="md" disabled={shortlisted.length === 0} title={shortlisted.length === 0 ? "Shortlist at least one vendor first" : undefined}>
+                      Approve shortlist
+                    </Button>
+                  </form>
+                )}
+                {req.shortlist_approved && (
+                  <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary"><CheckCircle2 className="h-4 w-4" /> Shortlist approved — ready for quotes</p>
+                )}
+
+                <p className="mt-3 text-xs text-subtle">
+                  Vendor details (licence, insurance) are informational — CohortBuy does not guarantee any vendor. Verify before contracting.
+                </p>
+              </Panel>
+            )}
+
             {/* Vendors & quotes (service) */}
             {showQuotes && (
               <Panel title="Vendors & quotes">
@@ -510,7 +644,7 @@ export default async function RequestPage({
                     })}
                   </ul>
                 )}
-                {(at("research") || at("rfq")) && isParticipant && (
+                {at("rfq") && isParticipant && (
                   <form action={addQuoteAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
                     <p className="text-sm font-medium text-text">Record a quote</p>
                     <input type="hidden" name="requestId" value={req.id} />

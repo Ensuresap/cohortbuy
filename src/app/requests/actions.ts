@@ -23,6 +23,13 @@ import {
 } from "@/core/requests/services/requestService";
 import { addScopeItem, updateScopeItem, deleteScopeItem } from "@/core/scope/services/scopeService";
 import { addQuote, updateQuote, deleteQuote } from "@/core/quotes/services/quoteService";
+import {
+  addCandidate,
+  setCandidateStatus,
+  deleteCandidate,
+  setResearch,
+  approveShortlist,
+} from "@/core/research/services/researchService";
 import { createPost } from "@/core/posts/services/postService";
 
 async function getCtx() {
@@ -283,6 +290,58 @@ export async function deleteCommentAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
   await deleteComment(ctx, String(formData.get("id") ?? ""));
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function addCandidateAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await addCandidate(ctx, {
+    requestId,
+    name: String(formData.get("name") ?? ""),
+    contact: String(formData.get("contact") ?? "") || undefined,
+    website: String(formData.get("website") ?? "") || undefined,
+    notes: String(formData.get("notes") ?? "") || undefined,
+    source: (String(formData.get("source") ?? "member") || "member") as "member" | "registry" | "ai" | "web",
+    vendorId: String(formData.get("vendorId") ?? "") || undefined,
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function setCandidateStatusAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await setCandidateStatus(ctx, {
+    id: String(formData.get("id") ?? ""),
+    status: String(formData.get("status") ?? "considering"),
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function deleteCandidateAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await deleteCandidate(ctx, String(formData.get("id") ?? ""));
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function setResearchAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await setResearch(ctx, {
+    requestId,
+    low: String(formData.get("low") ?? "0"),
+    high: String(formData.get("high") ?? "0"),
+    currency: String(formData.get("currency") ?? "USD"),
+    notes: String(formData.get("notes") ?? "") || undefined,
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function approveShortlistAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await approveShortlist(ctx, requestId);
   revalidatePath(`/requests/${requestId}`);
 }
 

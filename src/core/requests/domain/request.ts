@@ -139,6 +139,11 @@ export interface ServiceRequest {
   locked: boolean;
   contract_structure: "combined" | "individual";
   payment_mode: "pooled_escrow" | "individual_direct";
+  benchmark_low_cents: number | null;
+  benchmark_high_cents: number | null;
+  benchmark_currency: string | null;
+  research_notes: string | null;
+  shortlist_approved: boolean;
   status: RequestStatus;
   min_size: number;
   last_activity_at: string;

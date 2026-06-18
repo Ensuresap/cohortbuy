@@ -76,7 +76,10 @@ export default async function AdminPage() {
           <ShieldCheck className="h-6 w-6 text-primary" />
           <h1 className="font-display text-3xl font-semibold text-text">Platform admin</h1>
         </div>
-        <p className="mt-1 text-muted">Operations overview across all cohorts.</p>
+        <p className="mt-1 text-muted">
+          Operations overview across all cohorts.{" "}
+          <Link href="/admin/vendors" className="font-medium text-primary hover:underline">Vendor registry →</Link>
+        </p>
 
         {/* KPI cards */}
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

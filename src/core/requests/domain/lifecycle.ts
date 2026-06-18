@@ -40,11 +40,13 @@ export const STAGE_GUIDE: Record<RequestStatus, string> = {
  */
 export function advanceBlockedReason(
   status: RequestStatus,
-  counts: { participants: number; minSize: number; scope: number; quotes: number; hasSelection: boolean; shares: number; agreedAmount: boolean }
+  counts: { participants: number; minSize: number; scope: number; quotes: number; hasSelection: boolean; shares: number; agreedAmount: boolean; shortlistApproved: boolean }
 ): string | null {
   switch (status) {
     case "scoping":
       return counts.scope >= 1 ? null : "Add at least one scope item before moving on.";
+    case "research":
+      return counts.shortlistApproved ? null : "Approve the vendor shortlist before requesting quotes.";
     case "rfq":
       return counts.quotes >= 1 ? null : "Record at least one quote first.";
     case "deciding":
