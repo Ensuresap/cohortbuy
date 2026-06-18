@@ -301,20 +301,22 @@ export default async function RequestPage({
               const done = curIdx >= 0 && i < curIdx;
               const current = i === curIdx;
               const selected = s === viewedStep;
-              const cls = selected
+              // Progress drives the fill: completed = solid green (+check),
+              // current = bright ring, upcoming = muted. Selection adds an outline.
+              const progressCls = done
                 ? "bg-primary text-primary-foreground"
                 : current
-                  ? "bg-primary/15 text-primary ring-2 ring-primary/40"
-                  : done
-                    ? "bg-primary/15 text-primary"
-                    : "bg-surface-2 text-subtle hover:bg-surface-2/70";
+                  ? "bg-primary/20 text-primary ring-2 ring-primary"
+                  : "bg-surface-2 text-subtle hover:bg-surface-2/70";
+              const selCls = selected ? " outline outline-2 outline-offset-2 outline-primary/50" : "";
               return (
                 <Link
                   key={s}
                   href={`/requests/${req.id}?step=${s}`}
                   scroll={false}
-                  className={"rounded-full px-2.5 py-1 text-xs font-medium transition " + cls}
+                  className={"inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition " + progressCls + selCls}
                 >
+                  {done && <CheckCircle2 className="h-3 w-3" />}
                   {STAGE_LABELS[s]}
                 </Link>
               );
