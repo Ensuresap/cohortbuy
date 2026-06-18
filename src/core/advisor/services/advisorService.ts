@@ -26,10 +26,12 @@ export async function advise(ctx: Ctx, raw: unknown): Promise<Result<AdvisorRepl
   const cohortName = (cohort as { name?: string } | null)?.name ?? "your cohort";
 
   const modelRes = await resolveModel(ctx, { cohortId: parsed.data.cohortId });
+  const provider = (modelRes.ok ? modelRes.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
   const model = modelRes.ok ? modelRes.data.model : "claude-sonnet-4-6";
 
   try {
     const result = await runMessages({
+      provider,
       model,
       system: advisorSystemPrompt(cohortName),
       messages: parsed.data.messages,

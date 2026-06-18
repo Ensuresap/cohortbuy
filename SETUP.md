@@ -38,11 +38,18 @@ Used for: Postgres data, Auth, RLS. Migrations live in `supabase/migrations/`.
    ```
 
 ## 2. Anthropic / OpenAI — the AI models  *(Now — required for the Project Advisor)*
-Used for: the agent runtime, starting with the **Project Advisor** (Stage-0 intake at `/<cohort>/advisor`). We're **provider-agnostic** (`{ provider, model }`), set per-cohort or globally (see AI config in `Product_Spec.md`). The advisor currently calls Anthropic; without a key it shows a friendly "AI isn't configured yet" message and the rest of the app is unaffected.
+Used for: the agent runtime, starting with the **Project Advisor** (Stage-0 intake at `/<cohort>/advisor`). We're **provider-agnostic** (`{ provider, model }`): the model is resolved per-cohort → global DB setting → **env override** → code default. Both **OpenAI** and **Anthropic** are supported. Without a key the advisor shows a friendly "AI isn't configured yet" message and nothing else is affected.
 
-1. Anthropic: create a key at the Anthropic Console → set `ANTHROPIC_API_KEY`. **Required for the advisor.**
-2. OpenAI (optional): create a key at the OpenAI dashboard → set `OPENAI_API_KEY`.
-3. Optional default override via `AI_DEFAULT_PROVIDER` / `AI_DEFAULT_MODEL` (otherwise the code default `DEFAULT_MODEL` applies).
+**To use OpenAI (Chat Completions + function calling):**
+1. Create a key at the OpenAI dashboard → set `OPENAI_API_KEY`.
+2. Point the resolver at OpenAI with the env override:
+   - `AI_DEFAULT_PROVIDER=openai`
+   - `AI_DEFAULT_MODEL=gpt-4o` (or another chat model you have access to, e.g. `gpt-4.1`, `o4-mini`).
+3. Restart the dev server so the new env is picked up.
+
+**To use Anthropic instead:** set `ANTHROPIC_API_KEY`; leave the env override unset (the code default is `anthropic` / `claude-sonnet-4-6`) or set `AI_DEFAULT_PROVIDER=anthropic` + `AI_DEFAULT_MODEL=claude-sonnet-4-6`.
+
+Per-cohort or global DB overrides (set via admin) take precedence over the env override. Provider can be `openai` or `anthropic`.
 
 ## 3. Resend — transactional email  *(Now — required for magic-link login)*
 Used for: email notifications and Supabase Auth magic-link emails.

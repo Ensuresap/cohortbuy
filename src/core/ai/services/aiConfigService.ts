@@ -30,6 +30,11 @@ export async function resolveModel(
   const { data: g } = await repo.getGlobal(ctx.db);
   if (g?.provider && g?.model) return ok({ provider: g.provider, model: g.model });
 
+  // Env override (no DB row needed): AI_DEFAULT_PROVIDER + AI_DEFAULT_MODEL.
+  const envProvider = process.env.AI_DEFAULT_PROVIDER;
+  const envModel = process.env.AI_DEFAULT_MODEL;
+  if (envProvider && envModel) return ok({ provider: envProvider, model: envModel });
+
   return ok(DEFAULT_MODEL);
 }
 
