@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { Info, Share2, UserPlus, LogOut, Lock, MoreHorizontal } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Info,
+  Share2,
+  UserPlus,
+  LogOut,
+  Lock,
+  MoreHorizontal,
+  Link2,
+  MessageCircle,
+  Megaphone,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import Modal from "@/components/ui/Modal";
 import EditProjectButton from "@/components/app/EditProjectButton";
-import { joinRequestAction, leaveProjectAction } from "@/app/requests/actions";
+import { joinRequestAction, leaveProjectAction, announceProjectAction } from "@/app/requests/actions";
 
 export interface ProjectSummary {
   id: string;
@@ -17,7 +27,9 @@ export interface ProjectSummary {
   targetDate: string | null;
   locked: boolean;
   stageLabel: string;
+  cohortId: string;
   cohortName: string | null;
+  cohortHandle: string;
   startedLabel: string;
   targetLabel: string;
   participants: number;
@@ -30,21 +42,39 @@ export default function ProjectHeaderActions({
   canEdit,
   canJoin,
   canExit,
+  canAnnounce,
   joinClosedReason,
 }: {
   project: ProjectSummary;
   canEdit: boolean;
   canJoin: boolean;
   canExit: boolean;
+  canAnnounce: boolean;
   joinClosedReason: string | null;
 }) {
   const [about, setAbout] = useState(false);
-  const [menu, setMenu] = useState(false);
+  const [shareMenu, setShareMenu] = useState(false);
+  const [moreMenu, setMoreMenu] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [announced, setAnnounced] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState("");
+  const shareRef = useRef<HTMLDivElement>(null);
 
-  async function share() {
+  useEffect(() => {
+    setInviteUrl(`${window.location.origin}/invite/${project.id}`);
+  }, [project.id]);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) setShareMenu(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  async function copyLink() {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/invite/${project.id}`);
+      await navigator.clipboard.writeText(inviteUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -52,10 +82,41 @@ export default function ProjectHeaderActions({
     }
   }
 
+  const waHref = `https://wa.me/?text=${encodeURIComponent(`Join our group buy: ${project.title}\n${inviteUrl}`)}`;
+  const menuRow =
+    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2";
+
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
       <IconButton label="About this project" Icon={Info} onClick={() => setAbout(true)} />
-      <IconButton label="Copy link" Icon={Share2} onClick={share} />
+
+      {/* Share & invite menu */}
+      <div className="relative" ref={shareRef}>
+        <IconButton label="Share & invite" Icon={Share2} onClick={() => setShareMenu((o) => !o)} />
+        {shareMenu && (
+          <div className="absolute right-0 z-30 mt-2 w-60 rounded-xl border border-border bg-surface p-1.5 shadow-soft">
+            <button onClick={copyLink} className={menuRow}>
+              <Link2 className="h-4 w-4 text-muted" /> {copied ? "Copied!" : "Copy invite link"}
+            </button>
+            <a href={waHref} target="_blank" rel="noopener noreferrer" className={menuRow} onClick={() => setShareMenu(false)}>
+              <MessageCircle className="h-4 w-4 text-primary" /> Share to WhatsApp
+            </a>
+            {canAnnounce && (
+              <form action={announceProjectAction} onSubmit={() => { setAnnounced(true); setShareMenu(false); }}>
+                <input type="hidden" name="cohortId" value={project.cohortId} />
+                <input type="hidden" name="requestId" value={project.id} />
+                <input type="hidden" name="handle" value={project.cohortHandle} />
+                <input type="hidden" name="title" value={project.title} />
+                <input type="hidden" name="url" value={inviteUrl} />
+                <button type="submit" disabled={announced} className={`${menuRow} disabled:opacity-60`}>
+                  <Megaphone className="h-4 w-4 text-primary" /> {announced ? "Announced to cohort" : "Announce to cohort feed"}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
+
       {canEdit && (
         <EditProjectButton
           requestId={project.id}
@@ -84,8 +145,8 @@ export default function ProjectHeaderActions({
 
       {canExit && (
         <div className="relative">
-          <IconButton label="More" Icon={MoreHorizontal} onClick={() => setMenu((o) => !o)} />
-          {menu && (
+          <IconButton label="More" Icon={MoreHorizontal} onClick={() => setMoreMenu((o) => !o)} />
+          {moreMenu && (
             <div className="absolute right-0 z-30 mt-2 w-52 rounded-xl border border-border bg-surface p-1.5 shadow-soft">
               <form
                 action={leaveProjectAction}
@@ -94,10 +155,7 @@ export default function ProjectHeaderActions({
                 }}
               >
                 <input type="hidden" name="requestId" value={project.id} />
-                <button
-                  type="submit"
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-accent hover:bg-surface-2"
-                >
+                <button type="submit" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-accent hover:bg-surface-2">
                   <LogOut className="h-4 w-4" /> Leave this project
                 </button>
               </form>
@@ -105,8 +163,6 @@ export default function ProjectHeaderActions({
           )}
         </div>
       )}
-
-      {copied && <span className="ml-1 text-xs text-subtle">Copied</span>}
 
       {about && (
         <Modal title={project.title} onClose={() => setAbout(false)}>

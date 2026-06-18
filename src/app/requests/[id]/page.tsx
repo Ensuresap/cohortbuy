@@ -41,7 +41,6 @@ import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import SafetyNote from "@/components/app/SafetyNote";
 import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
-import InviteActions from "@/components/app/InviteActions";
 import {
   addScopeAction,
   advanceRequestAction,
@@ -198,7 +197,9 @@ export default async function RequestPage({ params }: { params: { id: string } }
                     targetDate: req.target_date,
                     locked: req.locked,
                     stageLabel: STAGE_LABELS[req.status],
+                    cohortId: req.cohort_id,
                     cohortName: req.cohort?.name ?? null,
+                    cohortHandle: req.cohort?.handle ?? "",
                     startedLabel: fmtDate(req.created_at),
                     targetLabel: req.target_date ? fmtDate(req.target_date) : "Not set",
                     participants: participants.length,
@@ -208,6 +209,7 @@ export default async function RequestPage({ params }: { params: { id: string } }
                   canEdit={canEdit}
                   canJoin={canJoin}
                   canExit={canExit}
+                  canAnnounce={isManager}
                   joinClosedReason={joinClosedReason}
                 />
               </div>
@@ -626,22 +628,6 @@ export default async function RequestPage({ params }: { params: { id: string } }
 
           {/* Side */}
           <div className="space-y-6">
-            {(isParticipant || isCoordinator) && !isCompleted && (
-              <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-                <h2 className="font-display text-lg font-semibold text-text">Invite neighbors</h2>
-                <p className="mt-1 text-xs text-muted">Share the link — the more join, the better the price.</p>
-                <div className="mt-3">
-                  <InviteActions
-                    requestId={req.id}
-                    title={req.title}
-                    cohortId={req.cohort_id}
-                    handle={req.cohort?.handle ?? ""}
-                    canAnnounce={isManager}
-                  />
-                </div>
-              </section>
-            )}
-
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
               <h2 className="text-sm font-medium text-muted">Details</h2>
               <dl className="mt-3 space-y-3 text-sm">
