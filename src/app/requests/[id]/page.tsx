@@ -17,6 +17,7 @@ import {
   Lock,
   ChevronRight,
   RotateCcw,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -65,6 +66,8 @@ import {
   deleteCandidateAction,
   setResearchAction,
   approveShortlistAction,
+  aiEstimateBenchmarkAction,
+  aiSuggestVendorsAction,
   selectQuoteAction,
   recordContractAction,
   setTermsAction,
@@ -466,6 +469,14 @@ export default async function RequestPage({
                   <p className="text-xs text-subtle">Estimated price range</p>
                   <p className="font-display text-lg font-semibold text-primary">{benchmark ?? "Not set yet"}</p>
                   {req.research_notes && <p className="mt-1 text-sm text-muted">{req.research_notes}</p>}
+                  {(isCoordinator || isManager) && at("research") && (
+                    <form action={aiEstimateBenchmarkAction} className="mt-2 inline-block">
+                      <input type="hidden" name="requestId" value={req.id} />
+                      <button type="submit" className={subtleBtnClass}>
+                        <Sparkles className="h-4 w-4 text-primary" /> Estimate with AI
+                      </button>
+                    </form>
+                  )}
                   {(isCoordinator || isManager) && (
                     <details className="mt-2">
                       <summary className="cursor-pointer text-xs font-medium text-primary hover:underline">Set benchmark & notes</summary>
@@ -484,9 +495,19 @@ export default async function RequestPage({
                 </div>
 
                 {/* Vendor shortlist */}
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold text-text">Vendor shortlist</h3>
-                  <span className="text-xs text-subtle">{shortlisted.length} shortlisted · {candidates.length} candidates</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-subtle">{shortlisted.length} shortlisted · {candidates.length} candidates</span>
+                    {at("research") && (isCoordinator || isManager) && !req.shortlist_approved && (
+                      <form action={aiSuggestVendorsAction}>
+                        <input type="hidden" name="requestId" value={req.id} />
+                        <button type="submit" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                          <Sparkles className="h-3.5 w-3.5" /> Suggest with AI
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 </div>
                 {candidates.length === 0 ? (
                   <p className="mt-2 text-muted">No vendors added yet. Add candidates to research and shortlist.</p>

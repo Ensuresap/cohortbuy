@@ -21,7 +21,8 @@ import {
   updateComment,
   deleteComment,
 } from "@/core/requests/services/requestService";
-import { addScopeItem, updateScopeItem, deleteScopeItem } from "@/core/scope/services/scopeService";
+import { getRequest } from "@/core/requests/services/requestService";
+import { addScopeItem, updateScopeItem, deleteScopeItem, listScope } from "@/core/scope/services/scopeService";
 import { addQuote, updateQuote, deleteQuote } from "@/core/quotes/services/quoteService";
 import {
   addCandidate,
@@ -30,6 +31,7 @@ import {
   setResearch,
   approveShortlist,
 } from "@/core/research/services/researchService";
+import { estimateBenchmark, suggestVendors } from "@/core/research/services/researchAiService";
 import { createPost } from "@/core/posts/services/postService";
 
 async function getCtx() {
@@ -342,6 +344,64 @@ export async function approveShortlistAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
   await approveShortlist(ctx, requestId);
+  revalidatePath(`/requests/${requestId}`);
+}
+
+async function researchContext(ctx: Awaited<ReturnType<typeof getCtx>>, requestId: string) {
+  const reqRes = await getRequest(ctx, { requestId });
+  const r = reqRes.ok ? reqRes.data : null;
+  if (!r) return null;
+  const scopeRes = await listScope(ctx, requestId);
+  const scope = scopeRes.ok ? scopeRes.data : [];
+  const scopeText = scope.map((s) => `- ${s.description}${s.quantity ? ` (${s.quantity})` : ""}`).join("\n") || "(none yet)";
+  const context = [
+    `Project: ${r.title}`,
+    r.category ? `Category: ${r.category}` : "",
+    r.description ? `Description: ${r.description}` : "",
+    r.driver ? `Why now: ${r.driver}` : "",
+    r.cohort?.name ? `Community: ${r.cohort.name}` : "",
+    `Group size aim: ${r.min_size}+ homes`,
+    `Member scope items:\n${scopeText}`,
+  ].filter(Boolean).join("\n");
+  return { request: r, context };
+}
+
+export async function aiEstimateBenchmarkAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const ctxData = await researchContext(ctx, requestId);
+  if (ctxData) {
+    const est = await estimateBenchmark(ctx, { cohortId: ctxData.request.cohort_id, context: ctxData.context });
+    if (est.ok) {
+      await setResearch(ctx, {
+        requestId,
+        low: String(est.data.low),
+        high: String(est.data.high),
+        currency: est.data.currency,
+        notes: est.data.rationale || undefined,
+      });
+    }
+  }
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function aiSuggestVendorsAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const ctxData = await researchContext(ctx, requestId);
+  if (ctxData) {
+    const sug = await suggestVendors(ctx, { cohortId: ctxData.request.cohort_id, context: ctxData.context });
+    if (sug.ok) {
+      for (const v of sug.data.slice(0, 5)) {
+        await addCandidate(ctx, {
+          requestId,
+          name: v.name,
+          notes: `AI-suggested — verify before contacting. ${v.note}`.trim(),
+          source: "ai",
+        });
+      }
+    }
+  }
   revalidatePath(`/requests/${requestId}`);
 }
 
