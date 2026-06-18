@@ -14,6 +14,18 @@ export const AddQuoteInput = z.object({
 });
 export type AddQuoteInput = z.infer<typeof AddQuoteInput>;
 
+export const UpdateQuoteInput = z.object({
+  id: z.string().uuid(),
+  vendorName: z.string().trim().min(1).max(120),
+  amount: z.coerce.number().nonnegative().max(100_000_000),
+  currency: z.string().trim().length(3).default("USD"),
+  timeline: z.string().trim().max(120).optional(),
+  warranty: z.string().trim().max(200).optional(),
+  notes: z.string().trim().max(1000).optional(),
+  kind: QuoteKind.default("indicative"),
+});
+export type UpdateQuoteInput = z.infer<typeof UpdateQuoteInput>;
+
 export interface Quote {
   id: string;
   request_id: string;

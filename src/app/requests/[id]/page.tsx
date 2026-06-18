@@ -45,9 +45,15 @@ import SafetyNote from "@/components/app/SafetyNote";
 import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
 import {
   addScopeAction,
+  updateScopeAction,
+  deleteScopeAction,
   advanceRequestAction,
   addQuoteAction,
+  updateQuoteAction,
+  deleteQuoteAction,
   addCommentAction,
+  updateCommentAction,
+  deleteCommentAction,
   selectQuoteAction,
   recordContractAction,
   setTermsAction,
@@ -155,6 +161,8 @@ export default async function RequestPage({
   const viewedStep: RequestStatus =
     requested && track.includes(requested) ? requested : track.includes(req.status) ? req.status : track[0];
   const viewingCurrent = viewedStep === req.status;
+  const viewedIdx = track.indexOf(viewedStep);
+  const viewingPast = curIdx >= 0 && viewedIdx >= 0 && viewedIdx < curIdx;
 
   const nextStage = curIdx >= 0 && curIdx < track.length - 1 ? track[curIdx + 1] : null;
   const blockedReason = advanceBlockedReason(req.status, {
@@ -330,9 +338,20 @@ export default async function RequestPage({
               </form>
             )}
             {!viewingCurrent && curIdx >= 0 && (
-              <Link href={`/requests/${req.id}?step=${req.status}`} scroll={false} className="shrink-0 text-sm font-medium text-primary hover:underline">
-                Back to current step →
-              </Link>
+              <div className="flex shrink-0 items-center gap-3">
+                {viewingPast && isCoordinator && !isCompleted && (
+                  <form action={advanceRequestAction}>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <input type="hidden" name="status" value={viewedStep} />
+                    <button type="submit" className="rounded-xl border border-border px-3 py-2 text-sm font-semibold text-text hover:bg-surface-2">
+                      Reopen this step
+                    </button>
+                  </form>
+                )}
+                <Link href={`/requests/${req.id}?step=${req.status}`} scroll={false} className="text-sm font-medium text-primary hover:underline">
+                  Back to current step →
+                </Link>
+              </div>
             )}
           </div>
         </section>
@@ -357,15 +376,38 @@ export default async function RequestPage({
                   <p className="mt-2 text-muted">No scope captured yet.</p>
                 ) : (
                   <ul className="mt-3 space-y-2">
-                    {scopeItems.map((s) => (
-                      <li key={s.id} className="rounded-xl border border-border px-4 py-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-text">{s.description}</span>
-                          {s.quantity && <span className="text-xs font-medium text-primary">{s.quantity}</span>}
-                        </div>
-                        {s.notes && <p className="mt-1 text-sm text-muted">{s.notes}</p>}
-                      </li>
-                    ))}
+                    {scopeItems.map((s) => {
+                      const canManage = (s.user_id === user.id || isCoordinator || isManager) && !isCompleted;
+                      return (
+                        <li key={s.id} className="rounded-xl border border-border px-4 py-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-text">{s.description}</span>
+                            {s.quantity && <span className="shrink-0 text-xs font-medium text-primary">{s.quantity}</span>}
+                          </div>
+                          {s.notes && <p className="mt-1 text-sm text-muted">{s.notes}</p>}
+                          {canManage && (
+                            <div className="mt-2 flex items-center gap-3 text-xs">
+                              <details>
+                                <summary className="cursor-pointer text-primary hover:underline">Edit</summary>
+                                <form action={updateScopeAction} className="mt-2 space-y-2 rounded-xl border border-border p-3">
+                                  <input type="hidden" name="requestId" value={req.id} />
+                                  <input type="hidden" name="id" value={s.id} />
+                                  <input name="description" required defaultValue={s.description} className={fieldClass} />
+                                  <input name="quantity" defaultValue={s.quantity ?? ""} placeholder="Quantity" className={fieldClass} />
+                                  <textarea name="notes" rows={2} defaultValue={s.notes ?? ""} placeholder="Notes" className={fieldClass} />
+                                  <Button type="submit" size="md">Save</Button>
+                                </form>
+                              </details>
+                              <form action={deleteScopeAction}>
+                                <input type="hidden" name="requestId" value={req.id} />
+                                <input type="hidden" name="id" value={s.id} />
+                                <button type="submit" className="text-accent hover:underline">Delete</button>
+                              </form>
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
                 {at("scoping") && isParticipant && (
@@ -414,6 +456,7 @@ export default async function RequestPage({
                   <ul className="mt-3 space-y-2">
                     {quotes.map((q, i) => {
                       const selected = q.id === req.selected_quote_id;
+                      const canManageQuote = (q.created_by === user.id || isCoordinator || isManager) && !isCompleted;
                       return (
                         <li key={q.id} className={"rounded-xl border px-4 py-3 " + (selected ? "border-primary bg-primary/5" : "border-border")}>
                           <div className="flex items-center justify-between gap-2">
@@ -440,6 +483,35 @@ export default async function RequestPage({
                               <input type="hidden" name="quoteId" value={q.id} />
                               <button type="submit" className={subtleBtnClass}>Select this quote</button>
                             </form>
+                          )}
+                          {canManageQuote && (
+                            <div className="mt-2 flex items-center gap-3 text-xs">
+                              <details>
+                                <summary className="cursor-pointer text-primary hover:underline">Edit</summary>
+                                <form action={updateQuoteAction} className="mt-2 space-y-2 rounded-xl border border-border p-3">
+                                  <input type="hidden" name="requestId" value={req.id} />
+                                  <input type="hidden" name="id" value={q.id} />
+                                  <input name="vendorName" required defaultValue={q.vendor_name} placeholder="Vendor name" className={fieldClass} />
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <input name="amount" type="number" step="0.01" min="0" required defaultValue={(q.amount_cents / 100).toFixed(2)} className={`${fieldClass} col-span-2`} />
+                                    <input name="currency" defaultValue={q.currency} maxLength={3} className={fieldClass} />
+                                  </div>
+                                  <input name="timeline" defaultValue={q.timeline ?? ""} placeholder="Timeline" className={fieldClass} />
+                                  <input name="warranty" defaultValue={q.warranty ?? ""} placeholder="Warranty" className={fieldClass} />
+                                  <textarea name="notes" rows={2} defaultValue={q.notes ?? ""} placeholder="Notes" className={fieldClass} />
+                                  <select name="kind" defaultValue={q.kind} className={fieldClass}>
+                                    <option value="indicative">Indicative</option>
+                                    <option value="final">Final</option>
+                                  </select>
+                                  <Button type="submit" size="md">Save</Button>
+                                </form>
+                              </details>
+                              <form action={deleteQuoteAction}>
+                                <input type="hidden" name="requestId" value={req.id} />
+                                <input type="hidden" name="id" value={q.id} />
+                                <button type="submit" className="text-accent hover:underline">Delete</button>
+                              </form>
+                            </div>
                           )}
                         </li>
                       );
@@ -634,23 +706,49 @@ export default async function RequestPage({
                 <p className="mt-4 text-muted">No discussion yet — start the conversation.</p>
               ) : (
                 <ul className="mt-4 space-y-4">
-                  {comments.map((c) => (
-                    <li key={c.id} className="flex gap-3">
-                      {c.author_avatar ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={c.author_avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
-                      ) : (
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">{initials(c.author_name)}</div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-sm">
-                          <span className="font-medium text-text">{c.author_name ?? "Member"}</span>
-                          <span className="ml-2 text-xs text-subtle">{timeAgo(c.created_at)}</span>
-                        </p>
-                        <p className="mt-0.5 whitespace-pre-wrap text-text">{c.body}</p>
-                      </div>
-                    </li>
-                  ))}
+                  {comments.map((c) => {
+                    const mineComment = c.user_id === user.id;
+                    const canDelete = mineComment || isCoordinator || isManager;
+                    return (
+                      <li key={c.id} className="flex gap-3">
+                        {c.author_avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={c.author_avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                        ) : (
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">{initials(c.author_name)}</div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm">
+                            <span className="font-medium text-text">{c.author_name ?? "Member"}</span>
+                            <span className="ml-2 text-xs text-subtle">{timeAgo(c.created_at)}</span>
+                          </p>
+                          <p className="mt-0.5 whitespace-pre-wrap text-text">{c.body}</p>
+                          {(mineComment || canDelete) && (
+                            <div className="mt-1 flex items-center gap-3 text-xs">
+                              {mineComment && (
+                                <details>
+                                  <summary className="cursor-pointer text-primary hover:underline">Edit</summary>
+                                  <form action={updateCommentAction} className="mt-2 flex gap-2">
+                                    <input type="hidden" name="requestId" value={req.id} />
+                                    <input type="hidden" name="id" value={c.id} />
+                                    <input name="body" required defaultValue={c.body} className={fieldClass} />
+                                    <Button type="submit" size="md">Save</Button>
+                                  </form>
+                                </details>
+                              )}
+                              {canDelete && (
+                                <form action={deleteCommentAction}>
+                                  <input type="hidden" name="requestId" value={req.id} />
+                                  <input type="hidden" name="id" value={c.id} />
+                                  <button type="submit" className="text-accent hover:underline">Delete</button>
+                                </form>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </section>

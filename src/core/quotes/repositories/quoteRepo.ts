@@ -20,6 +20,27 @@ export function insertQuote(
   });
 }
 
+export function updateQuote(
+  db: SupabaseClient,
+  input: { id: string; vendorName: string; currency: string; timeline?: string; warranty?: string; notes?: string; kind: string },
+  amountCents: number
+) {
+  return db.rpc("update_quote", {
+    p_id: input.id,
+    p_vendor: input.vendorName,
+    p_amount_cents: amountCents,
+    p_currency: input.currency.toUpperCase(),
+    p_timeline: input.timeline ?? "",
+    p_warranty: input.warranty ?? "",
+    p_notes: input.notes ?? "",
+    p_kind: input.kind,
+  });
+}
+
+export function deleteQuote(db: SupabaseClient, id: string) {
+  return db.rpc("delete_quote", { p_id: id });
+}
+
 export function listByRequest(db: SupabaseClient, requestId: string) {
   return db
     .from("quotes")

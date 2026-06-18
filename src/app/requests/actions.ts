@@ -18,9 +18,11 @@ import {
   completeProject,
   assignRole,
   setProjectAmount,
+  updateComment,
+  deleteComment,
 } from "@/core/requests/services/requestService";
-import { addScopeItem } from "@/core/scope/services/scopeService";
-import { addQuote } from "@/core/quotes/services/quoteService";
+import { addScopeItem, updateScopeItem, deleteScopeItem } from "@/core/scope/services/scopeService";
+import { addQuote, updateQuote, deleteQuote } from "@/core/quotes/services/quoteService";
 import { createPost } from "@/core/posts/services/postService";
 
 async function getCtx() {
@@ -213,6 +215,62 @@ export async function completeProjectAction(formData: FormData) {
     requestId,
     note: String(formData.get("note") ?? "") || undefined,
   });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function updateScopeAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await updateScopeItem(ctx, {
+    id: String(formData.get("id") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    quantity: String(formData.get("quantity") ?? "") || undefined,
+    notes: String(formData.get("notes") ?? "") || undefined,
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function deleteScopeAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await deleteScopeItem(ctx, String(formData.get("id") ?? ""));
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function updateQuoteAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await updateQuote(ctx, {
+    id: String(formData.get("id") ?? ""),
+    vendorName: String(formData.get("vendorName") ?? ""),
+    amount: String(formData.get("amount") ?? "0"),
+    currency: String(formData.get("currency") ?? "USD"),
+    timeline: String(formData.get("timeline") ?? "") || undefined,
+    warranty: String(formData.get("warranty") ?? "") || undefined,
+    notes: String(formData.get("notes") ?? "") || undefined,
+    kind: String(formData.get("kind") ?? "indicative"),
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function deleteQuoteAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await deleteQuote(ctx, String(formData.get("id") ?? ""));
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function updateCommentAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await updateComment(ctx, { id: String(formData.get("id") ?? ""), body: String(formData.get("body") ?? "") });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function deleteCommentAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await deleteComment(ctx, String(formData.get("id") ?? ""));
   revalidatePath(`/requests/${requestId}`);
 }
 

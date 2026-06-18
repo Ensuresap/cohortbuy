@@ -66,6 +66,11 @@ export const AddCommentInput = z.object({
 });
 export type AddCommentInput = z.infer<typeof AddCommentInput>;
 
+export const UpdateCommentInput = z.object({
+  id: z.string().uuid(),
+  body: z.string().trim().min(1).max(2000),
+});
+
 export const EditRequestInput = z.object({
   requestId: z.string().uuid(),
   title: z.string().trim().min(2).max(120),

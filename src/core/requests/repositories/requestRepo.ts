@@ -49,6 +49,14 @@ export function commentsFeed(db: SupabaseClient, requestId: string) {
   return db.rpc("request_comments_feed", { p_request: requestId });
 }
 
+export function updateComment(db: SupabaseClient, args: { id: string; body: string }) {
+  return db.rpc("update_comment", { p_id: args.id, p_body: args.body });
+}
+
+export function deleteComment(db: SupabaseClient, id: string) {
+  return db.rpc("delete_comment", { p_id: id });
+}
+
 export function projectTeaser(db: SupabaseClient, requestId: string) {
   return db.rpc("project_teaser", { p_request: requestId });
 }

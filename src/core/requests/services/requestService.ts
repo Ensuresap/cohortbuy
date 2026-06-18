@@ -4,6 +4,7 @@ import {
   RequestIdInput,
   AdvanceStatusInput,
   AddCommentInput,
+  UpdateCommentInput,
   EditRequestInput,
   SelectQuoteInput,
   SetContractInput,
@@ -187,6 +188,30 @@ export async function getProjectTeaserBySlug(ctx: Ctx, slug: string): Promise<Re
   const { data, error } = await repo.projectTeaserBySlug(ctx.db, slug);
   if (error) return err("db_error", error.message);
   return ok((data as ProjectTeaser) ?? null);
+}
+
+export async function updateComment(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = UpdateCommentInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", "Invalid");
+  const { error } = await repo.updateComment(ctx.db, { id: p.data.id, body: p.data.body });
+  if (error) {
+    if (error.message?.includes("forbidden")) return err("forbidden", "You can only edit your own comment");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+export async function deleteComment(ctx: Ctx, id: string): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.deleteComment(ctx.db, id);
+  if (error) {
+    if (error.message?.includes("forbidden")) return err("forbidden", "You can't delete this comment");
+    return err("db_error", error.message);
+  }
+  return ok(true);
 }
 
 export async function listComments(ctx: Ctx, requestId: string): Promise<Result<ProjectComment[]>> {
