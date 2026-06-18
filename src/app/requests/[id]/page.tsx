@@ -14,6 +14,7 @@ import {
   Hammer,
   Lightbulb,
   Home,
+  Lock,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -22,19 +23,20 @@ import {
   listComments,
   listCostShares,
 } from "@/core/requests/services/requestService";
+import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { listScope } from "@/core/scope/services/scopeService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
 import {
   PIPELINE,
   STAGE_LABELS,
+  JOINABLE_STATUSES,
   type RequestStatus,
 } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import SafetyNote from "@/components/app/SafetyNote";
-import EditProjectButton from "@/components/app/EditProjectButton";
+import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
 import {
-  joinRequestAction,
   addScopeAction,
   advanceRequestAction,
   addQuoteAction,
@@ -100,12 +102,13 @@ export default async function RequestPage({ params }: { params: { id: string } }
   const req = reqRes.ok ? reqRes.data : null;
   if (!req) notFound();
 
-  const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes] = await Promise.all([
+  const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes, mineRes] = await Promise.all([
     listParticipants(ctx, { requestId: params.id }),
     listScope(ctx, params.id),
     listQuotes(ctx, params.id),
     listComments(ctx, params.id),
     listCostShares(ctx, params.id),
+    listMyCohorts(ctx),
   ]);
   const participants = partsRes.ok ? partsRes.data : [];
   const scopeItems = scopeRes.ok ? scopeRes.data : [];
@@ -118,6 +121,22 @@ export default async function RequestPage({ params }: { params: { id: string } }
   const vendorCount = new Set(quotes.map((q) => q.vendor_name)).size;
   const hasSelection = !!req.selected_quote_id;
   const isCompleted = req.status === "completed";
+
+  const mine = (mineRes.ok ? mineRes.data : []) as Array<{
+    status: string;
+    access_level: string;
+    cohort: { id: string } | null;
+  }>;
+  const isManager =
+    mine.find((m) => m.cohort?.id === req.cohort_id)?.status === "approved" &&
+    mine.find((m) => m.cohort?.id === req.cohort_id)?.access_level === "manager";
+
+  const joinableStage = JOINABLE_STATUSES.includes(req.status);
+  const canEdit = (isCoordinator || isManager) && !isCompleted;
+  const canJoin = !isParticipant && !req.locked && joinableStage;
+  const canExit = isParticipant && !isCoordinator && !req.locked && !isCompleted;
+  const joinClosedReason =
+    isParticipant || canJoin ? null : req.locked ? "Joining locked" : !joinableStage ? "Joining closed" : null;
   const sharesPaid = shares.filter((s) => s.paid);
   const collectedCents = sharesPaid.reduce((t, s) => t + s.amount_cents, 0);
   const shareCurrency = shares[0]?.currency ?? req.agreed_currency ?? "USD";
@@ -147,32 +166,45 @@ export default async function RequestPage({ params }: { params: { id: string } }
         {/* Hero */}
         <section className="mt-3 overflow-hidden rounded-2xl border border-border bg-surface shadow-soft">
           <div className="relative h-28 bg-gradient-to-br from-brand-forest to-brand-forest-dark sm:h-36">
-            <span className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-              {STAGE_LABELS[req.status]}
-            </span>
+            <div className="absolute right-4 top-4 flex items-center gap-2">
+              {req.locked && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
+                  <Lock className="h-3 w-3" /> Locked
+                </span>
+              )}
+              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+                {STAGE_LABELS[req.status]}
+              </span>
+            </div>
           </div>
           <div className="relative z-10 px-6 pb-6">
             <div className="-mt-10 flex items-end justify-between gap-4">
               <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface shadow-soft ring-4 ring-surface">
                 <Icon className="h-9 w-9 text-primary" />
               </div>
-              <div className="mb-1 flex items-center gap-2">
-                {isCoordinator && !isCompleted && (
-                  <EditProjectButton
-                    requestId={req.id}
-                    title={req.title}
-                    category={req.category}
-                    description={req.description}
-                    driver={req.driver}
-                    targetDate={req.target_date}
-                  />
-                )}
-                {!isParticipant && req.status === "forming" && (
-                  <form action={joinRequestAction}>
-                    <input type="hidden" name="requestId" value={req.id} />
-                    <Button type="submit">Join this project</Button>
-                  </form>
-                )}
+              <div className="mb-1">
+                <ProjectHeaderActions
+                  project={{
+                    id: req.id,
+                    title: req.title,
+                    category: req.category,
+                    description: req.description,
+                    driver: req.driver,
+                    targetDate: req.target_date,
+                    locked: req.locked,
+                    stageLabel: STAGE_LABELS[req.status],
+                    cohortName: req.cohort?.name ?? null,
+                    startedLabel: fmtDate(req.created_at),
+                    targetLabel: req.target_date ? fmtDate(req.target_date) : "Not set",
+                    participants: participants.length,
+                    scopeCount: scopeItems.length,
+                    priceLabel: headlineMoney,
+                  }}
+                  canEdit={canEdit}
+                  canJoin={canJoin}
+                  canExit={canExit}
+                  joinClosedReason={joinClosedReason}
+                />
               </div>
             </div>
             <div className="mt-3">

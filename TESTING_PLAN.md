@@ -145,6 +145,14 @@
 - ◐ (manual) cost-share list shows per-member amounts, paid toggle, collected/agreed total; SafetyNote + off-platform note present.
 - ◐ (e2e) full path: forming → select quote → record contract → generate split → mark paid → complete → Completed banner.
 
+## Project action bar + lock
+- ☐ (integration) `joinServiceRequest` rejects when project locked or past `JOINABLE_STATUSES`; succeeds for a cohort member in an open stage.
+- ☐ (integration) `leaveProject` blocks the coordinator and blocks when locked; otherwise sets participant status='left'.
+- ☐ (integration) `editProject`/`create_service_request` persist `locked`; non-coordinator/non-manager can't edit.
+- ◐ (manual) bar shows Info/Share always; Edit only for coordinator/manager; Join only for non-participant members in an open, unlocked stage; Exit only for non-coordinator participants when unlocked.
+- ◐ (manual) Info modal shows cohort/participants/dates/scope/price/description/driver; Share copies URL; Locked pill appears on hero when locked.
+- ◐ (e2e) coordinator locks in Edit → Join/Exit disappear with a "Joining locked" hint; unlock restores them.
+
 ## Project detail page
 - ☐ (unit) `AddCommentInput` requires non-empty body ≤ 2000 chars.
 - ☐ (integration) RLS: `request_comments` readable by the request's cohort members; insert only own row as approved member.

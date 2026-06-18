@@ -15,6 +15,7 @@ export default function EditProjectButton({
   description,
   driver,
   targetDate,
+  locked,
 }: {
   requestId: string;
   title: string;
@@ -22,6 +23,7 @@ export default function EditProjectButton({
   description: string | null;
   driver: string | null;
   targetDate: string | null;
+  locked: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -52,6 +54,12 @@ export default function EditProjectButton({
               <label className="block text-xs font-medium text-subtle">
                 Target date (optional)
                 <input name="targetDate" type="date" defaultValue={targetDate ?? ""} className={`${fieldClass} mt-1`} />
+              </label>
+              <label className="flex items-start gap-2 rounded-xl border border-border px-3 py-2.5 text-sm text-text">
+                <input name="locked" type="checkbox" defaultChecked={locked} className="mt-0.5 h-4 w-4 accent-[color:var(--color-primary)]" />
+                <span>
+                  Lock the group <span className="text-subtle">— prevents anyone joining or leaving</span>
+                </span>
               </label>
               <div className="flex justify-end gap-2 pt-1">
                 <button

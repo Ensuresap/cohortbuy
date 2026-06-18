@@ -46,6 +46,12 @@ export default function AddProjectButton({
                 Target date (optional)
                 <input name="targetDate" type="date" className={`${fieldClass} mt-1`} />
               </label>
+              <label className="flex items-start gap-2 rounded-xl border border-border px-3 py-2.5 text-sm text-text">
+                <input name="locked" type="checkbox" className="mt-0.5 h-4 w-4 accent-[color:var(--color-primary)]" />
+                <span>
+                  Lock the group <span className="text-subtle">— prevents anyone joining or leaving (you can change this later)</span>
+                </span>
+              </label>
               <div className="flex justify-end gap-2 pt-1">
                 <button
                   type="button"

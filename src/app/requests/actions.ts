@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   createServiceRequest,
   joinServiceRequest,
+  leaveProject,
   advanceStatus,
   addComment,
   editProject,
@@ -37,6 +38,7 @@ export async function createRequestAction(formData: FormData) {
     description: String(formData.get("description") ?? "") || undefined,
     driver: String(formData.get("driver") ?? "") || undefined,
     targetDate: String(formData.get("targetDate") ?? "") || undefined,
+    locked: formData.get("locked") === "on" || formData.get("locked") === "true",
   });
   if (!res.ok) {
     redirect(`/${handle}?error=${encodeURIComponent(res.error.message)}`);
@@ -54,6 +56,7 @@ export async function updateProjectAction(formData: FormData) {
     description: String(formData.get("description") ?? "") || undefined,
     driver: String(formData.get("driver") ?? "") || undefined,
     targetDate: String(formData.get("targetDate") ?? "") || undefined,
+    locked: formData.get("locked") === "on" || formData.get("locked") === "true",
   });
   revalidatePath(`/requests/${requestId}`);
 }
@@ -62,6 +65,13 @@ export async function joinRequestAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
   await joinServiceRequest(ctx, { requestId });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function leaveProjectAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await leaveProject(ctx, { requestId });
   revalidatePath(`/requests/${requestId}`);
 }
 

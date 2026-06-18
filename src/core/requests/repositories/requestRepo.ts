@@ -9,6 +9,7 @@ export function createRequest(db: SupabaseClient, input: CreateRequestInput) {
     p_description: input.description ?? null,
     p_driver: input.driver ?? null,
     p_target: input.targetDate || null,
+    p_locked: input.locked ?? false,
     p_min_size: input.minSize,
   });
 }
@@ -97,7 +98,7 @@ export function joinRequest(
 
 export function updateProject(
   db: SupabaseClient,
-  args: { requestId: string; title: string; category: string | null; description: string | null; driver: string | null; targetDate: string | null }
+  args: { requestId: string; title: string; category: string | null; description: string | null; driver: string | null; targetDate: string | null; locked: boolean }
 ) {
   return db
     .from("service_requests")
@@ -107,9 +108,20 @@ export function updateProject(
       description: args.description,
       driver: args.driver,
       target_date: args.targetDate,
+      locked: args.locked,
       last_activity_at: new Date().toISOString(),
     })
     .eq("id", args.requestId)
+    .select();
+}
+
+/** Mark the signed-in user's participation as left (RLS: own row only). */
+export function leaveRequest(db: SupabaseClient, args: { requestId: string; userId: string }) {
+  return db
+    .from("request_participants")
+    .update({ status: "left" })
+    .eq("request_id", args.requestId)
+    .eq("user_id", args.userId)
     .select();
 }
 

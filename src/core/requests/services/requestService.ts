@@ -9,6 +9,7 @@ import {
   SetContractInput,
   SetSharePaidInput,
   CompleteProjectInput,
+  JOINABLE_STATUSES,
   type ServiceRequest,
   type Participant,
   type ProjectComment,
@@ -78,6 +79,7 @@ export async function editProject(ctx: Ctx, raw: unknown): Promise<Result<true>>
     description: p.data.description ?? null,
     driver: p.data.driver ?? null,
     targetDate: p.data.targetDate || null,
+    locked: p.data.locked ?? false,
   });
   if (error) return err("db_error", error.message);
   if (!data || data.length === 0)
@@ -91,6 +93,15 @@ export async function joinServiceRequest(ctx: Ctx, raw: unknown): Promise<Result
   const parsed = RequestIdInput.safeParse(raw);
   if (!parsed.success) return err("invalid_input", "Invalid request id");
 
+  // Gate joining: project must be open (not locked) and still in an early stage.
+  const { data: reqRow, error: getErr } = await repo.getById(ctx.db, parsed.data.requestId);
+  if (getErr) return err("db_error", getErr.message);
+  const project = reqRow as ServiceRequest | null;
+  if (!project) return err("not_found", "Project not found");
+  if (project.locked) return err("locked", "This project is locked — joining is closed");
+  if (!JOINABLE_STATUSES.includes(project.status))
+    return err("closed", "This project has moved past the joining stage");
+
   const { error } = await repo.joinRequest(ctx.db, {
     requestId: parsed.data.requestId,
     userId: ctx.actor.id,
@@ -99,6 +110,29 @@ export async function joinServiceRequest(ctx: Ctx, raw: unknown): Promise<Result
     if (error.code === "23505") return err("already_joined", "You're already in this project");
     return err("db_error", error.message);
   }
+  return ok(true);
+}
+
+/** Leave a project (non-coordinator participant; blocked when the project is locked). */
+export async function leaveProject(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const parsed = RequestIdInput.safeParse(raw);
+  if (!parsed.success) return err("invalid_input", "Invalid request id");
+
+  const { data: reqRow, error: getErr } = await repo.getById(ctx.db, parsed.data.requestId);
+  if (getErr) return err("db_error", getErr.message);
+  const project = reqRow as ServiceRequest | null;
+  if (!project) return err("not_found", "Project not found");
+  if (project.created_by === ctx.actor.id)
+    return err("forbidden", "The coordinator can't leave their own project");
+  if (project.locked) return err("locked", "This project is locked — leaving is closed");
+
+  const { error } = await repo.leaveRequest(ctx.db, {
+    requestId: parsed.data.requestId,
+    userId: ctx.actor.id,
+  });
+  if (error) return err("db_error", error.message);
   return ok(true);
 }
 

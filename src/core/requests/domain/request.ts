@@ -25,6 +25,9 @@ export const PIPELINE: RequestStatus[] = [
   "contracting", "funding", "in_progress", "completed",
 ];
 
+/** Stages during which new members may still join (before a decision is made). */
+export const JOINABLE_STATUSES: RequestStatus[] = ["forming", "scoping", "research", "rfq"];
+
 export const CreateRequestInput = z.object({
   cohortId: z.string().uuid(),
   title: z.string().trim().min(2).max(120),
@@ -32,6 +35,7 @@ export const CreateRequestInput = z.object({
   description: z.string().trim().max(2000).optional(),
   driver: z.string().trim().max(1000).optional(),
   targetDate: z.string().trim().max(20).optional(),
+  locked: z.boolean().optional(),
   minSize: z.number().int().min(1).max(100).default(2),
 });
 export type CreateRequestInput = z.infer<typeof CreateRequestInput>;
@@ -49,6 +53,7 @@ export const EditRequestInput = z.object({
   description: z.string().trim().max(2000).optional(),
   driver: z.string().trim().max(1000).optional(),
   targetDate: z.string().trim().max(20).optional(),
+  locked: z.boolean().optional(),
 });
 export type EditRequestInput = z.infer<typeof EditRequestInput>;
 
@@ -79,6 +84,7 @@ export interface ServiceRequest {
   description: string | null;
   driver: string | null;
   target_date: string | null;
+  locked: boolean;
   status: RequestStatus;
   min_size: number;
   last_activity_at: string;
