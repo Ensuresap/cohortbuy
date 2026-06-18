@@ -85,6 +85,9 @@ export async function editProject(ctx: Ctx, raw: unknown): Promise<Result<true>>
     description: p.data.description ?? null,
     driver: p.data.driver ?? null,
     targetDate: p.data.targetDate || null,
+    serviceScope: p.data.serviceScope ?? "service",
+    splitMethod: p.data.splitMethod ?? "even",
+    minSize: p.data.minSize ?? 2,
     locked: p.data.locked ?? false,
   });
   if (error) return err("db_error", error.message);

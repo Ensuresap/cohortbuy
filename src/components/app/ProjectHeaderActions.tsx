@@ -26,6 +26,9 @@ export interface ProjectSummary {
   description: string | null;
   driver: string | null;
   targetDate: string | null;
+  serviceScope: "service" | "equipment" | "both";
+  splitMethod: "even" | "by_quantity" | "by_usage" | "custom";
+  minSize: number;
   locked: boolean;
   stageLabel: string;
   cohortId: string;
@@ -131,6 +134,9 @@ export default function ProjectHeaderActions({
           description={project.description}
           driver={project.driver}
           targetDate={project.targetDate}
+          serviceScope={project.serviceScope}
+          splitMethod={project.splitMethod}
+          minSize={project.minSize}
           locked={project.locked}
         />
       )}

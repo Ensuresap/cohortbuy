@@ -129,7 +129,18 @@ export function joinRequest(
 
 export function updateProject(
   db: SupabaseClient,
-  args: { requestId: string; title: string; category: string | null; description: string | null; driver: string | null; targetDate: string | null; locked: boolean }
+  args: {
+    requestId: string;
+    title: string;
+    category: string | null;
+    description: string | null;
+    driver: string | null;
+    targetDate: string | null;
+    serviceScope: string;
+    splitMethod: string;
+    minSize: number;
+    locked: boolean;
+  }
 ) {
   return db
     .from("service_requests")
@@ -139,6 +150,9 @@ export function updateProject(
       description: args.description,
       driver: args.driver,
       target_date: args.targetDate,
+      service_scope: args.serviceScope,
+      split_method: args.splitMethod,
+      min_size: args.minSize,
       locked: args.locked,
       last_activity_at: new Date().toISOString(),
     })

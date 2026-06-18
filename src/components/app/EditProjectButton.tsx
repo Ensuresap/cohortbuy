@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import IconButton from "@/components/ui/IconButton";
 import Modal from "@/components/ui/Modal";
-import { Field, Textarea } from "@/components/ui/Field";
+import { Field, Textarea, Select } from "@/components/ui/Field";
 import { updateProjectAction } from "@/app/requests/actions";
 
 export default function EditProjectButton({
@@ -16,6 +16,9 @@ export default function EditProjectButton({
   description,
   driver,
   targetDate,
+  serviceScope,
+  splitMethod,
+  minSize,
   locked,
 }: {
   requestId: string;
@@ -24,6 +27,9 @@ export default function EditProjectButton({
   description: string | null;
   driver: string | null;
   targetDate: string | null;
+  serviceScope: "service" | "equipment" | "both";
+  splitMethod: "even" | "by_quantity" | "by_usage" | "custom";
+  minSize: number;
   locked: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -48,8 +54,28 @@ export default function EditProjectButton({
             <Field label="Why now — the driver" htmlFor="driver" optional>
               <Textarea id="driver" name="driver" rows={2} defaultValue={driver ?? ""} placeholder="The motivation behind it" />
             </Field>
-            <Field label="Target date" htmlFor="targetDate" optional>
-              <Input id="targetDate" name="targetDate" type="date" defaultValue={targetDate ?? ""} />
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Target date" htmlFor="targetDate" optional>
+                <Input id="targetDate" name="targetDate" type="date" defaultValue={targetDate ?? ""} />
+              </Field>
+              <Field label="Min group size" htmlFor="minSize">
+                <Input id="minSize" name="minSize" type="number" min={1} max={100} defaultValue={minSize} />
+              </Field>
+            </div>
+            <Field label="What's included" htmlFor="serviceScope">
+              <Select id="serviceScope" name="serviceScope" defaultValue={serviceScope}>
+                <option value="service">Service / labor only</option>
+                <option value="equipment">Equipment / product only</option>
+                <option value="both">Equipment + installation</option>
+              </Select>
+            </Field>
+            <Field label="How costs split" htmlFor="splitMethod">
+              <Select id="splitMethod" name="splitMethod" defaultValue={splitMethod}>
+                <option value="even">Even split (equal shares)</option>
+                <option value="by_quantity">By quantity (e.g. footage / units)</option>
+                <option value="by_usage">By usage / consumption</option>
+                <option value="custom">Custom (you set it)</option>
+              </Select>
             </Field>
             <label className="flex items-start gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm text-text">
               <input name="locked" type="checkbox" defaultChecked={locked} className="mt-0.5 h-4 w-4 accent-primary" />

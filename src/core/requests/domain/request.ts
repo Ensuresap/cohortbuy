@@ -78,6 +78,9 @@ export const EditRequestInput = z.object({
   description: z.string().trim().max(2000).optional(),
   driver: z.string().trim().max(1000).optional(),
   targetDate: z.string().trim().max(20).optional(),
+  serviceScope: z.enum(["service", "equipment", "both"]).optional(),
+  splitMethod: z.enum(["even", "by_quantity", "by_usage", "custom"]).optional(),
+  minSize: z.number().int().min(1).max(100).optional(),
   locked: z.boolean().optional(),
 });
 export type EditRequestInput = z.infer<typeof EditRequestInput>;

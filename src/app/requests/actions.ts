@@ -79,6 +79,18 @@ export async function updateProjectAction(formData: FormData) {
     description: String(formData.get("description") ?? "") || undefined,
     driver: String(formData.get("driver") ?? "") || undefined,
     targetDate: String(formData.get("targetDate") ?? "") || undefined,
+    serviceScope: (String(formData.get("serviceScope") ?? "") || undefined) as
+      | "service"
+      | "equipment"
+      | "both"
+      | undefined,
+    splitMethod: (String(formData.get("splitMethod") ?? "") || undefined) as
+      | "even"
+      | "by_quantity"
+      | "by_usage"
+      | "custom"
+      | undefined,
+    minSize: Number(formData.get("minSize")) || undefined,
     locked: formData.get("locked") === "on" || formData.get("locked") === "true",
   });
   revalidatePath(`/requests/${requestId}`);
