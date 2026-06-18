@@ -44,7 +44,7 @@ export default function ProjectHeaderActions({
 
   async function share() {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(`${window.location.origin}/invite/${project.id}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

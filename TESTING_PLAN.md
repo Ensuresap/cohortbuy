@@ -150,6 +150,12 @@
 - ☐ (unit) defaults are `individual` + `individual_direct` on new projects.
 - ◐ (manual) Decision & contract shows current structure/payment labels; coordinator/manager form sets them only after a quote is selected; escrow labeled "coming later".
 
+## Project invite & recruitment
+- ☐ (integration) `project_teaser` returns light fields for anon + non-member; executable by anon/authenticated; no scope/quotes leaked.
+- ◐ (manual) `/invite/<id>`: member → redirected to project; logged-in non-member → teaser + "Join {cohort}"; logged-out → teaser + "Sign in to join".
+- ◐ (manual) Invite panel: copy link, Share to WhatsApp (wa.me), Announce to cohort (managers only) creates a feed post with the link.
+- ◐ (e2e) share invite → non-member joins cohort → returns and joins the project.
+
 ## Project action bar + lock
 - ☐ (integration) `joinServiceRequest` rejects when project locked or past `JOINABLE_STATUSES`; succeeds for a cohort member in an open stage.
 - ☐ (integration) `leaveProject` blocks the coordinator and blocks when locked; otherwise sets participant status='left'.

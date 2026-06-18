@@ -77,6 +77,24 @@ export const EditRequestInput = z.object({
 });
 export type EditRequestInput = z.infer<typeof EditRequestInput>;
 
+export interface ProjectTeaser {
+  id: string;
+  title: string;
+  category: string | null;
+  description: string | null;
+  status: RequestStatus;
+  locked: boolean;
+  join_deadline: string | null;
+  min_size: number;
+  project_type: "service" | "group_buy";
+  cohort_id: string;
+  cohort_handle: string;
+  cohort_name: string;
+  cohort_visibility: "public" | "private";
+  coordinator_name: string | null;
+  participants: number;
+}
+
 export interface ProjectComment {
   id: string;
   body: string;

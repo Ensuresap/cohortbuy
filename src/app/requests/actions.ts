@@ -19,6 +19,7 @@ import {
 } from "@/core/requests/services/requestService";
 import { addScopeItem } from "@/core/scope/services/scopeService";
 import { addQuote } from "@/core/quotes/services/quoteService";
+import { createPost } from "@/core/posts/services/postService";
 
 async function getCtx() {
   const supabase = createClient();
@@ -83,6 +84,19 @@ export async function joinRequestAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
   await joinServiceRequest(ctx, { requestId });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function announceProjectAction(formData: FormData) {
+  const ctx = await getCtx();
+  const cohortId = String(formData.get("cohortId") ?? "");
+  const requestId = String(formData.get("requestId") ?? "");
+  const handle = String(formData.get("handle") ?? "");
+  const title = String(formData.get("title") ?? "a new project");
+  const url = String(formData.get("url") ?? `/requests/${requestId}`);
+  const body = `📣 New project: ${title}\n\nWe're pooling neighbors to get a better deal together — tap to see it and join:\n${url}`;
+  await createPost(ctx, { cohortId, body, visibility: "members" });
+  revalidatePath(`/${handle}`);
   revalidatePath(`/requests/${requestId}`);
 }
 

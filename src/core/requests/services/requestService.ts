@@ -14,6 +14,7 @@ import {
   type ServiceRequest,
   type Participant,
   type ProjectComment,
+  type ProjectTeaser,
   type CostShare,
 } from "../domain/request";
 import * as repo from "../repositories/requestRepo";
@@ -167,6 +168,14 @@ export async function addComment(ctx: Ctx, raw: unknown): Promise<Result<true>> 
   });
   if (error) return err("db_error", error.message);
   return ok(true);
+}
+
+/** Public light teaser for an invite link (works for non-members / logged-out). */
+export async function getProjectTeaser(ctx: Ctx, requestId: string): Promise<Result<ProjectTeaser | null>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.projectTeaser(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  return ok((data as ProjectTeaser) ?? null);
 }
 
 export async function listComments(ctx: Ctx, requestId: string): Promise<Result<ProjectComment[]>> {
