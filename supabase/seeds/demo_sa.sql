@@ -222,5 +222,13 @@ begin
   insert into public.request_comments (request_id, user_id, body) values
    (v_p, v_maya, 'Looks fantastic — thanks Tom for running this!');
 
+  -- target dates (relative to today) for the hero / stat strip
+  update public.service_requests set target_date = current_date + 28 where cohort_id = v_cohort and title = '[DEMO] Block gutter cleaning';
+  update public.service_requests set target_date = current_date + 21 where cohort_id = v_cohort and title = '[DEMO] Backyard fence replacement';
+  update public.service_requests set target_date = current_date + 45 where cohort_id = v_cohort and title = '[DEMO] Rooftop solar group install';
+  update public.service_requests set target_date = current_date + 14 where cohort_id = v_cohort and title = '[DEMO] Driveway resealing';
+  update public.service_requests set target_date = current_date + 9  where cohort_id = v_cohort and title = '[DEMO] Street tree trimming';
+  update public.service_requests set target_date = current_date - 3  where cohort_id = v_cohort and title = '[DEMO] Holiday lighting install';
+
   raise notice 'Demo seed complete for cohort % (owner/coordinator %).', v_cohort, v_owner;
 end $$;

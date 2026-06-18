@@ -14,12 +14,14 @@ export default function EditProjectButton({
   category,
   description,
   driver,
+  targetDate,
 }: {
   requestId: string;
   title: string;
   category: string | null;
   description: string | null;
   driver: string | null;
+  targetDate: string | null;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -47,6 +49,10 @@ export default function EditProjectButton({
               <input name="category" defaultValue={category ?? ""} placeholder="Category (e.g. Fencing)" className={fieldClass} />
               <textarea name="description" rows={3} defaultValue={description ?? ""} placeholder="What is this project? What needs doing?" className={fieldClass} />
               <textarea name="driver" rows={2} defaultValue={driver ?? ""} placeholder="Why now? The driver / motivation" className={fieldClass} />
+              <label className="block text-xs font-medium text-subtle">
+                Target date (optional)
+                <input name="targetDate" type="date" defaultValue={targetDate ?? ""} className={`${fieldClass} mt-1`} />
+              </label>
               <div className="flex justify-end gap-2 pt-1">
                 <button
                   type="button"

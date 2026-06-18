@@ -36,6 +36,7 @@ export async function createRequestAction(formData: FormData) {
     category: String(formData.get("category") ?? "") || undefined,
     description: String(formData.get("description") ?? "") || undefined,
     driver: String(formData.get("driver") ?? "") || undefined,
+    targetDate: String(formData.get("targetDate") ?? "") || undefined,
   });
   if (!res.ok) {
     redirect(`/${handle}?error=${encodeURIComponent(res.error.message)}`);
@@ -52,6 +53,7 @@ export async function updateProjectAction(formData: FormData) {
     category: String(formData.get("category") ?? "") || undefined,
     description: String(formData.get("description") ?? "") || undefined,
     driver: String(formData.get("driver") ?? "") || undefined,
+    targetDate: String(formData.get("targetDate") ?? "") || undefined,
   });
   revalidatePath(`/requests/${requestId}`);
 }

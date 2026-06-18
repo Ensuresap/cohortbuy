@@ -31,6 +31,7 @@ export const CreateRequestInput = z.object({
   category: z.string().trim().max(60).optional(),
   description: z.string().trim().max(2000).optional(),
   driver: z.string().trim().max(1000).optional(),
+  targetDate: z.string().trim().max(20).optional(),
   minSize: z.number().int().min(1).max(100).default(2),
 });
 export type CreateRequestInput = z.infer<typeof CreateRequestInput>;
@@ -47,6 +48,7 @@ export const EditRequestInput = z.object({
   category: z.string().trim().max(60).optional(),
   description: z.string().trim().max(2000).optional(),
   driver: z.string().trim().max(1000).optional(),
+  targetDate: z.string().trim().max(20).optional(),
 });
 export type EditRequestInput = z.infer<typeof EditRequestInput>;
 
@@ -76,6 +78,7 @@ export interface ServiceRequest {
   category: string | null;
   description: string | null;
   driver: string | null;
+  target_date: string | null;
   status: RequestStatus;
   min_size: number;
   last_activity_at: string;

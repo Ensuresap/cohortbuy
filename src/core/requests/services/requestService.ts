@@ -77,6 +77,7 @@ export async function editProject(ctx: Ctx, raw: unknown): Promise<Result<true>>
     category: p.data.category ?? null,
     description: p.data.description ?? null,
     driver: p.data.driver ?? null,
+    targetDate: p.data.targetDate || null,
   });
   if (error) return err("db_error", error.message);
   if (!data || data.length === 0)

@@ -8,6 +8,7 @@ export function createRequest(db: SupabaseClient, input: CreateRequestInput) {
     p_category: input.category ?? null,
     p_description: input.description ?? null,
     p_driver: input.driver ?? null,
+    p_target: input.targetDate || null,
     p_min_size: input.minSize,
   });
 }
@@ -96,7 +97,7 @@ export function joinRequest(
 
 export function updateProject(
   db: SupabaseClient,
-  args: { requestId: string; title: string; category: string | null; description: string | null; driver: string | null }
+  args: { requestId: string; title: string; category: string | null; description: string | null; driver: string | null; targetDate: string | null }
 ) {
   return db
     .from("service_requests")
@@ -105,6 +106,7 @@ export function updateProject(
       category: args.category,
       description: args.description,
       driver: args.driver,
+      target_date: args.targetDate,
       last_activity_at: new Date().toISOString(),
     })
     .eq("id", args.requestId)

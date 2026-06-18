@@ -1,7 +1,21 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { CheckCircle2, ExternalLink } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  CalendarDays,
+  Target,
+  Users,
+  Wrench,
+  Fence,
+  Sun,
+  Trees,
+  Hammer,
+  Lightbulb,
+  Home,
+  type LucideIcon,
+} from "lucide-react";
 import {
   getRequest,
   listParticipants,
@@ -42,8 +56,25 @@ function fmt(cents: number, currency: string) {
     return `${(cents / 100).toFixed(2)} ${currency}`;
   }
 }
-function monthYear(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function targetHint(iso: string): { label: string; overdue: boolean } | null {
+  const days = Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000);
+  if (Number.isNaN(days)) return null;
+  if (days < 0) return { label: `${Math.abs(days)}d overdue`, overdue: true };
+  if (days === 0) return { label: "today", overdue: false };
+  return { label: `in ${days}d`, overdue: false };
+}
+function categoryIcon(category: string | null): LucideIcon {
+  const c = (category ?? "").toLowerCase();
+  if (/(fenc)/.test(c)) return Fence;
+  if (/(solar|energy|panel)/.test(c)) return Sun;
+  if (/(tree|landscap|garden)/.test(c)) return Trees;
+  if (/(pav|driveway|concret|seal)/.test(c)) return Hammer;
+  if (/(light|season|holiday)/.test(c)) return Lightbulb;
+  if (/(home|gutter|roof|maintenance|clean)/.test(c)) return Home;
+  return Wrench;
 }
 function timeAgo(iso: string) {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -95,49 +126,92 @@ export default async function RequestPage({ params }: { params: { id: string } }
   const nextStatus =
     currentIndex >= 0 && currentIndex < PIPELINE.length - 1 ? PIPELINE[currentIndex + 1] : null;
 
+  const Icon = categoryIcon(req.category);
+  const bestQuote = quotes.length ? quotes[0] : null;
+  const headlineMoney =
+    hasSelection && req.agreed_amount_cents != null
+      ? fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")
+      : bestQuote
+        ? fmt(bestQuote.amount_cents, bestQuote.currency)
+        : "—";
+
   return (
     <AppShell>
-      <main className="mx-auto w-full max-w-4xl px-6 py-8">
+      <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
         {req.cohort && (
           <Link href={`/${req.cohort.handle}`} className="text-sm text-subtle hover:text-primary">
             ← {req.cohort.name}
           </Link>
         )}
 
-        {/* Header */}
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="font-display text-3xl font-semibold text-text">{req.title}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                {STAGE_LABELS[req.status]}
-              </span>
-              {req.category && (
-                <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-text">{req.category}</span>
-              )}
-              <span className="text-subtle">
-                Started {monthYear(req.created_at)} · {participants.length} participant
-                {participants.length === 1 ? "" : "s"}
-              </span>
+        {/* Hero */}
+        <section className="mt-3 overflow-hidden rounded-2xl border border-border bg-surface shadow-soft">
+          <div className="relative h-28 bg-gradient-to-br from-brand-forest to-brand-forest-dark sm:h-36">
+            <span className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+              {STAGE_LABELS[req.status]}
+            </span>
+          </div>
+          <div className="relative z-10 px-6 pb-6">
+            <div className="-mt-10 flex items-end justify-between gap-4">
+              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface shadow-soft ring-4 ring-surface">
+                <Icon className="h-9 w-9 text-primary" />
+              </div>
+              <div className="mb-1 flex items-center gap-2">
+                {isCoordinator && !isCompleted && (
+                  <EditProjectButton
+                    requestId={req.id}
+                    title={req.title}
+                    category={req.category}
+                    description={req.description}
+                    driver={req.driver}
+                    targetDate={req.target_date}
+                  />
+                )}
+                {!isParticipant && req.status === "forming" && (
+                  <form action={joinRequestAction}>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <Button type="submit">Join this project</Button>
+                  </form>
+                )}
+              </div>
+            </div>
+            <div className="mt-3">
+              <h1 className="font-display text-2xl font-semibold text-text sm:text-3xl">{req.title}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                {req.category && (
+                  <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-text">{req.category}</span>
+                )}
+                {req.cohort && <span className="text-subtle">in {req.cohort.name}</span>}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted">
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays className="h-4 w-4 text-subtle" /> Started {fmtDate(req.created_at)}
+                </span>
+                {req.target_date && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Target className="h-4 w-4 text-subtle" /> Target {fmtDate(req.target_date)}
+                    {!isCompleted && targetHint(req.target_date) && (
+                      <span className={targetHint(req.target_date)!.overdue ? "text-accent" : "text-subtle"}>
+                        ({targetHint(req.target_date)!.label})
+                      </span>
+                    )}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-subtle" /> {participants.length} participant
+                  {participants.length === 1 ? "" : "s"}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {isCoordinator && !isCompleted && (
-              <EditProjectButton
-                requestId={req.id}
-                title={req.title}
-                category={req.category}
-                description={req.description}
-                driver={req.driver}
-              />
-            )}
-            {!isParticipant && req.status === "forming" && (
-              <form action={joinRequestAction}>
-                <input type="hidden" name="requestId" value={req.id} />
-                <Button type="submit">Join this project</Button>
-              </form>
-            )}
-          </div>
+        </section>
+
+        {/* Stat strip */}
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Stage" value={STAGE_LABELS[req.status]} />
+          <Stat label="Participants" value={String(participants.length)} />
+          <Stat label="Target date" value={req.target_date ? fmtDate(req.target_date) : "Not set"} />
+          <Stat label={hasSelection ? "Agreed price" : "Best quote"} value={headlineMoney} />
         </div>
 
         {isCompleted && (
@@ -483,7 +557,8 @@ export default async function RequestPage({ params }: { params: { id: string } }
               <h2 className="text-sm font-medium text-muted">Details</h2>
               <dl className="mt-3 space-y-3 text-sm">
                 <Row label="Status" value={STAGE_LABELS[req.status]} />
-                <Row label="Started" value={new Date(req.created_at).toLocaleDateString("en-US", { dateStyle: "medium" })} />
+                <Row label="Started" value={fmtDate(req.created_at)} />
+                <Row label="Target" value={req.target_date ? fmtDate(req.target_date) : "Not set"} />
                 <Row label="Min group" value={`${req.min_size} members`} />
                 <Row label="Participants" value={String(participants.length)} />
                 {req.cohort && <Row label="Cohort" value={req.cohort.name} />}
@@ -508,6 +583,15 @@ export default async function RequestPage({ params }: { params: { id: string } }
         </div>
       </main>
     </AppShell>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-soft">
+      <p className="text-xs text-subtle">{label}</p>
+      <p className="mt-1 truncate font-display text-lg font-semibold text-text">{value}</p>
+    </div>
   );
 }
 
