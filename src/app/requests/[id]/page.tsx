@@ -16,6 +16,7 @@ import {
   Home,
   Lock,
   ChevronRight,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -339,18 +340,18 @@ export default async function RequestPage({
             )}
             {!viewingCurrent && curIdx >= 0 && (
               <div className="flex shrink-0 items-center gap-3">
+                <Link href={`/requests/${req.id}?step=${req.status}`} scroll={false} className="text-sm font-medium text-primary hover:underline">
+                  Back to current step →
+                </Link>
                 {viewingPast && isCoordinator && !isCompleted && (
                   <form action={advanceRequestAction}>
                     <input type="hidden" name="requestId" value={req.id} />
                     <input type="hidden" name="status" value={viewedStep} />
-                    <button type="submit" className="rounded-xl border border-border px-3 py-2 text-sm font-semibold text-text hover:bg-surface-2">
-                      Reopen this step
-                    </button>
+                    <Button type="submit" size="md" variant="secondary" className="gap-1.5">
+                      <RotateCcw className="h-4 w-4" /> Reopen this step
+                    </Button>
                   </form>
                 )}
-                <Link href={`/requests/${req.id}?step=${req.status}`} scroll={false} className="text-sm font-medium text-primary hover:underline">
-                  Back to current step →
-                </Link>
               </div>
             )}
           </div>
