@@ -322,37 +322,24 @@ export default async function RequestPage({
           </nav>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-            <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-wide text-primary">
-                {viewingCurrent ? "Current step" : "Viewing"} · {STAGE_LABELS[viewedStep]}
-              </p>
-              <p className="mt-0.5 text-sm text-muted">{STAGE_GUIDE[viewedStep]}</p>
-            </div>
+            <p className="min-w-0 text-sm text-muted">{STAGE_GUIDE[viewedStep]}</p>
             {viewingCurrent && isCoordinator && nextStage && !isCompleted && (
-              <form action={advanceRequestAction} className="shrink-0 text-right">
+              <form action={advanceRequestAction} className="shrink-0">
                 <input type="hidden" name="requestId" value={req.id} />
                 <input type="hidden" name="status" value={nextStage} />
-                <Button type="submit" size="md" disabled={!!blockedReason} className="gap-1.5">
+                <Button type="submit" size="md" disabled={!!blockedReason} className="gap-1.5" title={blockedReason ?? undefined}>
                   Move to {STAGE_LABELS[nextStage]} <ChevronRight className="h-4 w-4" />
                 </Button>
-                {blockedReason && <p className="mt-1 max-w-[16rem] text-xs text-subtle">{blockedReason}</p>}
               </form>
             )}
-            {!viewingCurrent && curIdx >= 0 && (
-              <div className="flex shrink-0 items-center gap-3">
-                <Link href={`/requests/${req.id}?step=${req.status}`} scroll={false} className="text-sm font-medium text-primary hover:underline">
-                  Back to current step →
-                </Link>
-                {viewingPast && isCoordinator && !isCompleted && (
-                  <form action={advanceRequestAction}>
-                    <input type="hidden" name="requestId" value={req.id} />
-                    <input type="hidden" name="status" value={viewedStep} />
-                    <Button type="submit" size="md" variant="secondary" className="gap-1.5">
-                      <RotateCcw className="h-4 w-4" /> Reopen this step
-                    </Button>
-                  </form>
-                )}
-              </div>
+            {viewingPast && isCoordinator && !isCompleted && (
+              <form action={advanceRequestAction} className="shrink-0">
+                <input type="hidden" name="requestId" value={req.id} />
+                <input type="hidden" name="status" value={viewedStep} />
+                <Button type="submit" size="md" variant="secondary" className="gap-1.5">
+                  <RotateCcw className="h-4 w-4" /> Reopen this step
+                </Button>
+              </form>
             )}
           </div>
         </section>
@@ -364,8 +351,7 @@ export default async function RequestPage({
             {viewedStep === "forming" && (
               <Panel title="Gathering the group">
                 <p className="mt-2 text-muted">
-                  {participants.length} of {req.min_size}+ neighbors so far. Share the invite link (the Share button up top)
-                  to bring more in — the bigger the group, the better the price.
+                  {participants.length} of {req.min_size}+ neighbors so far. Invite more with the Share button up top.
                 </p>
               </Panel>
             )}
