@@ -16,6 +16,8 @@ import {
   generateCostShares,
   setSharePaid,
   completeProject,
+  assignRole,
+  setProjectAmount,
 } from "@/core/requests/services/requestService";
 import { addScopeItem } from "@/core/scope/services/scopeService";
 import { addQuote } from "@/core/quotes/services/quoteService";
@@ -97,6 +99,28 @@ export async function announceProjectAction(formData: FormData) {
   const body = `📣 New project: ${title}\n\nA few of us are teaming up to get a better group price — the more neighbors who join, the bigger the saving. Tap to take a look and count yourself in:\n${url}`;
   await createPost(ctx, { cohortId, body, visibility: "members" });
   revalidatePath(`/${handle}`);
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function assignRoleAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await assignRole(ctx, {
+    requestId,
+    userId: String(formData.get("userId") ?? ""),
+    role: String(formData.get("role") ?? "participant"),
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function setAgreedAmountAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await setProjectAmount(ctx, {
+    requestId,
+    amount: String(formData.get("amount") ?? "0"),
+    currency: String(formData.get("currency") ?? "USD"),
+  });
   revalidatePath(`/requests/${requestId}`);
 }
 

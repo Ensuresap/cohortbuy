@@ -10,9 +10,12 @@ import {
   SetSharePaidInput,
   SetTermsInput,
   CompleteProjectInput,
+  AssignRoleInput,
+  SetAgreedAmountInput,
   JOINABLE_STATUSES,
   type ServiceRequest,
   type Participant,
+  type ParticipantFeedItem,
   type ProjectComment,
   type ProjectTeaser,
   type CostShare,
@@ -297,6 +300,53 @@ export async function listCostShares(ctx: Ctx, requestId: string): Promise<Resul
   const { data, error } = await repo.costSharesFeed(ctx.db, requestId);
   if (error) return err("db_error", error.message);
   return ok((data ?? []) as CostShare[]);
+}
+
+export async function listParticipantsFeed(ctx: Ctx, requestId: string): Promise<Result<ParticipantFeedItem[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.participantsFeed(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as ParticipantFeedItem[]);
+}
+
+/** Coordinator assigns a role (treasurer / co-coordinator / member) to a participant. */
+export async function assignRole(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = AssignRoleInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", "Invalid role");
+  const { error } = await repo.setParticipantRole(ctx.db, {
+    requestId: p.data.requestId,
+    userId: p.data.userId,
+    role: p.data.role,
+  });
+  if (error) {
+    if (error.message?.includes("not_coordinator"))
+      return err("forbidden", "Only the project coordinator can assign roles");
+    if (error.message?.includes("cannot_change_creator"))
+      return err("forbidden", "The project creator stays a coordinator");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** Coordinator sets the agreed amount directly (group-buy projects without an RFQ). */
+export async function setProjectAmount(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = SetAgreedAmountInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", p.error.issues[0]?.message ?? "Invalid");
+  const { error } = await repo.setAgreedAmount(ctx.db, {
+    requestId: p.data.requestId,
+    amountCents: Math.round(p.data.amount * 100),
+    currency: p.data.currency.toUpperCase(),
+  });
+  if (error) {
+    if (error.message?.includes("not_coordinator"))
+      return err("forbidden", "Only the project coordinator can set the price");
+    return err("db_error", error.message);
+  }
+  return ok(true);
 }
 
 export async function listParticipants(ctx: Ctx, raw: unknown): Promise<Result<Participant[]>> {

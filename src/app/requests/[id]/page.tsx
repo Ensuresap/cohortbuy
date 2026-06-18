@@ -15,11 +15,12 @@ import {
   Lightbulb,
   Home,
   Lock,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import {
   getRequest,
-  listParticipants,
+  listParticipantsFeed,
   listComments,
   listCostShares,
 } from "@/core/requests/services/requestService";
@@ -27,7 +28,6 @@ import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { listScope } from "@/core/scope/services/scopeService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
 import {
-  PIPELINE,
   STAGE_LABELS,
   JOINABLE_STATUSES,
   CONTRACT_STRUCTURE_LABELS,
@@ -35,8 +35,10 @@ import {
   PROJECT_TYPE_LABELS,
   SERVICE_SCOPE_LABELS,
   SPLIT_METHOD_LABELS,
+  PARTICIPANT_ROLE_LABELS,
   type RequestStatus,
 } from "@/core/requests/domain/request";
+import { trackFor, STAGE_GUIDE, advanceBlockedReason } from "@/core/requests/domain/lifecycle";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import SafetyNote from "@/components/app/SafetyNote";
@@ -52,6 +54,8 @@ import {
   generateCostSharesAction,
   setSharePaidAction,
   completeProjectAction,
+  assignRoleAction,
+  setAgreedAmountAction,
 } from "../actions";
 import { fieldClass, subtleBtnClass } from "@/components/ui/Field";
 
@@ -107,7 +111,7 @@ export default async function RequestPage({ params }: { params: { id: string } }
   if (!req) notFound();
 
   const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes, mineRes] = await Promise.all([
-    listParticipants(ctx, { requestId: params.id }),
+    listParticipantsFeed(ctx, params.id),
     listScope(ctx, params.id),
     listQuotes(ctx, params.id),
     listComments(ctx, params.id),
@@ -122,7 +126,8 @@ export default async function RequestPage({ params }: { params: { id: string } }
 
   const isParticipant = participants.some((p) => p.user_id === user.id);
   const isCoordinator = req.created_by === user.id;
-  const vendorCount = new Set(quotes.map((q) => q.vendor_name)).size;
+  const isTreasurer = participants.some((p) => p.user_id === user.id && p.role === "treasurer");
+  const canManageMoney = isCoordinator || isTreasurer;
   const hasSelection = !!req.selected_quote_id;
   const isCompleted = req.status === "completed";
 
@@ -131,9 +136,29 @@ export default async function RequestPage({ params }: { params: { id: string } }
     access_level: string;
     cohort: { id: string } | null;
   }>;
-  const isManager =
-    mine.find((m) => m.cohort?.id === req.cohort_id)?.status === "approved" &&
-    mine.find((m) => m.cohort?.id === req.cohort_id)?.access_level === "manager";
+  const membership = mine.find((m) => m.cohort?.id === req.cohort_id);
+  const isManager = membership?.status === "approved" && membership?.access_level === "manager";
+
+  // ── Configurable lifecycle: the project's own stage track ────────────────
+  const type = req.project_type;
+  const track = trackFor(type);
+  const curIdx = track.indexOf(req.status);
+  const idxOf = (s: RequestStatus) => track.indexOf(s);
+  const inTrack = (s: RequestStatus) => track.includes(s);
+  const at = (s: RequestStatus) => req.status === s;
+  const reached = (s: RequestStatus) => inTrack(s) && curIdx >= idxOf(s);
+  const past = (s: RequestStatus) => inTrack(s) && curIdx > idxOf(s);
+
+  const nextStage = curIdx >= 0 && curIdx < track.length - 1 ? track[curIdx + 1] : null;
+  const blockedReason = advanceBlockedReason(req.status, {
+    participants: participants.length,
+    minSize: req.min_size,
+    scope: scopeItems.length,
+    quotes: quotes.length,
+    hasSelection,
+    shares: shares.length,
+    agreedAmount: req.agreed_amount_cents != null,
+  });
 
   const joinableStage = JOINABLE_STATUSES.includes(req.status);
   const canEdit = (isCoordinator || isManager) && !isCompleted;
@@ -145,10 +170,6 @@ export default async function RequestPage({ params }: { params: { id: string } }
   const collectedCents = sharesPaid.reduce((t, s) => t + s.amount_cents, 0);
   const shareCurrency = shares[0]?.currency ?? req.agreed_currency ?? "USD";
 
-  const currentIndex = PIPELINE.indexOf(req.status);
-  const nextStatus =
-    currentIndex >= 0 && currentIndex < PIPELINE.length - 1 ? PIPELINE[currentIndex + 1] : null;
-
   const Icon = categoryIcon(req.category);
   const bestQuote = quotes.length ? quotes[0] : null;
   const headlineMoney =
@@ -157,6 +178,8 @@ export default async function RequestPage({ params }: { params: { id: string } }
       : bestQuote
         ? fmt(bestQuote.amount_cents, bestQuote.currency)
         : "—";
+
+  const upNext = curIdx >= 0 ? track.slice(curIdx + 1).filter((s) => s !== "completed") : [];
 
   return (
     <AppShell>
@@ -270,318 +293,284 @@ export default async function RequestPage({ params }: { params: { id: string } }
           </div>
         )}
 
-        {/* Progress */}
+        {/* Progress + current step */}
         <section className="mt-5 rounded-2xl border border-border bg-surface p-5 shadow-soft">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-medium text-muted">Progress</p>
-            {isCoordinator && nextStatus && (
-              <form action={advanceRequestAction}>
-                <input type="hidden" name="requestId" value={req.id} />
-                <input type="hidden" name="status" value={nextStatus} />
-                <Button type="submit" size="md">Advance to {STAGE_LABELS[nextStatus]}</Button>
-              </form>
-            )}
-          </div>
-          <StageBar status={req.status} />
+          <StageBar track={track} status={req.status} />
+          {!isCompleted && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-primary">Current step · {STAGE_LABELS[req.status]}</p>
+                <p className="mt-0.5 text-sm text-muted">{STAGE_GUIDE[req.status]}</p>
+              </div>
+              {isCoordinator && nextStage && (
+                <form action={advanceRequestAction} className="shrink-0 text-right">
+                  <input type="hidden" name="requestId" value={req.id} />
+                  <input type="hidden" name="status" value={nextStage} />
+                  <Button type="submit" size="md" disabled={!!blockedReason} className="gap-1.5">
+                    Move to {STAGE_LABELS[nextStage]} <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  {blockedReason && <p className="mt-1 max-w-[16rem] text-xs text-subtle">{blockedReason}</p>}
+                </form>
+              )}
+            </div>
+          )}
         </section>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Main */}
           <div className="space-y-6 lg:col-span-2">
-            {/* About */}
-            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <h2 className="font-display text-lg font-semibold text-text">About this project</h2>
-              <p className="mt-2 whitespace-pre-wrap text-muted">
-                {req.description || "No description yet."}
-              </p>
-              <h3 className="mt-4 text-sm font-semibold text-text">Why now — the driver</h3>
-              <p className="mt-1 whitespace-pre-wrap text-muted">{req.driver || "Not specified."}</p>
-            </section>
-
-            {/* Scope */}
-            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <h2 className="font-display text-lg font-semibold text-text">Scope</h2>
-              {scopeItems.length === 0 ? (
-                <p className="mt-2 text-muted">No scope captured yet.</p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {scopeItems.map((s) => (
-                    <li key={s.id} className="rounded-xl border border-border px-4 py-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-text">{s.description}</span>
-                        {s.quantity && <span className="text-xs font-medium text-primary">{s.quantity}</span>}
-                      </div>
-                      {s.notes && <p className="mt-1 text-sm text-muted">{s.notes}</p>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {isParticipant && (
-                <form action={addScopeAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
-                  <p className="text-sm font-medium text-text">Add your scope</p>
-                  <input type="hidden" name="requestId" value={req.id} />
-                  <input name="description" required placeholder="What you need (e.g. wood fence, back yard)" className={fieldClass} />
-                  <input name="quantity" placeholder="Quantity (e.g. 120 ft)" className={fieldClass} />
-                  <textarea name="notes" rows={2} placeholder="Any details or variations…" className={fieldClass} />
-                  <Button type="submit">Add to scope</Button>
-                </form>
-              )}
-            </section>
-
-            {/* Vendors & quotes */}
-            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-lg font-semibold text-text">Vendors &amp; quotes</h2>
-                <span className="text-xs text-subtle">
-                  {vendorCount} vendor{vendorCount === 1 ? "" : "s"} quoted
-                </span>
-              </div>
-              {quotes.length === 0 ? (
-                <p className="mt-2 text-muted">No quotes recorded yet.</p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {quotes.map((q, i) => {
-                    const selected = q.id === req.selected_quote_id;
-                    return (
-                      <li
-                        key={q.id}
-                        className={
-                          "rounded-xl border px-4 py-3 " +
-                          (selected ? "border-primary bg-primary/5" : "border-border")
-                        }
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-text">
-                            {q.vendor_name}
-                            {selected && (
-                              <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
-                                Selected
-                              </span>
-                            )}
-                            {!hasSelection && i === 0 && (
-                              <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                                Best price
-                              </span>
-                            )}
-                          </span>
-                          <span className="font-display text-lg font-semibold text-primary">
-                            {fmt(q.amount_cents, q.currency)}
-                          </span>
+            {/* ── Scope ─────────────────────────────────────────────── */}
+            {reached("scoping") && (
+              <Phase title="Scope" active={at("scoping")} done={past("scoping")}>
+                {scopeItems.length === 0 ? (
+                  <p className="mt-2 text-muted">No scope captured yet.</p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {scopeItems.map((s) => (
+                      <li key={s.id} className="rounded-xl border border-border px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-text">{s.description}</span>
+                          {s.quantity && <span className="text-xs font-medium text-primary">{s.quantity}</span>}
                         </div>
-                        <p className="mt-1 text-xs text-subtle">
-                          {q.kind}
-                          {q.timeline ? ` · ${q.timeline}` : ""}
-                          {q.warranty ? ` · ${q.warranty}` : ""}
-                        </p>
-                        {q.notes && <p className="mt-1 text-sm text-muted">{q.notes}</p>}
-                        {isCoordinator && !selected && !isCompleted && (
-                          <form action={selectQuoteAction} className="mt-2">
-                            <input type="hidden" name="requestId" value={req.id} />
-                            <input type="hidden" name="quoteId" value={q.id} />
-                            <button type="submit" className={subtleBtnClass}>
-                              Select this quote
-                            </button>
-                          </form>
-                        )}
+                        {s.notes && <p className="mt-1 text-sm text-muted">{s.notes}</p>}
                       </li>
-                    );
-                  })}
-                </ul>
-              )}
-              {isParticipant && (
-                <form action={addQuoteAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
-                  <p className="text-sm font-medium text-text">Record a quote</p>
-                  <input type="hidden" name="requestId" value={req.id} />
-                  <input name="vendorName" required placeholder="Vendor name" className={fieldClass} />
-                  <div className="grid grid-cols-3 gap-2">
-                    <input name="amount" type="number" step="0.01" min="0" required placeholder="Amount" className={`${fieldClass} col-span-2`} />
-                    <input name="currency" defaultValue="USD" maxLength={3} placeholder="USD" className={fieldClass} />
-                  </div>
-                  <input name="timeline" placeholder="Timeline (e.g. 2 weeks)" className={fieldClass} />
-                  <input name="warranty" placeholder="Warranty (e.g. 5 years)" className={fieldClass} />
-                  <textarea name="notes" rows={2} placeholder="Notes / exclusions…" className={fieldClass} />
-                  <select name="kind" defaultValue="indicative" className={fieldClass}>
-                    <option value="indicative">Indicative</option>
-                    <option value="final">Final</option>
-                  </select>
-                  <Button type="submit">Add quote</Button>
-                </form>
-              )}
-            </section>
-
-            {/* Decision & contract */}
-            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <h2 className="font-display text-lg font-semibold text-text">Decision &amp; contract</h2>
-              {hasSelection ? (
-                <div className="mt-2 rounded-xl border border-border p-4">
-                  <p className="text-sm text-subtle">Agreed vendor</p>
-                  <p className="font-medium text-text">{req.contract_vendor}</p>
-                  {req.agreed_amount_cents != null && (
-                    <p className="mt-1 font-display text-xl font-semibold text-primary">
-                      {fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")}
-                    </p>
-                  )}
-                  {req.contract_url && (
-                    <a
-                      href={req.contract_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-                    >
-                      <ExternalLink className="h-4 w-4" /> View contract document
-                    </a>
-                  )}
-                  {req.contract_note && <p className="mt-1 text-sm text-muted">{req.contract_note}</p>}
-                </div>
-              ) : (
-                <p className="mt-2 text-muted">
-                  No quote selected yet. The coordinator picks a winning quote under Vendors &amp; quotes.
-                </p>
-              )}
-              {/* Contract structure + payment mode (Addendum D) */}
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <div className="rounded-xl border border-border p-3">
-                  <p className="text-xs text-subtle">Contract structure</p>
-                  <p className="text-sm font-medium text-text">{CONTRACT_STRUCTURE_LABELS[req.contract_structure]}</p>
-                </div>
-                <div className="rounded-xl border border-border p-3">
-                  <p className="text-xs text-subtle">Payment</p>
-                  <p className="text-sm font-medium text-text">{PAYMENT_MODE_LABELS[req.payment_mode]}</p>
-                </div>
-              </div>
-
-              <p className="mt-3 text-xs text-subtle">
-                The agreement is made directly between participating members and the vendor. CohortBuy
-                facilitates coordination only — it is not a party to the contract and holds no funds.
-              </p>
-
-              {(isCoordinator || isManager) && hasSelection && !isCompleted && (
-                <form action={setTermsAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
-                  <p className="text-sm font-medium text-text">Set the structure &amp; payment</p>
-                  <input type="hidden" name="requestId" value={req.id} />
-                  <label className="block text-xs font-medium text-subtle">
-                    Contract structure
-                    <select name="contractStructure" defaultValue={req.contract_structure} className={`${fieldClass} mt-1`}>
-                      <option value="individual">Individual contracts (per member)</option>
-                      <option value="combined">One combined group contract</option>
-                    </select>
-                  </label>
-                  <label className="block text-xs font-medium text-subtle">
-                    Payment mode
-                    <select name="paymentMode" defaultValue={req.payment_mode} className={`${fieldClass} mt-1`}>
-                      <option value="individual_direct">Each member pays the vendor directly (off-platform)</option>
-                      <option value="pooled_escrow">Pooled escrow — coming later</option>
-                    </select>
-                  </label>
-                  <p className="text-xs text-subtle">
-                    Negotiation is always collective — only the contract &amp; settlement structure differs.
-                    Pooled escrow isn&rsquo;t enabled yet; direct payment keeps CohortBuy out of the flow of funds.
-                  </p>
-                  <Button type="submit">Save terms</Button>
-                </form>
-              )}
-
-              {isCoordinator && hasSelection && !isCompleted && (
-                <form action={recordContractAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
-                  <p className="text-sm font-medium text-text">Record the contract reference</p>
-                  <input type="hidden" name="requestId" value={req.id} />
-                  <input
-                    name="url"
-                    type="url"
-                    defaultValue={req.contract_url ?? ""}
-                    placeholder="Google Drive link to the signed agreement"
-                    className={fieldClass}
-                  />
-                  <textarea
-                    name="note"
-                    rows={2}
-                    defaultValue={req.contract_note ?? ""}
-                    placeholder="Notes (scope agreed, start date, terms…)"
-                    className={fieldClass}
-                  />
-                  <Button type="submit">Save contract reference</Button>
-                </form>
-              )}
-            </section>
-
-            {/* Cost share */}
-            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-lg font-semibold text-text">Cost share</h2>
-                {shares.length > 0 && req.agreed_amount_cents != null && (
-                  <span className="text-xs text-subtle">
-                    {fmt(collectedCents, shareCurrency)} of {fmt(req.agreed_amount_cents, shareCurrency)} collected
-                  </span>
+                    ))}
+                  </ul>
                 )}
-              </div>
-              {shares.length === 0 ? (
-                <p className="mt-2 text-muted">
-                  {hasSelection
-                    ? "No split yet — the coordinator can generate an even split of the agreed amount."
-                    : "Cost shares appear once a winning quote sets the agreed amount."}
-                </p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {shares.map((s) => {
-                    const canToggle = isCoordinator || s.user_id === user.id;
-                    return (
-                      <li key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-2.5">
-                        <div className="flex min-w-0 items-center gap-2">
-                          {s.member_avatar ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={s.member_avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
-                          ) : (
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[11px] font-semibold text-text">
-                              {initials(s.member_name)}
-                            </div>
-                          )}
-                          <span className="truncate text-sm text-text">
-                            {s.user_id === user.id ? "You" : s.member_name ?? "Member"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-text">{fmt(s.amount_cents, s.currency)}</span>
-                          {s.paid ? (
-                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Paid</span>
-                          ) : (
-                            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-subtle">Unpaid</span>
-                          )}
-                          {canToggle && !isCompleted && (
-                            <form action={setSharePaidAction}>
+                {at("scoping") && isParticipant && (
+                  <form action={addScopeAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
+                    <p className="text-sm font-medium text-text">Add your scope</p>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <input name="description" required placeholder="What you need (e.g. wood fence, back yard)" className={fieldClass} />
+                    <input name="quantity" placeholder="Quantity (e.g. 120 ft)" className={fieldClass} />
+                    <textarea name="notes" rows={2} placeholder="Any details or variations…" className={fieldClass} />
+                    <Button type="submit">Add to scope</Button>
+                  </form>
+                )}
+              </Phase>
+            )}
+
+            {/* ── Product & price (group buy) ───────────────────────── */}
+            {type === "group_buy" && reached("research") && (
+              <Phase title="Product & price" active={at("research")} done={past("research")}>
+                {req.agreed_amount_cents != null ? (
+                  <p className="mt-2 font-display text-xl font-semibold text-primary">
+                    {fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-muted">No price set yet.</p>
+                )}
+                {at("research") && isCoordinator && (
+                  <form action={setAgreedAmountAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
+                    <p className="text-sm font-medium text-text">Set the negotiated price</p>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <div className="grid grid-cols-3 gap-2">
+                      <input name="amount" type="number" step="0.01" min="0" required placeholder="Total price" className={`${fieldClass} col-span-2`} />
+                      <input name="currency" defaultValue="USD" maxLength={3} className={fieldClass} />
+                    </div>
+                    <Button type="submit">Save price</Button>
+                  </form>
+                )}
+              </Phase>
+            )}
+
+            {/* ── Vendors & quotes (service) ────────────────────────── */}
+            {type === "service" && reached("research") && (
+              <Phase
+                title="Vendors & quotes"
+                active={at("research") || at("rfq") || at("deciding")}
+                done={past("deciding")}
+              >
+                {quotes.length === 0 ? (
+                  <p className="mt-2 text-muted">No quotes recorded yet.</p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {quotes.map((q, i) => {
+                      const selected = q.id === req.selected_quote_id;
+                      return (
+                        <li key={q.id} className={"rounded-xl border px-4 py-3 " + (selected ? "border-primary bg-primary/5" : "border-border")}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium text-text">
+                              {q.vendor_name}
+                              {selected && (
+                                <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">Selected</span>
+                              )}
+                              {!hasSelection && i === 0 && (
+                                <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Best price</span>
+                              )}
+                            </span>
+                            <span className="font-display text-lg font-semibold text-primary">{fmt(q.amount_cents, q.currency)}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-subtle">
+                            {q.kind}
+                            {q.timeline ? ` · ${q.timeline}` : ""}
+                            {q.warranty ? ` · ${q.warranty}` : ""}
+                          </p>
+                          {q.notes && <p className="mt-1 text-sm text-muted">{q.notes}</p>}
+                          {at("deciding") && isCoordinator && !selected && (
+                            <form action={selectQuoteAction} className="mt-2">
                               <input type="hidden" name="requestId" value={req.id} />
-                              <input type="hidden" name="shareId" value={s.id} />
-                              <input type="hidden" name="paid" value={s.paid ? "false" : "true"} />
-                              <button type="submit" className="text-xs font-medium text-primary hover:underline">
-                                {s.paid ? "Mark unpaid" : "Mark paid"}
-                              </button>
+                              <input type="hidden" name="quoteId" value={q.id} />
+                              <button type="submit" className={subtleBtnClass}>Select this quote</button>
                             </form>
                           )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              {isCoordinator && hasSelection && !isCompleted && (
-                <form action={generateCostSharesAction} className="mt-3">
-                  <input type="hidden" name="requestId" value={req.id} />
-                  <button type="submit" className={subtleBtnClass}>
-                    {shares.length === 0 ? "Generate even split" : "Regenerate split"}
-                  </button>
-                </form>
-              )}
-              <div className="mt-3">
-                <SafetyNote />
-              </div>
-              <p className="mt-2 text-xs text-subtle">
-                Payments are settled directly between members and the vendor, off-platform. This tracker
-                records who has paid — CohortBuy never collects or holds money.
-              </p>
-            </section>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {(at("research") || at("rfq")) && isParticipant && (
+                  <form action={addQuoteAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
+                    <p className="text-sm font-medium text-text">Record a quote</p>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <input name="vendorName" required placeholder="Vendor name" className={fieldClass} />
+                    <div className="grid grid-cols-3 gap-2">
+                      <input name="amount" type="number" step="0.01" min="0" required placeholder="Amount" className={`${fieldClass} col-span-2`} />
+                      <input name="currency" defaultValue="USD" maxLength={3} placeholder="USD" className={fieldClass} />
+                    </div>
+                    <input name="timeline" placeholder="Timeline (e.g. 2 weeks)" className={fieldClass} />
+                    <input name="warranty" placeholder="Warranty (e.g. 5 years)" className={fieldClass} />
+                    <textarea name="notes" rows={2} placeholder="Notes / exclusions…" className={fieldClass} />
+                    <select name="kind" defaultValue="indicative" className={fieldClass}>
+                      <option value="indicative">Indicative</option>
+                      <option value="final">Final</option>
+                    </select>
+                    <Button type="submit">Add quote</Button>
+                  </form>
+                )}
+              </Phase>
+            )}
 
-            {/* Completion */}
-            {isCoordinator && !isCompleted && (
-              <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+            {/* ── Decision & contract (service) ─────────────────────── */}
+            {type === "service" && reached("contracting") && (
+              <Phase title="Decision & contract" active={at("contracting")} done={past("contracting")}>
+                {hasSelection ? (
+                  <div className="mt-2 rounded-xl border border-border p-4">
+                    <p className="text-sm text-subtle">Agreed vendor</p>
+                    <p className="font-medium text-text">{req.contract_vendor}</p>
+                    {req.agreed_amount_cents != null && (
+                      <p className="mt-1 font-display text-xl font-semibold text-primary">{fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")}</p>
+                    )}
+                    {req.contract_url && (
+                      <a href={req.contract_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+                        <ExternalLink className="h-4 w-4" /> View contract document
+                      </a>
+                    )}
+                    {req.contract_note && <p className="mt-1 text-sm text-muted">{req.contract_note}</p>}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-muted">No winning quote selected yet.</p>
+                )}
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="rounded-xl border border-border p-3">
+                    <p className="text-xs text-subtle">Contract structure</p>
+                    <p className="text-sm font-medium text-text">{CONTRACT_STRUCTURE_LABELS[req.contract_structure]}</p>
+                  </div>
+                  <div className="rounded-xl border border-border p-3">
+                    <p className="text-xs text-subtle">Payment</p>
+                    <p className="text-sm font-medium text-text">{PAYMENT_MODE_LABELS[req.payment_mode]}</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-subtle">
+                  The agreement is made directly between participating members and the vendor. CohortBuy facilitates
+                  coordination only — it is not a party to the contract and holds no funds.
+                </p>
+                {at("contracting") && (isCoordinator || isManager) && (
+                  <form action={setTermsAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
+                    <p className="text-sm font-medium text-text">Set the structure &amp; payment</p>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <label className="block text-xs font-medium text-subtle">
+                      Contract structure
+                      <select name="contractStructure" defaultValue={req.contract_structure} className={`${fieldClass} mt-1`}>
+                        <option value="individual">Individual contracts (per member)</option>
+                        <option value="combined">One combined group contract</option>
+                      </select>
+                    </label>
+                    <label className="block text-xs font-medium text-subtle">
+                      Payment mode
+                      <select name="paymentMode" defaultValue={req.payment_mode} className={`${fieldClass} mt-1`}>
+                        <option value="individual_direct">Each member pays the vendor directly (off-platform)</option>
+                        <option value="pooled_escrow">Pooled escrow — coming later</option>
+                      </select>
+                    </label>
+                    <Button type="submit">Save terms</Button>
+                  </form>
+                )}
+                {at("contracting") && isCoordinator && (
+                  <form action={recordContractAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
+                    <p className="text-sm font-medium text-text">Record the contract reference</p>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <input name="url" type="url" defaultValue={req.contract_url ?? ""} placeholder="Google Drive link to the signed agreement" className={fieldClass} />
+                    <textarea name="note" rows={2} defaultValue={req.contract_note ?? ""} placeholder="Notes (scope agreed, start date, terms…)" className={fieldClass} />
+                    <Button type="submit">Save contract reference</Button>
+                  </form>
+                )}
+              </Phase>
+            )}
+
+            {/* ── Cost share ────────────────────────────────────────── */}
+            {reached("funding") && (
+              <Phase title="Cost share" active={at("funding") || at("in_progress")} done={past("in_progress")}>
+                {shares.length > 0 && req.agreed_amount_cents != null && (
+                  <p className="mt-1 text-xs text-subtle">
+                    {fmt(collectedCents, shareCurrency)} of {fmt(req.agreed_amount_cents, shareCurrency)} collected
+                  </p>
+                )}
+                {shares.length === 0 ? (
+                  <p className="mt-2 text-muted">
+                    {req.agreed_amount_cents != null ? "No split yet — generate an even split of the agreed amount." : "A price is needed before splitting the cost."}
+                  </p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {shares.map((s) => {
+                      const canToggle = canManageMoney || s.user_id === user.id;
+                      return (
+                        <li key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-2.5">
+                          <div className="flex min-w-0 items-center gap-2">
+                            {s.member_avatar ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={s.member_avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                            ) : (
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[11px] font-semibold text-text">{initials(s.member_name)}</div>
+                            )}
+                            <span className="truncate text-sm text-text">{s.user_id === user.id ? "You" : s.member_name ?? "Member"}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-text">{fmt(s.amount_cents, s.currency)}</span>
+                            {s.paid ? (
+                              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Paid</span>
+                            ) : (
+                              <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-subtle">Unpaid</span>
+                            )}
+                            {canToggle && !isCompleted && (
+                              <form action={setSharePaidAction}>
+                                <input type="hidden" name="requestId" value={req.id} />
+                                <input type="hidden" name="shareId" value={s.id} />
+                                <input type="hidden" name="paid" value={s.paid ? "false" : "true"} />
+                                <button type="submit" className="text-xs font-medium text-primary hover:underline">{s.paid ? "Mark unpaid" : "Mark paid"}</button>
+                              </form>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {at("funding") && canManageMoney && req.agreed_amount_cents != null && (
+                  <form action={generateCostSharesAction} className="mt-3">
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <button type="submit" className={subtleBtnClass}>{shares.length === 0 ? "Generate even split" : "Regenerate split"}</button>
+                  </form>
+                )}
+                <div className="mt-3"><SafetyNote /></div>
+                <p className="mt-2 text-xs text-subtle">Payments settle directly between members and the vendor, off-platform. This tracker records who has paid — CohortBuy never holds money.</p>
+              </Phase>
+            )}
+
+            {/* ── Completion ────────────────────────────────────────── */}
+            {at("in_progress") && isCoordinator && (
+              <section className="rounded-2xl border border-primary/40 bg-surface p-5 shadow-soft ring-1 ring-primary/20">
+                <CurrentBadge />
                 <h2 className="font-display text-lg font-semibold text-text">Sign off completion</h2>
                 <form action={completeProjectAction} className="mt-3 space-y-2">
                   <input type="hidden" name="requestId" value={req.id} />
@@ -591,7 +580,29 @@ export default async function RequestPage({ params }: { params: { id: string } }
               </section>
             )}
 
-            {/* Discussion */}
+            {/* ── Up next ───────────────────────────────────────────── */}
+            {!isCompleted && upNext.length > 0 && (
+              <section className="rounded-2xl border border-dashed border-border bg-surface/50 p-5">
+                <h2 className="text-sm font-medium text-muted">Up next</h2>
+                <ol className="mt-2 space-y-1 text-sm text-subtle">
+                  {upNext.map((s) => (
+                    <li key={s} className="flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-border" /> {STAGE_LABELS[s]}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
+            {/* ── About ─────────────────────────────────────────────── */}
+            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+              <h2 className="font-display text-lg font-semibold text-text">About this project</h2>
+              <p className="mt-2 whitespace-pre-wrap text-muted">{req.description || "No description yet."}</p>
+              <h3 className="mt-4 text-sm font-semibold text-text">Why now — the driver</h3>
+              <p className="mt-1 whitespace-pre-wrap text-muted">{req.driver || "Not specified."}</p>
+            </section>
+
+            {/* ── Discussion ────────────────────────────────────────── */}
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
               <h2 className="font-display text-lg font-semibold text-text">Discussion</h2>
               <form action={addCommentAction} className="mt-3 flex gap-2">
@@ -609,9 +620,7 @@ export default async function RequestPage({ params }: { params: { id: string } }
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={c.author_avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
                       ) : (
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                          {initials(c.author_name)}
-                        </div>
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">{initials(c.author_name)}</div>
                       )}
                       <div className="min-w-0">
                         <p className="text-sm">
@@ -640,29 +649,94 @@ export default async function RequestPage({ params }: { params: { id: string } }
                 <Row label="Target" value={req.target_date ? fmtDate(req.target_date) : "Not set"} />
                 {req.join_deadline && <Row label="Join by" value={fmtDate(req.join_deadline)} />}
                 <Row label="Min group" value={`${req.min_size} members`} />
-                <Row label="Participants" value={String(participants.length)} />
                 {req.cohort && <Row label="Cohort" value={req.cohort.name} />}
               </dl>
             </section>
 
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
               <h2 className="font-display text-lg font-semibold text-text">Participants</h2>
-              <ul className="mt-3 space-y-1">
-                {participants.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between text-sm">
-                    <span className="text-text">
-                      {p.user_id === user.id ? "You" : "Member"}
-                      <span className="text-subtle"> {p.user_id.slice(0, 6)}…</span>
-                    </span>
-                    <span className="text-xs text-subtle">{p.role}</span>
-                  </li>
-                ))}
+              <ul className="mt-3 space-y-2">
+                {participants.map((p) => {
+                  const isCreator = p.user_id === req.created_by;
+                  return (
+                    <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
+                      <div className="flex min-w-0 items-center gap-2">
+                        {p.member_avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.member_avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                        ) : (
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[11px] font-semibold text-text">{initials(p.member_name)}</div>
+                        )}
+                        <span className="truncate text-text">{p.user_id === user.id ? "You" : p.member_name ?? "Member"}</span>
+                      </div>
+                      {isCoordinator && !isCreator && !isCompleted ? (
+                        <form action={assignRoleAction}>
+                          <input type="hidden" name="requestId" value={req.id} />
+                          <input type="hidden" name="userId" value={p.user_id} />
+                          <select name="role" defaultValue={p.role} className="rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text outline-none focus:ring-2 focus:ring-ring">
+                            <option value="participant">Member</option>
+                            <option value="treasurer">Treasurer</option>
+                            <option value="coordinator">Co-coordinator</option>
+                          </select>
+                        </form>
+                      ) : (
+                        <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-subtle">{PARTICIPANT_ROLE_LABELS[p.role]}</span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
+              {isCoordinator && !isCompleted && (
+                <p className="mt-2 text-xs text-subtle">Change a member&rsquo;s role from the dropdown — the Treasurer can manage the cost split.</p>
+              )}
             </section>
           </div>
         </div>
       </main>
     </AppShell>
+  );
+}
+
+function CurrentBadge() {
+  return (
+    <span className="mb-2 inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-primary">
+      Current step
+    </span>
+  );
+}
+
+function Phase({
+  title,
+  active,
+  done,
+  children,
+}: {
+  title: string;
+  active: boolean;
+  done: boolean;
+  children: React.ReactNode;
+}) {
+  if (active) {
+    return (
+      <section className="rounded-2xl border border-primary/40 bg-surface p-5 shadow-soft ring-1 ring-primary/20">
+        <CurrentBadge />
+        <h2 className="font-display text-lg font-semibold text-text">{title}</h2>
+        {children}
+      </section>
+    );
+  }
+  return (
+    <details className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-soft" open={!done}>
+      <summary className="flex cursor-pointer list-none items-center justify-between">
+        <span className="font-display text-lg font-semibold text-text">{title}</span>
+        {done && (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+            <CheckCircle2 className="h-3.5 w-3.5" /> Done
+          </span>
+        )}
+      </summary>
+      <div className="mt-3">{children}</div>
+    </details>
   );
 }
 
@@ -684,18 +758,23 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StageBar({ status }: { status: RequestStatus }) {
-  const currentIndex = PIPELINE.indexOf(status);
+function StageBar({ track, status }: { track: RequestStatus[]; status: RequestStatus }) {
+  const currentIndex = track.indexOf(status);
   return (
-    <div className="mt-3 flex flex-wrap gap-1.5">
-      {PIPELINE.map((s, i) => {
-        const done = currentIndex >= 0 && i <= currentIndex;
+    <div className="flex flex-wrap gap-1.5">
+      {track.map((s, i) => {
+        const done = currentIndex >= 0 && i < currentIndex;
+        const current = i === currentIndex;
         return (
           <span
             key={s}
             className={
               "rounded-full px-2.5 py-1 text-xs font-medium " +
-              (done ? "bg-primary text-primary-foreground" : "bg-surface-2 text-subtle")
+              (current
+                ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
+                : done
+                  ? "bg-primary/15 text-primary"
+                  : "bg-surface-2 text-subtle")
             }
           >
             {STAGE_LABELS[s]}

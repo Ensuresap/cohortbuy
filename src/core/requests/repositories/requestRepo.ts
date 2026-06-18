@@ -159,6 +159,32 @@ export function updateStatus(
     .select();
 }
 
+export function participantsFeed(db: SupabaseClient, requestId: string) {
+  return db.rpc("request_participants_feed", { p_request: requestId });
+}
+
+export function setParticipantRole(
+  db: SupabaseClient,
+  args: { requestId: string; userId: string; role: string }
+) {
+  return db.rpc("set_participant_role", {
+    p_request: args.requestId,
+    p_user: args.userId,
+    p_role: args.role,
+  });
+}
+
+export function setAgreedAmount(
+  db: SupabaseClient,
+  args: { requestId: string; amountCents: number; currency: string }
+) {
+  return db.rpc("set_agreed_amount", {
+    p_request: args.requestId,
+    p_amount_cents: args.amountCents,
+    p_currency: args.currency,
+  });
+}
+
 export function listParticipants(db: SupabaseClient, requestId: string) {
   return db
     .from("request_participants")

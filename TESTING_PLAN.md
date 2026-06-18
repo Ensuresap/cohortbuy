@@ -135,6 +135,15 @@
 - ☐ (integration) RLS: quotes visible/insertable only within the request's cohort.
 - ◐ (manual) comparison sorts by price ascending; currency formats per code.
 
+## Stage-aware page + roles (Addendum E + Capability 2)
+- ◐ (manual) only the current phase's form shows; past phases collapse to "Done"; future phases listed under "Up next".
+- ◐ (manual) "Move to next" is disabled with a hint until prerequisite met (scope/quote/selection/split); enables once met.
+- ◐ (manual) group-buy project shows Forming → Product & price → Funding → … (no scope/RFQ/contract); service shows full track.
+- ☐ (integration) `set_participant_role` coordinator-gated; can't change the creator; `is_project_treasurer` true after assignment.
+- ☐ (integration) treasurer can `generate_cost_shares` / `set_share_paid`; a plain member cannot.
+- ☐ (integration) `set_agreed_amount` coordinator-gated; enables group-buy funding.
+- ◐ (manual) Participants list shows names/avatars; coordinator sees a role dropdown per member.
+
 ## Procurement lifecycle (decision → contract → cost-share → deliver)
 - ☐ (integration) `select_quote` sets one quote `selected`, others `rejected`, records agreed amount/vendor; non-coordinator → `not_coordinator`.
 - ☐ (integration) `generate_cost_shares` even-splits agreed amount across joined participants; remainder cents to coordinator; sum equals agreed amount.

@@ -194,3 +194,29 @@ export interface Participant {
   role: "coordinator" | "treasurer" | "participant";
   status: "joined" | "left";
 }
+
+export interface ParticipantFeedItem {
+  id: string;
+  user_id: string;
+  role: "coordinator" | "treasurer" | "participant";
+  member_name: string | null;
+  member_avatar: string | null;
+}
+
+export const PARTICIPANT_ROLE_LABELS: Record<"coordinator" | "treasurer" | "participant", string> = {
+  coordinator: "Coordinator",
+  treasurer: "Treasurer",
+  participant: "Member",
+};
+
+export const AssignRoleInput = z.object({
+  requestId: z.string().uuid(),
+  userId: z.string().uuid(),
+  role: z.enum(["coordinator", "treasurer", "participant"]),
+});
+
+export const SetAgreedAmountInput = z.object({
+  requestId: z.string().uuid(),
+  amount: z.coerce.number().nonnegative().max(100_000_000),
+  currency: z.string().trim().length(3).default("USD"),
+});
