@@ -94,7 +94,7 @@ export async function announceProjectAction(formData: FormData) {
   const handle = String(formData.get("handle") ?? "");
   const title = String(formData.get("title") ?? "a new project");
   const url = String(formData.get("url") ?? `/requests/${requestId}`);
-  const body = `📣 New project: ${title}\n\nWe're pooling neighbors to get a better deal together — tap to see it and join:\n${url}`;
+  const body = `📣 New project: ${title}\n\nA few of us are teaming up to get a better group price — the more neighbors who join, the bigger the saving. Tap to take a look and count yourself in:\n${url}`;
   await createPost(ctx, { cohortId, body, visibility: "members" });
   revalidatePath(`/${handle}`);
   revalidatePath(`/requests/${requestId}`);

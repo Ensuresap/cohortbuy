@@ -83,7 +83,12 @@ export default function ProjectHeaderActions({
     }
   }
 
-  const waHref = `https://wa.me/?text=${encodeURIComponent(`Join our group buy: ${project.title}\n${inviteUrl}`)}`;
+  const waText =
+    `Hi! 👋 A few of us are teaming up on *${project.title}*` +
+    (project.cohortName ? ` with the ${project.cohortName} group` : "") +
+    ` to get a better price together — the more of us, the bigger the saving.\n\n` +
+    `Want in? Have a look and count yourself in here:\n${inviteUrl}`;
+  const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
   const menuRow =
     "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-2";
 
