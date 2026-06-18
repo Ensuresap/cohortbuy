@@ -354,12 +354,16 @@ async function researchContext(ctx: Awaited<ReturnType<typeof getCtx>>, requestI
   const scopeRes = await listScope(ctx, requestId);
   const scope = scopeRes.ok ? scopeRes.data : [];
   const scopeText = scope.map((s) => `- ${s.description}${s.quantity ? ` (${s.quantity})` : ""}`).join("\n") || "(none yet)";
+  const loc = [r.cohort?.city, r.cohort?.region].filter(Boolean).join(", ");
+  const zips = r.cohort?.coverage_zips?.length ? r.cohort.coverage_zips.join(", ") : "";
+  const location = [loc, zips ? `ZIP codes: ${zips}` : ""].filter(Boolean).join(" · ") || "location not specified";
   const context = [
     `Project: ${r.title}`,
     r.category ? `Category: ${r.category}` : "",
     r.description ? `Description: ${r.description}` : "",
     r.driver ? `Why now: ${r.driver}` : "",
     r.cohort?.name ? `Community: ${r.cohort.name}` : "",
+    `Location: ${location}`,
     `Group size aim: ${r.min_size}+ homes`,
     `Member scope items:\n${scopeText}`,
   ].filter(Boolean).join("\n");
@@ -396,6 +400,7 @@ export async function aiSuggestVendorsAction(formData: FormData) {
         await addCandidate(ctx, {
           requestId,
           name: v.name,
+          website: v.website || undefined,
           notes: `AI-suggested — verify before contacting. ${v.note}`.trim(),
           source: "ai",
         });

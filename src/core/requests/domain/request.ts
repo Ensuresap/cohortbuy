@@ -156,7 +156,13 @@ export interface ServiceRequest {
   contract_note: string | null;
   completion_note: string | null;
   completed_at: string | null;
-  cohort?: { handle: string; name: string } | null;
+  cohort?: {
+    handle: string;
+    name: string;
+    city?: string | null;
+    region?: string | null;
+    coverage_zips?: string[] | null;
+  } | null;
 }
 
 export interface CostShare {

@@ -20,7 +20,7 @@ const BENCHMARK_TOOL: LlmTool = {
 
 const VENDORS_TOOL: LlmTool = {
   name: "propose_vendors",
-  description: "Return a short list of candidate vendor types or businesses worth researching for this project.",
+  description: "Return a short list of named candidate vendors (actual businesses) worth researching for this project, local to the stated area.",
   input_schema: {
     type: "object",
     properties: {
@@ -29,8 +29,9 @@ const VENDORS_TOOL: LlmTool = {
         items: {
           type: "object",
           properties: {
-            name: { type: "string", description: "Vendor name or a clear vendor type to search for" },
-            note: { type: "string", description: "Why it fits / what to check" },
+            name: { type: "string", description: "The actual business name (not a category)" },
+            website: { type: "string", description: "Website or a Google Maps search URL for the business, if known" },
+            note: { type: "string", description: "Why it fits / what to verify" },
           },
           required: ["name"],
         },
@@ -74,7 +75,7 @@ export async function estimateBenchmark(
 export async function suggestVendors(
   ctx: Ctx,
   args: { cohortId: string; context: string }
-): Promise<Result<{ name: string; note: string }[]>> {
+): Promise<Result<{ name: string; website: string; note: string }[]>> {
   if (!ctx.db) return err("not_configured", "Database is not configured");
   const m = await resolveModel(ctx, { cohortId: args.cohortId });
   const provider = (m.ok ? m.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
@@ -84,13 +85,13 @@ export async function suggestVendors(
       provider,
       model,
       system:
-        "Suggest 3–5 candidate vendor types or businesses worth researching for this group project. These are leads to verify, not endorsements — prefer clear vendor TYPES/search terms over specific business names you're unsure exist. Always call propose_vendors.",
+        "Suggest 3–5 ACTUAL named vendor businesses (not categories) that operate in or near the project's stated location and could do this work. Use the location to keep them local. Give the real business name and, if you know it, a website or a Google Maps search URL. These are leads to verify, not endorsements — note what to check. If you genuinely don't know real local businesses, give the best-known regional/national options and say so in the note. Always call propose_vendors.",
       messages: [{ role: "user", content: args.context }],
       tools: [VENDORS_TOOL],
     });
     if (r.kind !== "tool") return err("ai_error", "No suggestions returned");
-    const list = (r.input as { vendors?: Array<{ name?: string; note?: string }> }).vendors ?? [];
-    return ok(list.filter((v) => v.name).map((v) => ({ name: v.name as string, note: v.note ?? "" })));
+    const list = (r.input as { vendors?: Array<{ name?: string; website?: string; note?: string }> }).vendors ?? [];
+    return ok(list.filter((v) => v.name).map((v) => ({ name: v.name as string, website: v.website ?? "", note: v.note ?? "" })));
   } catch (e) {
     return mapAiErr(e);
   }

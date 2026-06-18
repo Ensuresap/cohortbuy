@@ -29,7 +29,7 @@ export function listByCohort(db: SupabaseClient, cohortId: string) {
 export function getById(db: SupabaseClient, id: string) {
   return db
     .from("service_requests")
-    .select("*, cohort:cohorts(handle, name)")
+    .select("*, cohort:cohorts(handle, name, city, region, coverage_zips)")
     .eq("id", id)
     .maybeSingle();
 }
