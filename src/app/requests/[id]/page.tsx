@@ -471,7 +471,18 @@ export default async function RequestPage({
                 <div className="mt-2 rounded-xl border border-border p-4">
                   <p className="text-xs text-subtle">Estimated price range</p>
                   <p className="font-display text-lg font-semibold text-primary">{benchmark ?? "Not set yet"}</p>
-                  {req.research_notes && <p className="mt-1 text-sm text-muted">{req.research_notes}</p>}
+                  {req.benchmark_basis && (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-text">Based on</p>
+                      <p className="mt-0.5 whitespace-pre-wrap text-sm text-muted">{req.benchmark_basis}</p>
+                    </div>
+                  )}
+                  {req.research_notes && (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-text">Notes</p>
+                      <p className="mt-0.5 text-sm text-muted">{req.research_notes}</p>
+                    </div>
+                  )}
                   {(isCoordinator || isManager) && at("research") && (
                     <form action={aiEstimateBenchmarkAction} className="mt-2 inline-block">
                       <input type="hidden" name="requestId" value={req.id} />

@@ -78,6 +78,19 @@ export async function setResearch(ctx: Ctx, raw: unknown): Promise<Result<true>>
   return ok(true);
 }
 
+export async function setBenchmark(
+  ctx: Ctx,
+  args: { requestId: string; lowCents: number; highCents: number; currency: string; basis: string }
+): Promise<Result<true>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.setBenchmark(ctx.db, args);
+  if (error) {
+    if (error.message?.includes("not_coordinator")) return err("forbidden", "Only the coordinator can set the benchmark");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
 export async function approveShortlist(ctx: Ctx, requestId: string): Promise<Result<true>> {
   if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
   if (!ctx.db) return err("not_configured", "Database is not configured");

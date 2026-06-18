@@ -142,6 +142,7 @@ export interface ServiceRequest {
   benchmark_low_cents: number | null;
   benchmark_high_cents: number | null;
   benchmark_currency: string | null;
+  benchmark_basis: string | null;
   research_notes: string | null;
   shortlist_approved: boolean;
   status: RequestStatus;

@@ -56,6 +56,19 @@ export function setResearch(
   });
 }
 
+export function setBenchmark(
+  db: SupabaseClient,
+  args: { requestId: string; lowCents: number; highCents: number; currency: string; basis: string }
+) {
+  return db.rpc("set_benchmark", {
+    p_request: args.requestId,
+    p_low: args.lowCents,
+    p_high: args.highCents,
+    p_currency: args.currency,
+    p_basis: args.basis,
+  });
+}
+
 export function approveShortlist(db: SupabaseClient, requestId: string) {
   return db.rpc("approve_shortlist", { p_request: requestId });
 }

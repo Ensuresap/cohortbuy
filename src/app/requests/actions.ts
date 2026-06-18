@@ -29,6 +29,7 @@ import {
   setCandidateStatus,
   deleteCandidate,
   setResearch,
+  setBenchmark,
   approveShortlist,
 } from "@/core/research/services/researchService";
 import { estimateBenchmark, suggestVendors } from "@/core/research/services/researchAiService";
@@ -378,12 +379,15 @@ export async function aiEstimateBenchmarkAction(formData: FormData) {
   if (ctxData) {
     const est = await estimateBenchmark(ctx, { cohortId: ctxData.request.cohort_id, context: ctxData.context });
     if (est.ok) {
-      await setResearch(ctx, {
+      const basis =
+        est.data.assumptions.map((a) => `• ${a}`).join("\n") +
+        (est.data.rationale ? `\n\n${est.data.rationale}` : "");
+      await setBenchmark(ctx, {
         requestId,
-        low: String(est.data.low),
-        high: String(est.data.high),
+        lowCents: Math.round(est.data.low * 100),
+        highCents: Math.round(est.data.high * 100),
         currency: est.data.currency,
-        notes: est.data.rationale || undefined,
+        basis,
       });
     }
   }

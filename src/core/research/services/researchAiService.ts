@@ -5,16 +5,21 @@ import { runMessages, LlmConfigError, type LlmTool } from "../../ai/llm";
 
 const BENCHMARK_TOOL: LlmTool = {
   name: "propose_benchmark",
-  description: "Return an estimated typical total price range (in major currency units) for this group project.",
+  description: "Return an estimated typical total price range (in major currency units) for this group project, with the criteria/assumptions used.",
   input_schema: {
     type: "object",
     properties: {
       low: { type: "number", description: "Low end of the typical total price" },
       high: { type: "number", description: "High end of the typical total price" },
       currency: { type: "string", description: "ISO currency code, e.g. USD" },
-      rationale: { type: "string", description: "One or two sentences on what drives the range and what to verify" },
+      assumptions: {
+        type: "array",
+        description: "The specific criteria the estimate is based on, e.g. for a fence: '≈120 ft of cedar privacy fence', '6 ft height', 'includes removal/haul-away', 'standard install, level ground'. Be concrete with the dimensions, material, and scope you assumed.",
+        items: { type: "string" },
+      },
+      rationale: { type: "string", description: "One short sentence on what most drives the range and what to verify" },
     },
-    required: ["low", "high", "currency"],
+    required: ["low", "high", "currency", "assumptions"],
   },
 };
 
@@ -50,7 +55,7 @@ function mapAiErr(e: unknown) {
 export async function estimateBenchmark(
   ctx: Ctx,
   args: { cohortId: string; context: string }
-): Promise<Result<{ low: number; high: number; currency: string; rationale: string }>> {
+): Promise<Result<{ low: number; high: number; currency: string; assumptions: string[]; rationale: string }>> {
   if (!ctx.db) return err("not_configured", "Database is not configured");
   const m = await resolveModel(ctx, { cohortId: args.cohortId });
   const provider = (m.ok ? m.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
@@ -60,14 +65,20 @@ export async function estimateBenchmark(
       provider,
       model,
       system:
-        "You estimate a realistic typical TOTAL price range for a neighbor group-buying project, to set expectations. Be honest and conservative; it's only a benchmark. Always call propose_benchmark.",
+        "You estimate a realistic typical TOTAL price range for a neighbor group-buying project, to set expectations. State the concrete criteria you assumed (dimensions, material, scope) — if the scope is vague, assume typical values and say so. Be honest and conservative; it's only a benchmark. Always call propose_benchmark.",
       messages: [{ role: "user", content: args.context }],
       tools: [BENCHMARK_TOOL],
     });
     if (r.kind !== "tool") return err("ai_error", "No estimate returned");
-    const i = r.input as { low?: number; high?: number; currency?: string; rationale?: string };
+    const i = r.input as { low?: number; high?: number; currency?: string; assumptions?: string[]; rationale?: string };
     if (typeof i.low !== "number" || typeof i.high !== "number") return err("ai_error", "Incomplete estimate");
-    return ok({ low: i.low, high: i.high, currency: i.currency || "USD", rationale: i.rationale || "" });
+    return ok({
+      low: i.low,
+      high: i.high,
+      currency: i.currency || "USD",
+      assumptions: Array.isArray(i.assumptions) ? i.assumptions.filter(Boolean) : [],
+      rationale: i.rationale || "",
+    });
   } catch (e) {
     return mapAiErr(e);
   }
