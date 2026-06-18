@@ -35,10 +35,30 @@ export const CreateRequestInput = z.object({
   description: z.string().trim().max(2000).optional(),
   driver: z.string().trim().max(1000).optional(),
   targetDate: z.string().trim().max(20).optional(),
+  joinDeadline: z.string().trim().max(20).optional(),
+  projectType: z.enum(["service", "group_buy"]).optional(),
+  serviceScope: z.enum(["service", "equipment", "both"]).optional(),
+  splitMethod: z.enum(["even", "by_quantity", "by_usage", "custom"]).optional(),
   locked: z.boolean().optional(),
   minSize: z.number().int().min(1).max(100).default(2),
 });
 export type CreateRequestInput = z.infer<typeof CreateRequestInput>;
+
+export const PROJECT_TYPE_LABELS: Record<"service" | "group_buy", string> = {
+  service: "Service — work done per home",
+  group_buy: "Group buy — volume product order",
+};
+export const SERVICE_SCOPE_LABELS: Record<"service" | "equipment" | "both", string> = {
+  service: "Service / labor only",
+  equipment: "Equipment / product only",
+  both: "Equipment + installation",
+};
+export const SPLIT_METHOD_LABELS: Record<"even" | "by_quantity" | "by_usage" | "custom", string> = {
+  even: "Even split (equal shares)",
+  by_quantity: "By quantity (e.g. footage / units)",
+  by_usage: "By usage / consumption",
+  custom: "Custom (coordinator sets)",
+};
 
 export const AddCommentInput = z.object({
   requestId: z.string().uuid(),
@@ -84,6 +104,10 @@ export interface ServiceRequest {
   description: string | null;
   driver: string | null;
   target_date: string | null;
+  join_deadline: string | null;
+  project_type: "service" | "group_buy";
+  service_scope: "service" | "equipment" | "both";
+  split_method: "even" | "by_quantity" | "by_usage" | "custom";
   locked: boolean;
   contract_structure: "combined" | "individual";
   payment_mode: "pooled_escrow" | "individual_direct";

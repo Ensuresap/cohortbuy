@@ -161,7 +161,13 @@ export default async function CohortPage({ params }: { params: { handle: string 
               <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="font-display text-lg font-semibold text-text">Active projects</h2>
-                  {isManager && <AddProjectButton cohortId={cohort.id} handle={cohort.handle} />}
+                  {isManager && (
+                    <AddProjectButton
+                      cohortId={cohort.id}
+                      handle={cohort.handle}
+                      cohortKind={(cohort as { kind?: "service" | "group_buy" }).kind ?? "service"}
+                    />
+                  )}
                 </div>
                 {projects.length === 0 ? (
                   <p className="mt-3 text-muted">

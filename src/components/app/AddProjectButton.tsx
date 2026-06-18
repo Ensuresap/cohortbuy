@@ -6,17 +6,19 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Stepper from "@/components/ui/Stepper";
-import { Field, Textarea } from "@/components/ui/Field";
+import { Field, Textarea, Select } from "@/components/ui/Field";
 import { createRequestAction } from "@/app/requests/actions";
 
-const STEPS = ["Basics", "Details", "Access"];
+const STEPS = ["Basics", "Type & scope", "Timing & size", "Access"];
 
 export default function AddProjectButton({
   cohortId,
   handle,
+  cohortKind = "service",
 }: {
   cohortId: string;
   handle: string;
+  cohortKind?: "service" | "group_buy";
 }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -48,7 +50,7 @@ export default function AddProjectButton({
       {open && (
         <Modal title="Start a project" onClose={close}>
           <p className="-mt-2 mb-4 text-sm text-muted">
-            Kick off a group purchase for this cohort — you&rsquo;ll coordinate it.
+            Set up a group purchase for this cohort — you&rsquo;ll coordinate it.
           </p>
           <Stepper steps={STEPS} current={step} />
 
@@ -88,30 +90,63 @@ export default function AddProjectButton({
               </Field>
             </div>
 
-            {/* Step 2 — Details */}
+            {/* Step 2 — Type & scope */}
             <div className={step === 1 ? "space-y-4" : "hidden"}>
-              <Field label="Why now — the driver" htmlFor="driver" optional hint="The motivation, e.g. fences are failing after the storm.">
-                <Textarea id="driver" name="driver" rows={3} placeholder="Why is the group doing this now?" />
+              <Field label="Project type" htmlFor="projectType" hint="Service runs an RFQ to vendors; group buy pools a volume product order.">
+                <Select id="projectType" name="projectType" defaultValue={cohortKind}>
+                  <option value="service">Service — work done per home (fencing, roofing, solar…)</option>
+                  <option value="group_buy">Group buy — volume product order (mulch, propane, EV chargers…)</option>
+                </Select>
               </Field>
-              <Field label="Target date" htmlFor="targetDate" optional hint="An aspirational “done by” date.">
+              <Field label="What's included" htmlFor="serviceScope">
+                <Select id="serviceScope" name="serviceScope" defaultValue="service">
+                  <option value="service">Service / labor only</option>
+                  <option value="equipment">Equipment / product only</option>
+                  <option value="both">Equipment + installation</option>
+                </Select>
+              </Field>
+              <Field label="How costs split" htmlFor="splitMethod" hint="You can fine-tune the split later, once the price is agreed.">
+                <Select id="splitMethod" name="splitMethod" defaultValue="even">
+                  <option value="even">Even split (equal shares)</option>
+                  <option value="by_quantity">By quantity (e.g. footage / units)</option>
+                  <option value="by_usage">By usage / consumption</option>
+                  <option value="custom">Custom (you set it)</option>
+                </Select>
+              </Field>
+            </div>
+
+            {/* Step 3 — Timing & size */}
+            <div className={step === 2 ? "space-y-4" : "hidden"}>
+              <Field label="Why now — the driver" htmlFor="driver" optional hint="The motivation, e.g. fences are failing after the storm.">
+                <Textarea id="driver" name="driver" rows={2} placeholder="Why is the group doing this now?" />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Min group size" htmlFor="minSize" hint="To unlock the deal.">
+                  <Input id="minSize" name="minSize" type="number" min={1} max={100} defaultValue={2} />
+                </Field>
+                <Field label="Join deadline" htmlFor="joinDeadline" optional>
+                  <Input id="joinDeadline" name="joinDeadline" type="date" />
+                </Field>
+              </div>
+              <Field label="Target completion date" htmlFor="targetDate" optional hint="An aspirational “done by” date.">
                 <Input id="targetDate" name="targetDate" type="date" />
               </Field>
             </div>
 
-            {/* Step 3 — Access */}
-            <div className={step === 2 ? "space-y-4" : "hidden"}>
+            {/* Step 4 — Access */}
+            <div className={step === 3 ? "space-y-4" : "hidden"}>
               <label className="flex items-start gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm text-text">
                 <input name="locked" type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" />
                 <span>
                   Lock the group
                   <span className="mt-0.5 block text-xs text-subtle">
-                    Prevents anyone joining or leaving. Leave off while you&rsquo;re gathering members — you can lock it later once the group is set.
+                    Prevents anyone joining or leaving. Leave off while you&rsquo;re gathering members — you can lock it later.
                   </span>
                 </span>
               </label>
               <p className="rounded-xl border border-border px-4 py-3 text-xs text-subtle">
-                You&rsquo;ll be the coordinator. Members can join while the project is open, add their scope,
-                and the agreement stays directly between members and the vendor.
+                You&rsquo;ll be the coordinator. The agreement stays directly between members and the
+                vendor — CohortBuy facilitates and never holds funds.
               </p>
             </div>
 

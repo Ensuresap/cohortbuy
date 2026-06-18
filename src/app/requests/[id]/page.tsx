@@ -32,6 +32,9 @@ import {
   JOINABLE_STATUSES,
   CONTRACT_STRUCTURE_LABELS,
   PAYMENT_MODE_LABELS,
+  PROJECT_TYPE_LABELS,
+  SERVICE_SCOPE_LABELS,
+  SPLIT_METHOD_LABELS,
   type RequestStatus,
 } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
@@ -626,8 +629,12 @@ export default async function RequestPage({ params }: { params: { id: string } }
               <h2 className="text-sm font-medium text-muted">Details</h2>
               <dl className="mt-3 space-y-3 text-sm">
                 <Row label="Status" value={STAGE_LABELS[req.status]} />
+                <Row label="Type" value={PROJECT_TYPE_LABELS[req.project_type]} />
+                <Row label="Includes" value={SERVICE_SCOPE_LABELS[req.service_scope]} />
+                <Row label="Cost split" value={SPLIT_METHOD_LABELS[req.split_method]} />
                 <Row label="Started" value={fmtDate(req.created_at)} />
                 <Row label="Target" value={req.target_date ? fmtDate(req.target_date) : "Not set"} />
+                {req.join_deadline && <Row label="Join by" value={fmtDate(req.join_deadline)} />}
                 <Row label="Min group" value={`${req.min_size} members`} />
                 <Row label="Participants" value={String(participants.length)} />
                 {req.cohort && <Row label="Cohort" value={req.cohort.name} />}

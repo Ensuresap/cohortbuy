@@ -9,6 +9,10 @@ export function createRequest(db: SupabaseClient, input: CreateRequestInput) {
     p_description: input.description ?? null,
     p_driver: input.driver ?? null,
     p_target: input.targetDate || null,
+    p_deadline: input.joinDeadline || null,
+    p_type: input.projectType ?? "service",
+    p_service_scope: input.serviceScope ?? "service",
+    p_split: input.splitMethod ?? "even",
     p_locked: input.locked ?? false,
     p_min_size: input.minSize,
   });
