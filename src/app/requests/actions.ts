@@ -303,6 +303,7 @@ export async function addCandidateAction(formData: FormData) {
     name: String(formData.get("name") ?? ""),
     contact: String(formData.get("contact") ?? "") || undefined,
     website: String(formData.get("website") ?? "") || undefined,
+    address: String(formData.get("address") ?? "") || undefined,
     notes: String(formData.get("notes") ?? "") || undefined,
     source: (String(formData.get("source") ?? "member") || "member") as "member" | "registry" | "ai" | "web",
     vendorId: String(formData.get("vendorId") ?? "") || undefined,
@@ -401,7 +402,8 @@ export async function aiSuggestVendorsAction(formData: FormData) {
           requestId,
           name: v.name,
           website: v.website || undefined,
-          notes: `AI-suggested — verify before contacting. ${v.note}`.trim(),
+          address: v.address || undefined,
+          notes: v.note || undefined,
           source: "ai",
         });
       }

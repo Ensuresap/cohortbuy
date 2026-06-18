@@ -7,6 +7,7 @@ export function insertCandidate(
     name: string;
     contact?: string;
     website?: string;
+    address?: string;
     notes?: string;
     source: string;
     vendorId?: string;
@@ -19,6 +20,7 @@ export function insertCandidate(
     name: args.name,
     contact: args.contact ?? null,
     website: args.website ?? null,
+    address: args.address ?? null,
     notes: args.notes ?? null,
     source: args.source,
     suggested_by: args.userId,

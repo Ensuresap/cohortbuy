@@ -7,6 +7,7 @@ export interface VendorCandidate {
   name: string;
   contact: string | null;
   website: string | null;
+  address: string | null;
   source: "member" | "registry" | "ai" | "web";
   status: "considering" | "shortlisted" | "contacted" | "declined";
   vetting_status: "unverified" | "vetted";
@@ -33,6 +34,7 @@ export const AddCandidateInput = z.object({
   name: z.string().trim().min(1).max(160),
   contact: z.string().trim().max(200).optional(),
   website: z.string().trim().max(300).optional(),
+  address: z.string().trim().max(300).optional(),
   notes: z.string().trim().max(1000).optional(),
   source: z.enum(["member", "registry", "ai", "web"]).default("member"),
   vendorId: z.string().uuid().optional(),

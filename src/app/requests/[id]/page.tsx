@@ -18,6 +18,9 @@ import {
   ChevronRight,
   RotateCcw,
   Sparkles,
+  MapPin,
+  Globe,
+  Phone,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -524,17 +527,21 @@ export default async function RequestPage({
                         <li key={c.id} className="rounded-xl border border-border px-4 py-3">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="font-medium text-text">
-                                {c.website ? (
-                                  <a href={c.website} target="_blank" rel="noopener noreferrer" className="hover:underline">{c.name}</a>
-                                ) : c.name}
-                              </p>
+                              <p className="font-medium text-text">{c.name}</p>
                               <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-subtle">
                                 <span className="rounded-full bg-surface-2 px-2 py-0.5">{CANDIDATE_SOURCE_LABELS[c.source]}</span>
                                 {c.vetting_status === "unverified" && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-accent">Not vetted</span>}
-                                {c.contact && <span>· {c.contact}</span>}
                               </p>
-                              {c.notes && <p className="mt-1 text-sm text-muted">{c.notes}</p>}
+                              <div className="mt-1 space-y-0.5 text-xs text-muted">
+                                {c.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3 shrink-0 text-subtle" /> {c.address}</p>}
+                                {c.website && (
+                                  <a href={c.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                                    <Globe className="h-3 w-3 shrink-0" /> {c.website.replace(/^https?:\/\//, "")}
+                                  </a>
+                                )}
+                                {c.contact && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0 text-subtle" /> {c.contact}</p>}
+                              </div>
+                              {c.notes && <p className="mt-1.5 text-sm text-muted">{c.notes}</p>}
                             </div>
                             <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${statusTone}`}>{CANDIDATE_STATUS_LABELS[c.status]}</span>
                           </div>
@@ -571,6 +578,7 @@ export default async function RequestPage({
                     <input name="name" required placeholder="Vendor name" className={fieldClass} />
                     <input name="contact" placeholder="Contact (email / phone)" className={fieldClass} />
                     <input name="website" type="url" placeholder="Website (optional)" className={fieldClass} />
+                    <input name="address" placeholder="Address / service area (optional)" className={fieldClass} />
                     <textarea name="notes" rows={2} placeholder="Why this vendor / notes…" className={fieldClass} />
                     <Button type="submit">Add candidate</Button>
                   </form>

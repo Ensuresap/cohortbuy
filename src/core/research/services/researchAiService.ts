@@ -31,6 +31,7 @@ const VENDORS_TOOL: LlmTool = {
           properties: {
             name: { type: "string", description: "The actual business name (not a category)" },
             website: { type: "string", description: "Website or a Google Maps search URL for the business, if known" },
+            address: { type: "string", description: "Business address or service area/locality, if known" },
             note: { type: "string", description: "Why it fits / what to verify" },
           },
           required: ["name"],
@@ -75,7 +76,7 @@ export async function estimateBenchmark(
 export async function suggestVendors(
   ctx: Ctx,
   args: { cohortId: string; context: string }
-): Promise<Result<{ name: string; website: string; note: string }[]>> {
+): Promise<Result<{ name: string; website: string; address: string; note: string }[]>> {
   if (!ctx.db) return err("not_configured", "Database is not configured");
   const m = await resolveModel(ctx, { cohortId: args.cohortId });
   const provider = (m.ok ? m.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
@@ -90,8 +91,10 @@ export async function suggestVendors(
       tools: [VENDORS_TOOL],
     });
     if (r.kind !== "tool") return err("ai_error", "No suggestions returned");
-    const list = (r.input as { vendors?: Array<{ name?: string; website?: string; note?: string }> }).vendors ?? [];
-    return ok(list.filter((v) => v.name).map((v) => ({ name: v.name as string, website: v.website ?? "", note: v.note ?? "" })));
+    const list = (r.input as { vendors?: Array<{ name?: string; website?: string; address?: string; note?: string }> }).vendors ?? [];
+    return ok(
+      list.filter((v) => v.name).map((v) => ({ name: v.name as string, website: v.website ?? "", address: v.address ?? "", note: v.note ?? "" }))
+    );
   } catch (e) {
     return mapAiErr(e);
   }

@@ -25,6 +25,7 @@ export async function addCandidate(ctx: Ctx, raw: unknown): Promise<Result<true>
     name: p.data.name,
     contact: p.data.contact,
     website: p.data.website,
+    address: p.data.address,
     notes: p.data.notes,
     source: p.data.source,
     vendorId: p.data.vendorId,
