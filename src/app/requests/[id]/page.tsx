@@ -622,14 +622,6 @@ export default async function RequestPage({
               </Panel>
             )}
 
-            {/* About */}
-            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <h2 className="font-display text-lg font-semibold text-text">About this project</h2>
-              <p className="mt-2 whitespace-pre-wrap text-muted">{req.description || "No description yet."}</p>
-              <h3 className="mt-4 text-sm font-semibold text-text">Why now — the driver</h3>
-              <p className="mt-1 whitespace-pre-wrap text-muted">{req.driver || "Not specified."}</p>
-            </section>
-
             {/* Discussion */}
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
               <h2 className="font-display text-lg font-semibold text-text">Discussion</h2>
