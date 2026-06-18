@@ -30,6 +30,8 @@ import {
   PIPELINE,
   STAGE_LABELS,
   JOINABLE_STATUSES,
+  CONTRACT_STRUCTURE_LABELS,
+  PAYMENT_MODE_LABELS,
   type RequestStatus,
 } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
@@ -43,6 +45,7 @@ import {
   addCommentAction,
   selectQuoteAction,
   recordContractAction,
+  setTermsAction,
   generateCostSharesAction,
   setSharePaidAction,
   completeProjectAction,
@@ -433,10 +436,49 @@ export default async function RequestPage({ params }: { params: { id: string } }
                   No quote selected yet. The coordinator picks a winning quote under Vendors &amp; quotes.
                 </p>
               )}
+              {/* Contract structure + payment mode (Addendum D) */}
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="rounded-xl border border-border p-3">
+                  <p className="text-xs text-subtle">Contract structure</p>
+                  <p className="text-sm font-medium text-text">{CONTRACT_STRUCTURE_LABELS[req.contract_structure]}</p>
+                </div>
+                <div className="rounded-xl border border-border p-3">
+                  <p className="text-xs text-subtle">Payment</p>
+                  <p className="text-sm font-medium text-text">{PAYMENT_MODE_LABELS[req.payment_mode]}</p>
+                </div>
+              </div>
+
               <p className="mt-3 text-xs text-subtle">
                 The agreement is made directly between participating members and the vendor. CohortBuy
                 facilitates coordination only — it is not a party to the contract and holds no funds.
               </p>
+
+              {(isCoordinator || isManager) && hasSelection && !isCompleted && (
+                <form action={setTermsAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
+                  <p className="text-sm font-medium text-text">Set the structure &amp; payment</p>
+                  <input type="hidden" name="requestId" value={req.id} />
+                  <label className="block text-xs font-medium text-subtle">
+                    Contract structure
+                    <select name="contractStructure" defaultValue={req.contract_structure} className={`${fieldClass} mt-1`}>
+                      <option value="individual">Individual contracts (per member)</option>
+                      <option value="combined">One combined group contract</option>
+                    </select>
+                  </label>
+                  <label className="block text-xs font-medium text-subtle">
+                    Payment mode
+                    <select name="paymentMode" defaultValue={req.payment_mode} className={`${fieldClass} mt-1`}>
+                      <option value="individual_direct">Each member pays the vendor directly (off-platform)</option>
+                      <option value="pooled_escrow">Pooled escrow — coming later</option>
+                    </select>
+                  </label>
+                  <p className="text-xs text-subtle">
+                    Negotiation is always collective — only the contract &amp; settlement structure differs.
+                    Pooled escrow isn&rsquo;t enabled yet; direct payment keeps CohortBuy out of the flow of funds.
+                  </p>
+                  <Button type="submit">Save terms</Button>
+                </form>
+              )}
+
               {isCoordinator && hasSelection && !isCompleted && (
                 <form action={recordContractAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
                   <p className="text-sm font-medium text-text">Record the contract reference</p>

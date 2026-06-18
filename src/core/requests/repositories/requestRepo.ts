@@ -64,6 +64,17 @@ export function setSharePaid(db: SupabaseClient, args: { shareId: string; paid: 
   return db.rpc("set_share_paid", { p_share: args.shareId, p_paid: args.paid });
 }
 
+export function setProjectTerms(
+  db: SupabaseClient,
+  args: { requestId: string; contractStructure: string; paymentMode: string }
+) {
+  return db.rpc("set_project_terms", {
+    p_request: args.requestId,
+    p_structure: args.contractStructure,
+    p_payment: args.paymentMode,
+  });
+}
+
 export function completeProject(
   db: SupabaseClient,
   args: { requestId: string; note: string }

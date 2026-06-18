@@ -12,6 +12,7 @@ import {
   editProject,
   selectWinningQuote,
   recordContract,
+  setProjectTerms,
   generateCostShares,
   setSharePaid,
   completeProject,
@@ -108,6 +109,17 @@ export async function selectQuoteAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
   await selectWinningQuote(ctx, { quoteId: String(formData.get("quoteId") ?? "") });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function setTermsAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await setProjectTerms(ctx, {
+    requestId,
+    contractStructure: String(formData.get("contractStructure") ?? "individual"),
+    paymentMode: String(formData.get("paymentMode") ?? "individual_direct"),
+  });
   revalidatePath(`/requests/${requestId}`);
 }
 

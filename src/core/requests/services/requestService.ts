@@ -8,6 +8,7 @@ import {
   SelectQuoteInput,
   SetContractInput,
   SetSharePaidInput,
+  SetTermsInput,
   CompleteProjectInput,
   JOINABLE_STATUSES,
   type ServiceRequest,
@@ -234,6 +235,25 @@ export async function setSharePaid(ctx: Ctx, raw: unknown): Promise<Result<true>
   if (!p.success) return err("invalid_input", "Invalid share");
   const { error } = await repo.setSharePaid(ctx.db, { shareId: p.data.shareId, paid: p.data.paid });
   if (error) return err("db_error", error.message);
+  return ok(true);
+}
+
+/** Coordinator sets contract structure + payment mode (Addendum D). */
+export async function setProjectTerms(ctx: Ctx, raw: unknown): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const p = SetTermsInput.safeParse(raw);
+  if (!p.success) return err("invalid_input", p.error.issues[0]?.message ?? "Invalid");
+  const { error } = await repo.setProjectTerms(ctx.db, {
+    requestId: p.data.requestId,
+    contractStructure: p.data.contractStructure,
+    paymentMode: p.data.paymentMode,
+  });
+  if (error) {
+    if (error.message?.includes("not_coordinator"))
+      return err("forbidden", "Only the coordinator or a cohort manager can set terms");
+    return err("db_error", error.message);
+  }
   return ok(true);
 }
 

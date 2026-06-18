@@ -145,6 +145,11 @@
 - ◐ (manual) cost-share list shows per-member amounts, paid toggle, collected/agreed total; SafetyNote + off-platform note present.
 - ◐ (e2e) full path: forming → select quote → record contract → generate split → mark paid → complete → Completed banner.
 
+## Contract & payment terms (Addendum D)
+- ☐ (integration) `set_project_terms` validates enum values; non-coordinator/non-manager → `not_coordinator`.
+- ☐ (unit) defaults are `individual` + `individual_direct` on new projects.
+- ◐ (manual) Decision & contract shows current structure/payment labels; coordinator/manager form sets them only after a quote is selected; escrow labeled "coming later".
+
 ## Project action bar + lock
 - ☐ (integration) `joinServiceRequest` rejects when project locked or past `JOINABLE_STATUSES`; succeeds for a cohort member in an open stage.
 - ☐ (integration) `leaveProject` blocks the coordinator and blocks when locked; otherwise sets participant status='left'.

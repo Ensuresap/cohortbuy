@@ -85,6 +85,8 @@ export interface ServiceRequest {
   driver: string | null;
   target_date: string | null;
   locked: boolean;
+  contract_structure: "combined" | "individual";
+  payment_mode: "pooled_escrow" | "individual_direct";
   status: RequestStatus;
   min_size: number;
   last_activity_at: string;
@@ -125,6 +127,21 @@ export const CompleteProjectInput = z.object({
   requestId: z.string().uuid(),
   note: z.string().trim().max(1000).optional(),
 });
+
+export const SetTermsInput = z.object({
+  requestId: z.string().uuid(),
+  contractStructure: z.enum(["combined", "individual"]),
+  paymentMode: z.enum(["pooled_escrow", "individual_direct"]),
+});
+
+export const CONTRACT_STRUCTURE_LABELS: Record<"combined" | "individual", string> = {
+  individual: "Individual contracts (per member)",
+  combined: "One combined group contract",
+};
+export const PAYMENT_MODE_LABELS: Record<"pooled_escrow" | "individual_direct", string> = {
+  individual_direct: "Each member pays the vendor directly (off-platform)",
+  pooled_escrow: "Pooled escrow (platform-held) — coming later",
+};
 
 export interface Participant {
   id: string;
