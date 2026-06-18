@@ -6,6 +6,7 @@ Update the `[Unreleased]` section with **every** feature (see `CLAUDE.md` → "K
 ## [Unreleased]
 
 ### Changed
+- **UI consistency pass + professional forms** — promoted the cohort page's patterns into shared primitives (`ui/Modal`, `ui/IconButton`, `ui/Stepper`, `ui/Field` exporting `fieldClass`/`labelClass`/`subtleBtnClass` + `Field`/`Textarea`/`Select`) so the project and cohort pages now look identical. The project hero action bar now uses the same round **IconButtons** (Info · Share · Edit) + primary **Join** + **More** menu (Leave) as the cohort header. **Add Project is now a 3-step wizard** (Basics → Details → Access) matching the create-cohort wizard, Edit Project is a clean labeled modal, and the project page's inline forms/buttons use the shared field + button styles. Fixed a checkbox accent class (`accent-primary`).
 - **Edit cohort: full field coverage + polished create form** — the cohort settings modal now also edits **cohort type**, **city/state**, and **coverage ZIP codes** (in addition to name/tagline/description/tags/images/join-questions); `UpdateCohortProfileInput` + `updateCohortProfile` gained `kind`/`city`/`region`/`coverageZips`, and `ZipCoverageField` got an `onChange` for the JS-driven modal. The **create cohort** form is now a 3-step **wizard** (Basics → Type & tags → Location & coverage) with a progress stepper and Back/Next/Create; all fields stay in one form so it still submits in a single action, Basics is validated before advancing, and Enter advances instead of submitting mid-wizard. No migration needed.
 
 ### Fixed

@@ -50,9 +50,7 @@ import {
   setSharePaidAction,
   completeProjectAction,
 } from "../actions";
-
-const fieldClass =
-  "min-h-touch w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-text outline-none placeholder:text-subtle focus:ring-2 focus:ring-ring";
+import { fieldClass, subtleBtnClass } from "@/components/ui/Field";
 
 function fmt(cents: number, currency: string) {
   try {
@@ -373,10 +371,7 @@ export default async function RequestPage({ params }: { params: { id: string } }
                           <form action={selectQuoteAction} className="mt-2">
                             <input type="hidden" name="requestId" value={req.id} />
                             <input type="hidden" name="quoteId" value={q.id} />
-                            <button
-                              type="submit"
-                              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text hover:bg-surface-2"
-                            >
+                            <button type="submit" className={subtleBtnClass}>
                               Select this quote
                             </button>
                           </form>
@@ -563,7 +558,7 @@ export default async function RequestPage({ params }: { params: { id: string } }
               {isCoordinator && hasSelection && !isCompleted && (
                 <form action={generateCostSharesAction} className="mt-3">
                   <input type="hidden" name="requestId" value={req.id} />
-                  <button type="submit" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text hover:bg-surface-2">
+                  <button type="submit" className={subtleBtnClass}>
                     {shares.length === 0 ? "Generate even split" : "Regenerate split"}
                   </button>
                 </form>
