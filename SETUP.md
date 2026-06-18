@@ -37,10 +37,10 @@ Used for: Postgres data, Auth, RLS. Migrations live in `supabase/migrations/`.
    supabase db push
    ```
 
-## 2. Anthropic / OpenAI — the AI models  *(Agent)*
-Used for: the agent runtime. We're **provider-agnostic** (`{ provider, model }`), set per-cohort or globally (see AI config in `Product_Spec.md`).
+## 2. Anthropic / OpenAI — the AI models  *(Now — required for the Project Advisor)*
+Used for: the agent runtime, starting with the **Project Advisor** (Stage-0 intake at `/<cohort>/advisor`). We're **provider-agnostic** (`{ provider, model }`), set per-cohort or globally (see AI config in `Product_Spec.md`). The advisor currently calls Anthropic; without a key it shows a friendly "AI isn't configured yet" message and the rest of the app is unaffected.
 
-1. Anthropic: create a key at the Anthropic Console → set `ANTHROPIC_API_KEY`.
+1. Anthropic: create a key at the Anthropic Console → set `ANTHROPIC_API_KEY`. **Required for the advisor.**
 2. OpenAI (optional): create a key at the OpenAI dashboard → set `OPENAI_API_KEY`.
 3. Optional default override via `AI_DEFAULT_PROVIDER` / `AI_DEFAULT_MODEL` (otherwise the code default `DEFAULT_MODEL` applies).
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -162,11 +163,19 @@ export default async function CohortPage({ params }: { params: { handle: string 
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="font-display text-lg font-semibold text-text">Active projects</h2>
                   {isManager && (
-                    <AddProjectButton
-                      cohortId={cohort.id}
-                      handle={cohort.handle}
-                      cohortKind={(cohort as { kind?: "service" | "group_buy" }).kind ?? "service"}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/${cohort.handle}/advisor`}
+                        className="inline-flex min-h-touch items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition hover:bg-surface-2"
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" /> Advisor
+                      </Link>
+                      <AddProjectButton
+                        cohortId={cohort.id}
+                        handle={cohort.handle}
+                        cohortKind={(cohort as { kind?: "service" | "group_buy" }).kind ?? "service"}
+                      />
+                    </div>
                   )}
                 </div>
                 {projects.length === 0 ? (

@@ -28,6 +28,10 @@ export function getByHandle(db: SupabaseClient, handle: string) {
   return db.from("cohorts").select("*").eq("handle", handle.toLowerCase()).maybeSingle();
 }
 
+export function getById(db: SupabaseClient, id: string) {
+  return db.from("cohorts").select("id, name, handle, kind").eq("id", id).maybeSingle();
+}
+
 export function searchPublic(
   db: SupabaseClient,
   args: { query?: string; limit: number }
