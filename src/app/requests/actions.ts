@@ -146,11 +146,11 @@ export async function addScopeAction(formData: FormData) {
 export async function advanceRequestAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
-  await advanceStatus(ctx, {
-    requestId,
-    status: String(formData.get("status") ?? ""),
-  });
+  const status = String(formData.get("status") ?? "");
+  const res = await advanceStatus(ctx, { requestId, status });
   revalidatePath(`/requests/${requestId}`);
+  // Land the coordinator on the new stage's tab.
+  if (res.ok && status) redirect(`/requests/${requestId}?step=${status}`);
 }
 
 export async function addCommentAction(formData: FormData) {

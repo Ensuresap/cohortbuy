@@ -98,7 +98,13 @@ function initials(name: string | null) {
   return (name ?? "?").trim().split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase() || "?";
 }
 
-export default async function RequestPage({ params }: { params: { id: string } }) {
+export default async function RequestPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: { step?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -139,15 +145,16 @@ export default async function RequestPage({ params }: { params: { id: string } }
   const membership = mine.find((m) => m.cohort?.id === req.cohort_id);
   const isManager = membership?.status === "approved" && membership?.access_level === "manager";
 
-  // ── Configurable lifecycle: the project's own stage track ────────────────
+  // ── Configurable lifecycle + tabbed navigation ─────────────────────────
   const type = req.project_type;
   const track = trackFor(type);
   const curIdx = track.indexOf(req.status);
-  const idxOf = (s: RequestStatus) => track.indexOf(s);
-  const inTrack = (s: RequestStatus) => track.includes(s);
   const at = (s: RequestStatus) => req.status === s;
-  const reached = (s: RequestStatus) => inTrack(s) && curIdx >= idxOf(s);
-  const past = (s: RequestStatus) => inTrack(s) && curIdx > idxOf(s);
+
+  const requested = searchParams?.step as RequestStatus | undefined;
+  const viewedStep: RequestStatus =
+    requested && track.includes(requested) ? requested : track.includes(req.status) ? req.status : track[0];
+  const viewingCurrent = viewedStep === req.status;
 
   const nextStage = curIdx >= 0 && curIdx < track.length - 1 ? track[curIdx + 1] : null;
   const blockedReason = advanceBlockedReason(req.status, {
@@ -179,7 +186,8 @@ export default async function RequestPage({ params }: { params: { id: string } }
         ? fmt(bestQuote.amount_cents, bestQuote.currency)
         : "—";
 
-  const upNext = curIdx >= 0 ? track.slice(curIdx + 1).filter((s) => s !== "completed") : [];
+  const showQuotes = type === "service" && (viewedStep === "research" || viewedStep === "rfq" || viewedStep === "deciding");
+  const showPrice = type === "group_buy" && viewedStep === "research";
 
   return (
     <AppShell>
@@ -277,51 +285,74 @@ export default async function RequestPage({ params }: { params: { id: string } }
           <Stat label={hasSelection ? "Agreed price" : "Best quote"} value={headlineMoney} />
         </div>
 
-        {isCompleted && (
-          <div className="mt-4 flex items-start gap-2 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-medium text-text">Completed</p>
-              {req.completed_at && (
-                <p className="text-sm text-muted">
-                  Signed off {new Date(req.completed_at).toLocaleDateString("en-US", { dateStyle: "medium" })}
-                  {req.contract_vendor ? ` · ${req.contract_vendor}` : ""}
-                </p>
-              )}
-              {req.completion_note && <p className="mt-1 text-sm text-muted">{req.completion_note}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* Progress + current step */}
+        {/* Stage tabs + the viewed step's guidance/advance */}
         <section className="mt-5 rounded-2xl border border-border bg-surface p-5 shadow-soft">
-          <StageBar track={track} status={req.status} />
-          {!isCompleted && (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-primary">Current step · {STAGE_LABELS[req.status]}</p>
-                <p className="mt-0.5 text-sm text-muted">{STAGE_GUIDE[req.status]}</p>
-              </div>
-              {isCoordinator && nextStage && (
-                <form action={advanceRequestAction} className="shrink-0 text-right">
-                  <input type="hidden" name="requestId" value={req.id} />
-                  <input type="hidden" name="status" value={nextStage} />
-                  <Button type="submit" size="md" disabled={!!blockedReason} className="gap-1.5">
-                    Move to {STAGE_LABELS[nextStage]} <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  {blockedReason && <p className="mt-1 max-w-[16rem] text-xs text-subtle">{blockedReason}</p>}
-                </form>
-              )}
+          <nav className="flex flex-wrap gap-1.5">
+            {track.map((s, i) => {
+              const done = curIdx >= 0 && i < curIdx;
+              const current = i === curIdx;
+              const selected = s === viewedStep;
+              const cls = selected
+                ? "bg-primary text-primary-foreground"
+                : current
+                  ? "bg-primary/15 text-primary ring-2 ring-primary/40"
+                  : done
+                    ? "bg-primary/15 text-primary"
+                    : "bg-surface-2 text-subtle hover:bg-surface-2/70";
+              return (
+                <Link
+                  key={s}
+                  href={`/requests/${req.id}?step=${s}`}
+                  scroll={false}
+                  className={"rounded-full px-2.5 py-1 text-xs font-medium transition " + cls}
+                >
+                  {STAGE_LABELS[s]}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wide text-primary">
+                {viewingCurrent ? "Current step" : "Viewing"} · {STAGE_LABELS[viewedStep]}
+              </p>
+              <p className="mt-0.5 text-sm text-muted">{STAGE_GUIDE[viewedStep]}</p>
             </div>
-          )}
+            {viewingCurrent && isCoordinator && nextStage && !isCompleted && (
+              <form action={advanceRequestAction} className="shrink-0 text-right">
+                <input type="hidden" name="requestId" value={req.id} />
+                <input type="hidden" name="status" value={nextStage} />
+                <Button type="submit" size="md" disabled={!!blockedReason} className="gap-1.5">
+                  Move to {STAGE_LABELS[nextStage]} <ChevronRight className="h-4 w-4" />
+                </Button>
+                {blockedReason && <p className="mt-1 max-w-[16rem] text-xs text-subtle">{blockedReason}</p>}
+              </form>
+            )}
+            {!viewingCurrent && curIdx >= 0 && (
+              <Link href={`/requests/${req.id}?step=${req.status}`} scroll={false} className="shrink-0 text-sm font-medium text-primary hover:underline">
+                Back to current step →
+              </Link>
+            )}
+          </div>
         </section>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
-          {/* Main */}
+          {/* Main — the selected step's panel */}
           <div className="space-y-6 lg:col-span-2">
-            {/* ── Scope ─────────────────────────────────────────────── */}
-            {reached("scoping") && (
-              <Phase title="Scope" active={at("scoping")} done={past("scoping")}>
+            {/* Forming */}
+            {viewedStep === "forming" && (
+              <Panel title="Gathering the group">
+                <p className="mt-2 text-muted">
+                  {participants.length} of {req.min_size}+ neighbors so far. Share the invite link (the Share button up top)
+                  to bring more in — the bigger the group, the better the price.
+                </p>
+              </Panel>
+            )}
+
+            {/* Scope */}
+            {viewedStep === "scoping" && (
+              <Panel title="Scope">
                 {scopeItems.length === 0 ? (
                   <p className="mt-2 text-muted">No scope captured yet.</p>
                 ) : (
@@ -347,12 +378,12 @@ export default async function RequestPage({ params }: { params: { id: string } }
                     <Button type="submit">Add to scope</Button>
                   </form>
                 )}
-              </Phase>
+              </Panel>
             )}
 
-            {/* ── Product & price (group buy) ───────────────────────── */}
-            {type === "group_buy" && reached("research") && (
-              <Phase title="Product & price" active={at("research")} done={past("research")}>
+            {/* Product & price (group buy) */}
+            {showPrice && (
+              <Panel title="Product & price">
                 {req.agreed_amount_cents != null ? (
                   <p className="mt-2 font-display text-xl font-semibold text-primary">
                     {fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")}
@@ -371,16 +402,12 @@ export default async function RequestPage({ params }: { params: { id: string } }
                     <Button type="submit">Save price</Button>
                   </form>
                 )}
-              </Phase>
+              </Panel>
             )}
 
-            {/* ── Vendors & quotes (service) ────────────────────────── */}
-            {type === "service" && reached("research") && (
-              <Phase
-                title="Vendors & quotes"
-                active={at("research") || at("rfq") || at("deciding")}
-                done={past("deciding")}
-              >
+            {/* Vendors & quotes (service) */}
+            {showQuotes && (
+              <Panel title="Vendors & quotes">
                 {quotes.length === 0 ? (
                   <p className="mt-2 text-muted">No quotes recorded yet.</p>
                 ) : (
@@ -438,12 +465,12 @@ export default async function RequestPage({ params }: { params: { id: string } }
                     <Button type="submit">Add quote</Button>
                   </form>
                 )}
-              </Phase>
+              </Panel>
             )}
 
-            {/* ── Decision & contract (service) ─────────────────────── */}
-            {type === "service" && reached("contracting") && (
-              <Phase title="Decision & contract" active={at("contracting")} done={past("contracting")}>
+            {/* Decision & contract (service) */}
+            {type === "service" && viewedStep === "contracting" && (
+              <Panel title="Decision & contract">
                 {hasSelection ? (
                   <div className="mt-2 rounded-xl border border-border p-4">
                     <p className="text-sm text-subtle">Agreed vendor</p>
@@ -477,7 +504,7 @@ export default async function RequestPage({ params }: { params: { id: string } }
                 </p>
                 {at("contracting") && (isCoordinator || isManager) && (
                   <form action={setTermsAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
-                    <p className="text-sm font-medium text-text">Set the structure &amp; payment</p>
+                    <p className="text-sm font-medium text-text">Set the structure & payment</p>
                     <input type="hidden" name="requestId" value={req.id} />
                     <label className="block text-xs font-medium text-subtle">
                       Contract structure
@@ -505,12 +532,12 @@ export default async function RequestPage({ params }: { params: { id: string } }
                     <Button type="submit">Save contract reference</Button>
                   </form>
                 )}
-              </Phase>
+              </Panel>
             )}
 
-            {/* ── Cost share ────────────────────────────────────────── */}
-            {reached("funding") && (
-              <Phase title="Cost share" active={at("funding") || at("in_progress")} done={past("in_progress")}>
+            {/* Cost share */}
+            {viewedStep === "funding" && (
+              <Panel title="Cost share">
                 {shares.length > 0 && req.agreed_amount_cents != null && (
                   <p className="mt-1 text-xs text-subtle">
                     {fmt(collectedCents, shareCurrency)} of {fmt(req.agreed_amount_cents, shareCurrency)} collected
@@ -564,37 +591,38 @@ export default async function RequestPage({ params }: { params: { id: string } }
                 )}
                 <div className="mt-3"><SafetyNote /></div>
                 <p className="mt-2 text-xs text-subtle">Payments settle directly between members and the vendor, off-platform. This tracker records who has paid — CohortBuy never holds money.</p>
-              </Phase>
+              </Panel>
             )}
 
-            {/* ── Completion ────────────────────────────────────────── */}
-            {at("in_progress") && isCoordinator && (
-              <section className="rounded-2xl border border-primary/40 bg-surface p-5 shadow-soft ring-1 ring-primary/20">
-                <CurrentBadge />
-                <h2 className="font-display text-lg font-semibold text-text">Sign off completion</h2>
-                <form action={completeProjectAction} className="mt-3 space-y-2">
-                  <input type="hidden" name="requestId" value={req.id} />
-                  <textarea name="note" rows={2} placeholder="Completion note (what was delivered, outcome)…" className={fieldClass} />
-                  <Button type="submit">Mark project completed</Button>
-                </form>
-              </section>
+            {/* In progress → completion */}
+            {viewedStep === "in_progress" && (
+              <Panel title="Delivery">
+                <p className="mt-2 text-muted">Work is underway. The coordinator confirms once it&rsquo;s done.</p>
+                {at("in_progress") && isCoordinator && (
+                  <form action={completeProjectAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
+                    <p className="text-sm font-medium text-text">Sign off completion</p>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <textarea name="note" rows={2} placeholder="Completion note (what was delivered, outcome)…" className={fieldClass} />
+                    <Button type="submit">Mark project completed</Button>
+                  </form>
+                )}
+              </Panel>
             )}
 
-            {/* ── Up next ───────────────────────────────────────────── */}
-            {!isCompleted && upNext.length > 0 && (
-              <section className="rounded-2xl border border-dashed border-border bg-surface/50 p-5">
-                <h2 className="text-sm font-medium text-muted">Up next</h2>
-                <ol className="mt-2 space-y-1 text-sm text-subtle">
-                  {upNext.map((s) => (
-                    <li key={s} className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-border" /> {STAGE_LABELS[s]}
-                    </li>
-                  ))}
-                </ol>
-              </section>
+            {/* Completed recap */}
+            {viewedStep === "completed" && (
+              <Panel title="Completed">
+                {req.contract_vendor && <p className="mt-2 text-text">Vendor: <span className="font-medium">{req.contract_vendor}</span></p>}
+                {req.agreed_amount_cents != null && (
+                  <p className="text-text">Agreed: <span className="font-medium">{fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")}</span></p>
+                )}
+                {req.completed_at && <p className="text-sm text-subtle">Signed off {fmtDate(req.completed_at)}</p>}
+                {req.completion_note && <p className="mt-2 whitespace-pre-wrap text-muted">{req.completion_note}</p>}
+                {!isCompleted && <p className="mt-2 text-muted">Not completed yet.</p>}
+              </Panel>
             )}
 
-            {/* ── About ─────────────────────────────────────────────── */}
+            {/* About */}
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
               <h2 className="font-display text-lg font-semibold text-text">About this project</h2>
               <p className="mt-2 whitespace-pre-wrap text-muted">{req.description || "No description yet."}</p>
@@ -602,7 +630,7 @@ export default async function RequestPage({ params }: { params: { id: string } }
               <p className="mt-1 whitespace-pre-wrap text-muted">{req.driver || "Not specified."}</p>
             </section>
 
-            {/* ── Discussion ────────────────────────────────────────── */}
+            {/* Discussion */}
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
               <h2 className="font-display text-lg font-semibold text-text">Discussion</h2>
               <form action={addCommentAction} className="mt-3 flex gap-2">
@@ -697,46 +725,12 @@ export default async function RequestPage({ params }: { params: { id: string } }
   );
 }
 
-function CurrentBadge() {
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <span className="mb-2 inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-primary">
-      Current step
-    </span>
-  );
-}
-
-function Phase({
-  title,
-  active,
-  done,
-  children,
-}: {
-  title: string;
-  active: boolean;
-  done: boolean;
-  children: React.ReactNode;
-}) {
-  if (active) {
-    return (
-      <section className="rounded-2xl border border-primary/40 bg-surface p-5 shadow-soft ring-1 ring-primary/20">
-        <CurrentBadge />
-        <h2 className="font-display text-lg font-semibold text-text">{title}</h2>
-        {children}
-      </section>
-    );
-  }
-  return (
-    <details className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-soft" open={!done}>
-      <summary className="flex cursor-pointer list-none items-center justify-between">
-        <span className="font-display text-lg font-semibold text-text">{title}</span>
-        {done && (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-            <CheckCircle2 className="h-3.5 w-3.5" /> Done
-          </span>
-        )}
-      </summary>
-      <div className="mt-3">{children}</div>
-    </details>
+    <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+      <h2 className="font-display text-lg font-semibold text-text">{title}</h2>
+      {children}
+    </section>
   );
 }
 
@@ -754,33 +748,6 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-3">
       <dt className="text-subtle">{label}</dt>
       <dd className="text-right text-text">{value}</dd>
-    </div>
-  );
-}
-
-function StageBar({ track, status }: { track: RequestStatus[]; status: RequestStatus }) {
-  const currentIndex = track.indexOf(status);
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {track.map((s, i) => {
-        const done = currentIndex >= 0 && i < currentIndex;
-        const current = i === currentIndex;
-        return (
-          <span
-            key={s}
-            className={
-              "rounded-full px-2.5 py-1 text-xs font-medium " +
-              (current
-                ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
-                : done
-                  ? "bg-primary/15 text-primary"
-                  : "bg-surface-2 text-subtle")
-            }
-          >
-            {STAGE_LABELS[s]}
-          </span>
-        );
-      })}
     </div>
   );
 }
