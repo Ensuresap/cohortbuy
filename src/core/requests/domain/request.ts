@@ -79,6 +79,7 @@ export type EditRequestInput = z.infer<typeof EditRequestInput>;
 
 export interface ProjectTeaser {
   id: string;
+  slug: string;
   title: string;
   category: string | null;
   description: string | null;
@@ -121,6 +122,7 @@ export interface ServiceRequest {
   category: string | null;
   description: string | null;
   driver: string | null;
+  slug: string | null;
   target_date: string | null;
   join_deadline: string | null;
   project_type: "service" | "group_buy";

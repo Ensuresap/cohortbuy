@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Users, CalendarClock, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getProjectTeaser } from "@/core/requests/services/requestService";
+import { getProjectTeaserBySlug, getProjectTeaser } from "@/core/requests/services/requestService";
 import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { STAGE_LABELS, PROJECT_TYPE_LABELS } from "@/core/requests/domain/request";
 
@@ -12,15 +12,20 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export default async function InvitePage({ params }: { params: { id: string } }) {
+export default async function InvitePage({ params }: { params: { slug: string } }) {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const ctx = { db: supabase, actor: user ? { id: user.id } : undefined };
 
-  const res = await getProjectTeaser(ctx, params.id);
-  const t = res.ok ? res.data : null;
+  const res = await getProjectTeaserBySlug(ctx, params.slug);
+  let t = res.ok ? res.data : null;
+  // Back-compat: an old UUID invite link still resolves.
+  if (!t && /^[0-9a-f-]{36}$/i.test(params.slug)) {
+    const byId = await getProjectTeaser(ctx, params.slug);
+    t = byId.ok ? byId.data : null;
+  }
   if (!t) notFound();
 
   // Already an approved member → straight to the project.

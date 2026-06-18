@@ -178,6 +178,14 @@ export async function getProjectTeaser(ctx: Ctx, requestId: string): Promise<Res
   return ok((data as ProjectTeaser) ?? null);
 }
 
+/** Public light teaser looked up by the human-friendly slug. */
+export async function getProjectTeaserBySlug(ctx: Ctx, slug: string): Promise<Result<ProjectTeaser | null>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.projectTeaserBySlug(ctx.db, slug);
+  if (error) return err("db_error", error.message);
+  return ok((data as ProjectTeaser) ?? null);
+}
+
 export async function listComments(ctx: Ctx, requestId: string): Promise<Result<ProjectComment[]>> {
   if (!ctx.db) return err("not_configured", "Database is not configured");
   const { data, error } = await repo.commentsFeed(ctx.db, requestId);

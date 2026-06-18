@@ -190,6 +190,7 @@ export default async function RequestPage({ params }: { params: { id: string } }
                 <ProjectHeaderActions
                   project={{
                     id: req.id,
+                    slug: req.slug ?? "",
                     title: req.title,
                     category: req.category,
                     description: req.description,

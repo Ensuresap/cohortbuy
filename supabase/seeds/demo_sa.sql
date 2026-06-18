@@ -230,5 +230,11 @@ begin
   update public.service_requests set target_date = current_date + 9  where cohort_id = v_cohort and title = '[DEMO] Street tree trimming';
   update public.service_requests set target_date = current_date - 3  where cohort_id = v_cohort and title = '[DEMO] Holiday lighting install';
 
+  -- friendly invite slugs for the demo projects
+  update public.service_requests
+     set slug = left(coalesce(nullif(trim(both '-' from regexp_replace(lower(title), '[^a-z0-9]+', '-', 'g')), ''), 'project'), 40)
+                || '-' || substr(md5(id::text), 1, 4)
+   where cohort_id = v_cohort and title like '[DEMO]%' and slug is null;
+
   raise notice 'Demo seed complete for cohort % (owner/coordinator %).', v_cohort, v_owner;
 end $$;

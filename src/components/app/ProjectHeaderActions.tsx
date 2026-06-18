@@ -20,6 +20,7 @@ import { joinRequestAction, leaveProjectAction, announceProjectAction } from "@/
 
 export interface ProjectSummary {
   id: string;
+  slug: string;
   title: string;
   category: string | null;
   description: string | null;
@@ -61,8 +62,8 @@ export default function ProjectHeaderActions({
   const shareRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setInviteUrl(`${window.location.origin}/invite/${project.id}`);
-  }, [project.id]);
+    setInviteUrl(`${window.location.origin}/invite/${project.slug || project.id}`);
+  }, [project.slug, project.id]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {

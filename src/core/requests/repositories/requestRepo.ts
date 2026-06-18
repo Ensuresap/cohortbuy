@@ -53,6 +53,10 @@ export function projectTeaser(db: SupabaseClient, requestId: string) {
   return db.rpc("project_teaser", { p_request: requestId });
 }
 
+export function projectTeaserBySlug(db: SupabaseClient, slug: string) {
+  return db.rpc("project_teaser_by_slug", { p_slug: slug });
+}
+
 export function selectQuote(db: SupabaseClient, quoteId: string) {
   return db.rpc("select_quote", { p_quote: quoteId });
 }
