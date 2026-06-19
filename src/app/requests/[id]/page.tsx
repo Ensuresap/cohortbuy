@@ -56,12 +56,12 @@ import { Button } from "@/components/ui/Button";
 import SafetyNote from "@/components/app/SafetyNote";
 import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
 import RfqDraftEditor from "@/components/app/RfqDraftEditor";
+import QuoteWizard from "@/components/app/QuoteWizard";
 import {
   addScopeAction,
   updateScopeAction,
   deleteScopeAction,
   advanceRequestAction,
-  addQuoteAction,
   updateQuoteAction,
   deleteQuoteAction,
   aiDraftRfqAction,
@@ -735,23 +735,9 @@ export default async function RequestPage({
                   </ul>
                 )}
                 {at("rfq") && isParticipant && (
-                  <form action={addQuoteAction} className="mt-4 space-y-2 rounded-xl border border-border p-4">
-                    <p className="text-sm font-medium text-text">Record a quote</p>
-                    <input type="hidden" name="requestId" value={req.id} />
-                    <input name="vendorName" required placeholder="Vendor name" className={fieldClass} />
-                    <div className="grid grid-cols-3 gap-2">
-                      <input name="amount" type="number" step="0.01" min="0" required placeholder="Amount" className={`${fieldClass} col-span-2`} />
-                      <input name="currency" defaultValue="USD" maxLength={3} placeholder="USD" className={fieldClass} />
-                    </div>
-                    <input name="timeline" placeholder="Timeline (e.g. 2 weeks)" className={fieldClass} />
-                    <input name="warranty" placeholder="Warranty (e.g. 5 years)" className={fieldClass} />
-                    <textarea name="notes" rows={2} placeholder="Notes / exclusions…" className={fieldClass} />
-                    <select name="kind" defaultValue="indicative" className={fieldClass}>
-                      <option value="indicative">Indicative</option>
-                      <option value="final">Final</option>
-                    </select>
-                    <Button type="submit">Add quote</Button>
-                  </form>
+                  <div className="mt-4">
+                    <QuoteWizard requestId={req.id} />
+                  </div>
                 )}
               </Panel>
             )}

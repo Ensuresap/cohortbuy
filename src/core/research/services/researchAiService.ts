@@ -90,6 +90,65 @@ export async function draftRfq(
   }
 }
 
+const EXTRACT_QUOTE_TOOL: LlmTool = {
+  name: "propose_quote",
+  description: "Extract a vendor's quote from the supplied text (an email or quote document).",
+  input_schema: {
+    type: "object",
+    properties: {
+      vendorName: { type: "string", description: "The vendor / business name" },
+      amount: { type: "number", description: "Total quoted price as a number in major currency units (e.g. dollars)" },
+      currency: { type: "string", description: "ISO currency code, e.g. USD" },
+      timeline: { type: "string", description: "Stated timeline / lead time, if any" },
+      warranty: { type: "string", description: "Stated warranty, if any" },
+      notes: { type: "string", description: "Key inclusions, exclusions or caveats, brief" },
+      kind: { type: "string", enum: ["indicative", "final"], description: "'final' if it's a firm/site-visited quote, else 'indicative'" },
+    },
+    required: ["vendorName"],
+  },
+};
+
+export interface ExtractedQuote {
+  vendorName: string;
+  amount: number | null;
+  currency: string;
+  timeline: string;
+  warranty: string;
+  notes: string;
+  kind: "indicative" | "final";
+}
+
+export async function extractQuote(ctx: Ctx, args: { text: string }): Promise<Result<ExtractedQuote>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const m = await resolveModel(ctx, {});
+  const provider = (m.ok ? m.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
+  const model = m.ok ? m.data.model : "claude-sonnet-4-6";
+  try {
+    const r = await runMessages({
+      provider,
+      model,
+      system:
+        "Extract the vendor's quote details from the text (a vendor email or quote document). Return the total price as a number in major currency units. Leave fields empty if not present — do not invent values. Always call propose_quote.",
+      messages: [{ role: "user", content: args.text.slice(0, 12000) }],
+      tools: [EXTRACT_QUOTE_TOOL],
+    });
+    if (r.kind !== "tool") return err("ai_error", "Couldn't read a quote from that");
+    const i = r.input as Partial<ExtractedQuote>;
+    if (!i.vendorName) return err("ai_error", "No vendor found — try manual entry");
+    return ok({
+      vendorName: i.vendorName,
+      amount: typeof i.amount === "number" ? i.amount : null,
+      currency: i.currency || "USD",
+      timeline: i.timeline || "",
+      warranty: i.warranty || "",
+      notes: i.notes || "",
+      kind: i.kind === "final" ? "final" : "indicative",
+    });
+  } catch (e) {
+    return mapAiErr(e);
+  }
+}
+
 function mapAiErr(e: unknown) {
   if (e instanceof LlmConfigError) return err("ai_unconfigured", "AI isn't configured yet — set an API key (see SETUP.md).");
   return err("ai_error", e instanceof Error ? e.message : "AI request failed");
