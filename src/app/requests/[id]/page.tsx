@@ -55,7 +55,7 @@ import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import SafetyNote from "@/components/app/SafetyNote";
 import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
-import CopyButton from "@/components/app/CopyButton";
+import RfqDraftEditor from "@/components/app/RfqDraftEditor";
 import {
   addScopeAction,
   updateScopeAction,
@@ -65,7 +65,6 @@ import {
   updateQuoteAction,
   deleteQuoteAction,
   aiDraftRfqAction,
-  saveRfqDraftAction,
   addCommentAction,
   updateCommentAction,
   deleteCommentAction,
@@ -659,18 +658,7 @@ export default async function RequestPage({
                     </div>
                     {req.rfq_draft ? (
                       <>
-                        <p className="mt-2 whitespace-pre-wrap rounded-lg bg-surface-2 p-3 text-sm text-text">{req.rfq_draft}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <CopyButton text={req.rfq_draft} label="Copy RFQ" />
-                          <details>
-                            <summary className="cursor-pointer text-xs font-medium text-primary hover:underline">Edit</summary>
-                            <form action={saveRfqDraftAction} className="mt-2 space-y-2">
-                              <input type="hidden" name="requestId" value={req.id} />
-                              <textarea name="body" rows={8} defaultValue={req.rfq_draft} className={fieldClass} />
-                              <Button type="submit" size="md">Save RFQ</Button>
-                            </form>
-                          </details>
-                        </div>
+                        <RfqDraftEditor requestId={req.id} draft={req.rfq_draft} canEdit={isCoordinator || isManager} />
                         <p className="mt-2 text-xs text-subtle">Send this to your shortlisted vendors, then record their replies below.</p>
                       </>
                     ) : (
