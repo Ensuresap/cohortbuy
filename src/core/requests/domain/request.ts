@@ -40,9 +40,22 @@ export const CreateRequestInput = z.object({
   serviceScope: z.enum(["service", "equipment", "both"]).optional(),
   splitMethod: z.enum(["even", "by_quantity", "by_usage", "custom"]).optional(),
   locked: z.boolean().optional(),
+  joinPolicy: z.enum(["auto", "approval"]).optional(),
   minSize: z.number().int().min(1).max(100).default(2),
 });
 export type CreateRequestInput = z.infer<typeof CreateRequestInput>;
+
+export const JOIN_POLICY_LABELS: Record<"auto" | "approval", string> = {
+  auto: "Anyone in the cohort can join instantly",
+  approval: "Joining needs coordinator approval",
+};
+
+export interface JoinRequestItem {
+  user_id: string;
+  member_name: string | null;
+  member_avatar: string | null;
+  requested_at: string;
+}
 
 export const PROJECT_TYPE_LABELS: Record<"service" | "group_buy", string> = {
   service: "Service — work done per home",
@@ -82,6 +95,7 @@ export const EditRequestInput = z.object({
   splitMethod: z.enum(["even", "by_quantity", "by_usage", "custom"]).optional(),
   minSize: z.number().int().min(1).max(100).optional(),
   locked: z.boolean().optional(),
+  joinPolicy: z.enum(["auto", "approval"]).optional(),
 });
 export type EditRequestInput = z.infer<typeof EditRequestInput>;
 
@@ -137,6 +151,7 @@ export interface ServiceRequest {
   service_scope: "service" | "equipment" | "both";
   split_method: "even" | "by_quantity" | "by_usage" | "custom";
   locked: boolean;
+  join_policy: "auto" | "approval";
   contract_structure: "combined" | "individual";
   payment_mode: "pooled_escrow" | "individual_direct";
   benchmark_low_cents: number | null;

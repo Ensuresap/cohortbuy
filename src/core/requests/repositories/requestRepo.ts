@@ -14,6 +14,7 @@ export function createRequest(db: SupabaseClient, input: CreateRequestInput) {
     p_service_scope: input.serviceScope ?? "service",
     p_split: input.splitMethod ?? "even",
     p_locked: input.locked ?? false,
+    p_join_policy: input.joinPolicy ?? "auto",
     p_min_size: input.minSize,
   });
 }
@@ -117,14 +118,26 @@ export function listMyParticipations(db: SupabaseClient, userId: string) {
 
 export function joinRequest(
   db: SupabaseClient,
-  args: { requestId: string; userId: string }
+  args: { requestId: string; userId: string; status: string }
 ) {
   return db.from("request_participants").insert({
     request_id: args.requestId,
     user_id: args.userId,
     role: "participant",
-    status: "joined",
+    status: args.status,
   });
+}
+
+export function myParticipation(db: SupabaseClient, requestId: string) {
+  return db.rpc("my_participation", { p_request: requestId });
+}
+
+export function joinRequestFeed(db: SupabaseClient, requestId: string) {
+  return db.rpc("request_join_feed", { p_request: requestId });
+}
+
+export function respondJoin(db: SupabaseClient, args: { requestId: string; userId: string; approve: boolean }) {
+  return db.rpc("respond_join", { p_request: args.requestId, p_user: args.userId, p_approve: args.approve });
 }
 
 export function updateProject(
@@ -140,6 +153,7 @@ export function updateProject(
     splitMethod: string;
     minSize: number;
     locked: boolean;
+    joinPolicy: string;
   }
 ) {
   return db
@@ -154,6 +168,7 @@ export function updateProject(
       split_method: args.splitMethod,
       min_size: args.minSize,
       locked: args.locked,
+      join_policy: args.joinPolicy,
       last_activity_at: new Date().toISOString(),
     })
     .eq("id", args.requestId)

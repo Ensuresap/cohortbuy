@@ -28,6 +28,8 @@ import {
   listParticipantsFeed,
   listComments,
   listCostShares,
+  myParticipation,
+  listJoinRequests,
 } from "@/core/requests/services/requestService";
 import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { listScope } from "@/core/scope/services/scopeService";
@@ -71,6 +73,7 @@ import {
   approveShortlistAction,
   aiEstimateBenchmarkAction,
   aiSuggestVendorsAction,
+  respondJoinAction,
   selectQuoteAction,
   recordContractAction,
   setTermsAction,
@@ -139,16 +142,20 @@ export default async function RequestPage({
   const req = reqRes.ok ? reqRes.data : null;
   if (!req) notFound();
 
-  const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes, candRes, mineRes] = await Promise.all([
+  const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes, candRes, myPartRes, joinReqRes, mineRes] = await Promise.all([
     listParticipantsFeed(ctx, params.id),
     listScope(ctx, params.id),
     listQuotes(ctx, params.id),
     listComments(ctx, params.id),
     listCostShares(ctx, params.id),
     listCandidates(ctx, params.id),
+    myParticipation(ctx, params.id),
+    listJoinRequests(ctx, params.id),
     listMyCohorts(ctx),
   ]);
   const participants = partsRes.ok ? partsRes.data : [];
+  const myStatus = myPartRes.ok ? myPartRes.data : null;
+  const joinRequests = joinReqRes.ok ? joinReqRes.data : [];
   const scopeItems = scopeRes.ok ? scopeRes.data : [];
   const quotes = quotesRes.ok ? quotesRes.data : [];
   const comments = commentsRes.ok ? commentsRes.data : [];
@@ -195,9 +202,11 @@ export default async function RequestPage({
     shortlistApproved: req.shortlist_approved,
   });
 
+  const joinPending = myStatus === "requested";
+  const canSeeWork = isParticipant || isManager;
   const joinableStage = JOINABLE_STATUSES.includes(req.status);
   const canEdit = (isCoordinator || isManager) && !isCompleted;
-  const canJoin = !isParticipant && !req.locked && joinableStage;
+  const canJoin = !isParticipant && !joinPending && !req.locked && joinableStage;
   const canExit = isParticipant && !isCoordinator && !req.locked && !isCompleted;
   const joinClosedReason =
     isParticipant || canJoin ? null : req.locked ? "Joining locked" : !joinableStage ? "Joining closed" : null;
@@ -264,6 +273,7 @@ export default async function RequestPage({
                     serviceScope: req.service_scope,
                     splitMethod: req.split_method,
                     minSize: req.min_size,
+                    joinPolicy: req.join_policy,
                     locked: req.locked,
                     stageLabel: STAGE_LABELS[req.status],
                     cohortId: req.cohort_id,
@@ -279,6 +289,7 @@ export default async function RequestPage({
                   canJoin={canJoin}
                   canExit={canExit}
                   canAnnounce={isManager}
+                  joinPending={joinPending}
                   joinClosedReason={joinClosedReason}
                 />
               </div>
@@ -323,6 +334,7 @@ export default async function RequestPage({
         </div>
 
         {/* Stage tabs + the viewed step's guidance/advance */}
+        {canSeeWork && (
         <section className="mt-5 rounded-2xl border border-border bg-surface p-5 shadow-soft">
           <nav className="flex flex-wrap gap-1.5">
             {track.map((s, i) => {
@@ -373,10 +385,25 @@ export default async function RequestPage({
             )}
           </div>
         </section>
+        )}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Main — the selected step's panel */}
           <div className="space-y-6 lg:col-span-2">
+            {!canSeeWork && (
+              <Panel title="Join to take part">
+                <p className="mt-2 whitespace-pre-wrap text-muted">{req.description || "A neighbor group project."}</p>
+                {req.driver && <p className="mt-2 text-sm text-muted">{req.driver}</p>}
+                <p className="mt-3 text-sm text-subtle">
+                  Join to see the steps, scope, vendors, quotes and discussion — and to take part.
+                </p>
+                {joinPending && (
+                  <p className="mt-3 text-sm font-medium text-primary">Your request to join is pending the coordinator&rsquo;s approval.</p>
+                )}
+              </Panel>
+            )}
+            {canSeeWork && (
+              <>
             {/* Forming */}
             {viewedStep === "forming" && (
               <Panel title="Gathering the group">
@@ -918,10 +945,39 @@ export default async function RequestPage({
                 </ul>
               )}
             </section>
+              </>
+            )}
           </div>
 
           {/* Side */}
           <div className="space-y-6">
+            {(isCoordinator || isManager) && joinRequests.length > 0 && (
+              <section className="rounded-2xl border border-primary/30 bg-surface p-5 shadow-soft">
+                <h2 className="font-display text-lg font-semibold text-text">Join requests ({joinRequests.length})</h2>
+                <ul className="mt-3 space-y-2">
+                  {joinRequests.map((jr) => (
+                    <li key={jr.user_id} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="truncate text-text">{jr.member_name ?? "Member"}</span>
+                      <div className="flex items-center gap-3">
+                        <form action={respondJoinAction}>
+                          <input type="hidden" name="requestId" value={req.id} />
+                          <input type="hidden" name="userId" value={jr.user_id} />
+                          <input type="hidden" name="approve" value="true" />
+                          <button type="submit" className="text-xs font-semibold text-primary hover:underline">Approve</button>
+                        </form>
+                        <form action={respondJoinAction}>
+                          <input type="hidden" name="requestId" value={req.id} />
+                          <input type="hidden" name="userId" value={jr.user_id} />
+                          <input type="hidden" name="approve" value="false" />
+                          <button type="submit" className="text-xs font-medium text-accent hover:underline">Decline</button>
+                        </form>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
               <h2 className="text-sm font-medium text-muted">Details</h2>
               <dl className="mt-3 space-y-3 text-sm">
@@ -933,6 +989,7 @@ export default async function RequestPage({
                 <Row label="Target" value={req.target_date ? fmtDate(req.target_date) : "Not set"} />
                 {req.join_deadline && <Row label="Join by" value={fmtDate(req.join_deadline)} />}
                 <Row label="Min group" value={`${req.min_size} members`} />
+                <Row label="Joining" value={req.join_policy === "approval" ? "Approval needed" : "Open to cohort"} />
                 {req.cohort && <Row label="Cohort" value={req.cohort.name} />}
               </dl>
             </section>

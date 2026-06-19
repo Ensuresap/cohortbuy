@@ -19,6 +19,7 @@ export default function EditProjectButton({
   serviceScope,
   splitMethod,
   minSize,
+  joinPolicy,
   locked,
 }: {
   requestId: string;
@@ -30,6 +31,7 @@ export default function EditProjectButton({
   serviceScope: "service" | "equipment" | "both";
   splitMethod: "even" | "by_quantity" | "by_usage" | "custom";
   minSize: number;
+  joinPolicy: "auto" | "approval";
   locked: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -75,6 +77,12 @@ export default function EditProjectButton({
                 <option value="by_quantity">By quantity (e.g. footage / units)</option>
                 <option value="by_usage">By usage / consumption</option>
                 <option value="custom">Custom (you set it)</option>
+              </Select>
+            </Field>
+            <Field label="Who can join" htmlFor="joinPolicy">
+              <Select id="joinPolicy" name="joinPolicy" defaultValue={joinPolicy}>
+                <option value="auto">Anyone in the cohort joins instantly</option>
+                <option value="approval">I approve each join request</option>
               </Select>
             </Field>
             <label className="flex items-start gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm text-text">

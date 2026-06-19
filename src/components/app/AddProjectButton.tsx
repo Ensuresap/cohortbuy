@@ -135,6 +135,12 @@ export default function AddProjectButton({
 
             {/* Step 4 — Access */}
             <div className={step === 3 ? "space-y-4" : "hidden"}>
+              <Field label="Who can join" htmlFor="joinPolicy" hint="You can change this later.">
+                <Select id="joinPolicy" name="joinPolicy" defaultValue="auto">
+                  <option value="auto">Anyone in the cohort joins instantly</option>
+                  <option value="approval">I approve each join request</option>
+                </Select>
+              </Field>
               <label className="flex items-start gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm text-text">
                 <input name="locked" type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" />
                 <span>

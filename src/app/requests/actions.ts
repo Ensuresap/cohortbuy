@@ -7,6 +7,7 @@ import {
   createServiceRequest,
   joinServiceRequest,
   leaveProject,
+  respondJoin,
   advanceStatus,
   addComment,
   editProject,
@@ -72,6 +73,7 @@ export async function createRequestAction(formData: FormData) {
       | undefined,
     minSize: Number(formData.get("minSize")) || undefined,
     locked: formData.get("locked") === "on" || formData.get("locked") === "true",
+    joinPolicy: (String(formData.get("joinPolicy") ?? "") || undefined) as "auto" | "approval" | undefined,
   });
   if (!res.ok) {
     redirect(`/${handle}?error=${encodeURIComponent(res.error.message)}`);
@@ -102,6 +104,18 @@ export async function updateProjectAction(formData: FormData) {
       | undefined,
     minSize: Number(formData.get("minSize")) || undefined,
     locked: formData.get("locked") === "on" || formData.get("locked") === "true",
+    joinPolicy: (String(formData.get("joinPolicy") ?? "") || undefined) as "auto" | "approval" | undefined,
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function respondJoinAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await respondJoin(ctx, {
+    requestId,
+    userId: String(formData.get("userId") ?? ""),
+    approve: String(formData.get("approve") ?? "") === "true",
   });
   revalidatePath(`/requests/${requestId}`);
 }

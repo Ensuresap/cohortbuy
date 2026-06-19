@@ -29,6 +29,7 @@ export interface ProjectSummary {
   serviceScope: "service" | "equipment" | "both";
   splitMethod: "even" | "by_quantity" | "by_usage" | "custom";
   minSize: number;
+  joinPolicy: "auto" | "approval";
   locked: boolean;
   stageLabel: string;
   cohortId: string;
@@ -47,6 +48,7 @@ export default function ProjectHeaderActions({
   canJoin,
   canExit,
   canAnnounce,
+  joinPending,
   joinClosedReason,
 }: {
   project: ProjectSummary;
@@ -54,6 +56,7 @@ export default function ProjectHeaderActions({
   canJoin: boolean;
   canExit: boolean;
   canAnnounce: boolean;
+  joinPending: boolean;
   joinClosedReason: string | null;
 }) {
   const [about, setAbout] = useState(false);
@@ -137,6 +140,7 @@ export default function ProjectHeaderActions({
           serviceScope={project.serviceScope}
           splitMethod={project.splitMethod}
           minSize={project.minSize}
+          joinPolicy={project.joinPolicy}
           locked={project.locked}
         />
       )}
@@ -145,11 +149,16 @@ export default function ProjectHeaderActions({
         <form action={joinRequestAction}>
           <input type="hidden" name="requestId" value={project.id} />
           <Button type="submit" size="md" className="gap-1.5">
-            <UserPlus className="h-4 w-4" /> Join
+            <UserPlus className="h-4 w-4" /> {project.joinPolicy === "approval" ? "Request to join" : "Join"}
           </Button>
         </form>
       )}
-      {!canJoin && joinClosedReason && (
+      {!canJoin && joinPending && (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-subtle">
+          Request pending
+        </span>
+      )}
+      {!canJoin && !joinPending && joinClosedReason && (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-subtle">
           <Lock className="h-3.5 w-3.5" /> {joinClosedReason}
         </span>

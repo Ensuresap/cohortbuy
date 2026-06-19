@@ -17,6 +17,7 @@ import {
   type ServiceRequest,
   type Participant,
   type ParticipantFeedItem,
+  type JoinRequestItem,
   type ProjectComment,
   type ProjectTeaser,
   type CostShare,
@@ -89,6 +90,7 @@ export async function editProject(ctx: Ctx, raw: unknown): Promise<Result<true>>
     splitMethod: p.data.splitMethod ?? "even",
     minSize: p.data.minSize ?? 2,
     locked: p.data.locked ?? false,
+    joinPolicy: p.data.joinPolicy ?? "auto",
   });
   if (error) return err("db_error", error.message);
   if (!data || data.length === 0)
@@ -111,12 +113,43 @@ export async function joinServiceRequest(ctx: Ctx, raw: unknown): Promise<Result
   if (!JOINABLE_STATUSES.includes(project.status))
     return err("closed", "This project has moved past the joining stage");
 
+  const status = project.join_policy === "approval" ? "requested" : "joined";
   const { error } = await repo.joinRequest(ctx.db, {
     requestId: parsed.data.requestId,
     userId: ctx.actor.id,
+    status,
   });
   if (error) {
     if (error.code === "23505") return err("already_joined", "You're already in this project");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+/** The caller's own participation status, or null. */
+export async function myParticipation(ctx: Ctx, requestId: string): Promise<Result<string | null>> {
+  if (!ctx.actor?.id) return ok(null);
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.myParticipation(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  return ok((data as string | null) ?? null);
+}
+
+/** Pending join requests (coordinator/manager only). */
+export async function listJoinRequests(ctx: Ctx, requestId: string): Promise<Result<JoinRequestItem[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.joinRequestFeed(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as JoinRequestItem[]);
+}
+
+/** Coordinator/manager approves or declines a pending join request. */
+export async function respondJoin(ctx: Ctx, args: { requestId: string; userId: string; approve: boolean }): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.respondJoin(ctx.db, args);
+  if (error) {
+    if (error.message?.includes("not_coordinator")) return err("forbidden", "Only the coordinator can respond to requests");
     return err("db_error", error.message);
   }
   return ok(true);
