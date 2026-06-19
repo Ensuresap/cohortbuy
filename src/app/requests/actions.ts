@@ -8,6 +8,7 @@ import {
   joinServiceRequest,
   leaveProject,
   respondJoin,
+  setRfqDraft,
   advanceStatus,
   addComment,
   editProject,
@@ -33,7 +34,7 @@ import {
   setBenchmark,
   approveShortlist,
 } from "@/core/research/services/researchService";
-import { estimateBenchmark, suggestVendors } from "@/core/research/services/researchAiService";
+import { estimateBenchmark, suggestVendors, draftRfq } from "@/core/research/services/researchAiService";
 import { createPost } from "@/core/posts/services/postService";
 
 async function getCtx() {
@@ -427,6 +428,24 @@ export async function aiSuggestVendorsAction(formData: FormData) {
       }
     }
   }
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function aiDraftRfqAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const ctxData = await researchContext(ctx, requestId);
+  if (ctxData) {
+    const draft = await draftRfq(ctx, { cohortId: ctxData.request.cohort_id, context: ctxData.context });
+    if (draft.ok) await setRfqDraft(ctx, { requestId, text: draft.data });
+  }
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function saveRfqDraftAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await setRfqDraft(ctx, { requestId, text: String(formData.get("body") ?? "") });
   revalidatePath(`/requests/${requestId}`);
 }
 

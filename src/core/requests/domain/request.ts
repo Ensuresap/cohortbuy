@@ -160,6 +160,7 @@ export interface ServiceRequest {
   benchmark_basis: string | null;
   research_notes: string | null;
   shortlist_approved: boolean;
+  rfq_draft: string | null;
   status: RequestStatus;
   min_size: number;
   last_activity_at: string;

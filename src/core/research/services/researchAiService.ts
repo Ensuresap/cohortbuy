@@ -47,6 +47,49 @@ const VENDORS_TOOL: LlmTool = {
   },
 };
 
+const RFQ_TOOL: LlmTool = {
+  name: "propose_rfq",
+  description: "Return a ready-to-send Request for Quote message addressed to vendors.",
+  input_schema: {
+    type: "object",
+    properties: {
+      body: {
+        type: "string",
+        description:
+          "A complete, polite RFQ the coordinator can paste into an email or message. Include: who we are (a neighbor group buying together), the work/scope, that several nearby homes are doing it together (bulk opportunity), what we need quoted (itemized price, timeline, warranty, licence/insurance), and a request to reply by a reasonable date. Keep it professional and concise.",
+      },
+    },
+    required: ["body"],
+  },
+};
+
+export async function draftRfq(
+  ctx: Ctx,
+  args: { cohortId: string; context: string }
+): Promise<Result<string>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const m = await resolveModel(ctx, { cohortId: args.cohortId });
+  const provider = (m.ok ? m.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
+  const model = m.ok ? m.data.model : "claude-sonnet-4-6";
+  try {
+    const r = await runMessages({
+      provider,
+      model,
+      maxTokens: 1200,
+      system:
+        "You draft a standardized Request for Quote that a neighborhood group coordinator will send to vendors to collect bids for a shared project. Be clear and professional; emphasize the bulk/group opportunity. Always call propose_rfq.",
+      messages: [{ role: "user", content: args.context }],
+      tools: [RFQ_TOOL],
+    });
+    if (r.kind !== "tool") return err("ai_error", "No draft returned");
+    const body = (r.input as { body?: string }).body;
+    if (!body) return err("ai_error", "Empty draft");
+    return ok(body);
+  } catch (e) {
+    return mapAiErr(e);
+  }
+}
+
 function mapAiErr(e: unknown) {
   if (e instanceof LlmConfigError) return err("ai_unconfigured", "AI isn't configured yet — set an API key (see SETUP.md).");
   return err("ai_error", e instanceof Error ? e.message : "AI request failed");

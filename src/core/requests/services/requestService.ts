@@ -126,6 +126,18 @@ export async function joinServiceRequest(ctx: Ctx, raw: unknown): Promise<Result
   return ok(true);
 }
 
+/** Coordinator/manager saves the RFQ draft text. */
+export async function setRfqDraft(ctx: Ctx, args: { requestId: string; text: string }): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.setRfqDraft(ctx.db, args);
+  if (error) {
+    if (error.message?.includes("not_coordinator")) return err("forbidden", "Only the coordinator can edit the RFQ");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
 /** The caller's own participation status, or null. */
 export async function myParticipation(ctx: Ctx, requestId: string): Promise<Result<string | null>> {
   if (!ctx.actor?.id) return ok(null);

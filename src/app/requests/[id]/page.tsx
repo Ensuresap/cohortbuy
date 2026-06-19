@@ -55,6 +55,7 @@ import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import SafetyNote from "@/components/app/SafetyNote";
 import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
+import CopyButton from "@/components/app/CopyButton";
 import {
   addScopeAction,
   updateScopeAction,
@@ -63,6 +64,8 @@ import {
   addQuoteAction,
   updateQuoteAction,
   deleteQuoteAction,
+  aiDraftRfqAction,
+  saveRfqDraftAction,
   addCommentAction,
   updateCommentAction,
   deleteCommentAction,
@@ -643,6 +646,38 @@ export default async function RequestPage({
             {/* Vendors & quotes (service) */}
             {showQuotes && (
               <Panel title="Vendors & quotes">
+                {(isCoordinator || isManager) && !isCompleted && (
+                  <div className="mt-2 rounded-xl border border-border p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-text">Request for quote</p>
+                      <form action={aiDraftRfqAction}>
+                        <input type="hidden" name="requestId" value={req.id} />
+                        <button type="submit" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+                          <Sparkles className="h-3.5 w-3.5" /> {req.rfq_draft ? "Re-draft with AI" : "Draft with AI"}
+                        </button>
+                      </form>
+                    </div>
+                    {req.rfq_draft ? (
+                      <>
+                        <p className="mt-2 whitespace-pre-wrap rounded-lg bg-surface-2 p-3 text-sm text-text">{req.rfq_draft}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <CopyButton text={req.rfq_draft} label="Copy RFQ" />
+                          <details>
+                            <summary className="cursor-pointer text-xs font-medium text-primary hover:underline">Edit</summary>
+                            <form action={saveRfqDraftAction} className="mt-2 space-y-2">
+                              <input type="hidden" name="requestId" value={req.id} />
+                              <textarea name="body" rows={8} defaultValue={req.rfq_draft} className={fieldClass} />
+                              <Button type="submit" size="md">Save RFQ</Button>
+                            </form>
+                          </details>
+                        </div>
+                        <p className="mt-2 text-xs text-subtle">Send this to your shortlisted vendors, then record their replies below.</p>
+                      </>
+                    ) : (
+                      <p className="mt-2 text-sm text-muted">Draft a request to send to your shortlisted vendors, then log their quotes here.</p>
+                    )}
+                  </div>
+                )}
                 {quotes.length === 0 ? (
                   <p className="mt-2 text-muted">No quotes recorded yet.</p>
                 ) : (

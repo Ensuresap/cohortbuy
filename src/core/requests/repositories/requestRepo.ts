@@ -128,6 +128,10 @@ export function joinRequest(
   });
 }
 
+export function setRfqDraft(db: SupabaseClient, args: { requestId: string; text: string }) {
+  return db.rpc("set_rfq_draft", { p_request: args.requestId, p_text: args.text });
+}
+
 export function myParticipation(db: SupabaseClient, requestId: string) {
   return db.rpc("my_participation", { p_request: requestId });
 }
