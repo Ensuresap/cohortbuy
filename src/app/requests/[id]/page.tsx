@@ -21,6 +21,7 @@ import {
   MapPin,
   Globe,
   Phone,
+  ArrowLeft,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -238,15 +239,17 @@ export default async function RequestPage({
   return (
     <AppShell>
       <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
-        {req.cohort && (
-          <Link href={`/${req.cohort.handle}`} className="text-sm text-subtle hover:text-primary">
-            ← {req.cohort.name}
-          </Link>
-        )}
-
         {/* Hero */}
-        <section className="mt-3 overflow-hidden rounded-2xl border border-border bg-surface shadow-soft">
+        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-soft">
           <div className="relative h-28 bg-gradient-to-br from-brand-forest to-brand-forest-dark sm:h-36">
+            {req.cohort && (
+              <Link
+                href={`/${req.cohort.handle}`}
+                className="absolute left-4 top-4 z-10 inline-flex max-w-[55%] items-center gap-1 truncate rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur transition hover:bg-white/25"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 shrink-0" /> {req.cohort.name}
+              </Link>
+            )}
             <div className="absolute right-4 top-4 flex items-center gap-2">
               {req.locked && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
