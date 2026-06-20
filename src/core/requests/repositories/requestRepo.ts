@@ -38,12 +38,14 @@ export function getById(db: SupabaseClient, id: string) {
 
 export function insertComment(
   db: SupabaseClient,
-  args: { requestId: string; userId: string; body: string }
+  args: { requestId: string; userId: string; body: string; stage?: string; kind?: string }
 ) {
   return db.from("request_comments").insert({
     request_id: args.requestId,
     user_id: args.userId,
     body: args.body,
+    stage: args.stage ?? null,
+    kind: args.kind ?? "member",
   });
 }
 

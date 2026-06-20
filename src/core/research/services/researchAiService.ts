@@ -188,6 +188,29 @@ export async function recommendQuote(
   }
 }
 
+export async function answerDiscussion(
+  ctx: Ctx,
+  args: { cohortId: string; context: string; question: string }
+): Promise<Result<string>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const m = await resolveModel(ctx, { cohortId: args.cohortId });
+  const provider = (m.ok ? m.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
+  const model = m.ok ? m.data.model : "claude-sonnet-4-6";
+  try {
+    const r = await runMessages({
+      provider,
+      model,
+      maxTokens: 700,
+      system:
+        "You are a helpful assistant in a neighbor group-buying project's discussion. Answer the member's question using the project context. Be concise, practical and friendly. If it's outside what you can know, say so and suggest who to ask. Do not invent specific prices or vendors.",
+      messages: [{ role: "user", content: `${args.context}\n\nMember question: ${args.question}` }],
+    });
+    return ok(r.kind === "text" ? r.text : "…");
+  } catch (e) {
+    return mapAiErr(e);
+  }
+}
+
 function mapAiErr(e: unknown) {
   if (e instanceof LlmConfigError) return err("ai_unconfigured", "AI isn't configured yet — set an API key (see SETUP.md).");
   return err("ai_error", e instanceof Error ? e.message : "AI request failed");

@@ -81,6 +81,8 @@ export const SPLIT_METHOD_LABELS: Record<"even" | "by_quantity" | "by_usage" | "
 export const AddCommentInput = z.object({
   requestId: z.string().uuid(),
   body: z.string().trim().min(1).max(2000),
+  stage: z.string().trim().max(20).optional(),
+  kind: z.enum(["member", "ai"]).default("member"),
 });
 export type AddCommentInput = z.infer<typeof AddCommentInput>;
 
@@ -131,6 +133,8 @@ export interface ProjectComment {
   user_id: string;
   author_name: string | null;
   author_avatar: string | null;
+  stage: string | null;
+  kind: "member" | "ai";
 }
 
 export const RequestIdInput = z.object({ requestId: z.string().uuid() });

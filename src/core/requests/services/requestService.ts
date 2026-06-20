@@ -263,6 +263,8 @@ export async function addComment(ctx: Ctx, raw: unknown): Promise<Result<true>> 
     requestId: p.data.requestId,
     userId: ctx.actor.id,
     body: p.data.body,
+    stage: p.data.stage,
+    kind: p.data.kind,
   });
   if (error) return err("db_error", error.message);
   return ok(true);

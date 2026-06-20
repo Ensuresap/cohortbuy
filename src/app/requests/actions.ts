@@ -26,7 +26,7 @@ import {
   updateComment,
   deleteComment,
 } from "@/core/requests/services/requestService";
-import { getRequest } from "@/core/requests/services/requestService";
+import { getRequest, listComments } from "@/core/requests/services/requestService";
 import { addScopeItem, updateScopeItem, deleteScopeItem, listScope } from "@/core/scope/services/scopeService";
 import { addQuote, updateQuote, deleteQuote } from "@/core/quotes/services/quoteService";
 import {
@@ -37,7 +37,7 @@ import {
   setBenchmark,
   approveShortlist,
 } from "@/core/research/services/researchService";
-import { estimateBenchmark, suggestVendors, draftRfq, recommendQuote } from "@/core/research/services/researchAiService";
+import { estimateBenchmark, suggestVendors, draftRfq, recommendQuote, answerDiscussion } from "@/core/research/services/researchAiService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
 import { createPost } from "@/core/posts/services/postService";
 
@@ -230,7 +230,33 @@ export async function advanceRequestAction(formData: FormData) {
 export async function addCommentAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
-  await addComment(ctx, { requestId, body: String(formData.get("body") ?? "") });
+  await addComment(ctx, {
+    requestId,
+    body: String(formData.get("body") ?? ""),
+    stage: String(formData.get("stage") ?? "") || undefined,
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function askAiDiscussionAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const stage = String(formData.get("stage") ?? "") || undefined;
+  const question = String(formData.get("body") ?? "").trim();
+  if (!question) return;
+  // Post the member's question, then an AI reply in the same thread.
+  await addComment(ctx, { requestId, body: question, stage, kind: "member" });
+  const ctxData = await researchContext(ctx, requestId);
+  const commentsRes = await listComments(ctx, requestId);
+  const recent = (commentsRes.ok ? commentsRes.data : [])
+    .slice(-8)
+    .map((c) => `${c.kind === "ai" ? "AI" : c.author_name ?? "Member"}: ${c.body}`)
+    .join("\n");
+  if (ctxData) {
+    const context = `${ctxData.context}\n\nRecent discussion:\n${recent}`;
+    const ans = await answerDiscussion(ctx, { cohortId: ctxData.request.cohort_id, context, question });
+    if (ans.ok) await addComment(ctx, { requestId, body: ans.data, stage, kind: "ai" });
+  }
   revalidatePath(`/requests/${requestId}`);
 }
 

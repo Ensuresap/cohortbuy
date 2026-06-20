@@ -70,6 +70,7 @@ import {
   deleteQuoteAction,
   aiDraftRfqAction,
   addCommentAction,
+  askAiDiscussionAction,
   updateCommentAction,
   deleteCommentAction,
   addCandidateAction,
@@ -137,7 +138,7 @@ export default async function RequestPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams?: { step?: string };
+  searchParams?: { step?: string; disc?: string };
 }) {
   const supabase = createClient();
   const {
@@ -201,6 +202,8 @@ export default async function RequestPage({
   const viewingCurrent = viewedStep === req.status;
   const viewedIdx = track.indexOf(viewedStep);
   const viewingPast = curIdx >= 0 && viewedIdx >= 0 && viewedIdx < curIdx;
+  const discAll = searchParams?.disc === "all";
+  const visibleComments = discAll ? comments : comments.filter((c) => c.stage === viewedStep || !c.stage);
 
   const nextStage = curIdx >= 0 && curIdx < track.length - 1 ? track[curIdx + 1] : null;
   const blockedReason = advanceBlockedReason(req.status, {
@@ -945,22 +948,44 @@ export default async function RequestPage({
 
             {/* Discussion */}
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <CardTitle>Discussion</CardTitle>
+              <CardTitle
+                right={
+                  <Link
+                    href={discAll ? `/requests/${req.id}?step=${viewedStep}` : `/requests/${req.id}?step=${viewedStep}&disc=all`}
+                    scroll={false}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    {discAll ? "This step only" : "All discussion"}
+                  </Link>
+                }
+              >
+                Discussion
+              </CardTitle>
+              {!discAll && (
+                <p className="-mt-2 mb-3 text-xs text-subtle">About the {STAGE_LABELS[viewedStep]} step.</p>
+              )}
               <form action={addCommentAction} className="flex gap-2">
                 <input type="hidden" name="requestId" value={req.id} />
+                <input type="hidden" name="stage" value={viewedStep} />
                 <input name="body" required placeholder="Add a comment…" className={fieldClass} />
                 <Button type="submit">Post</Button>
+                <Button type="submit" variant="secondary" formAction={askAiDiscussionAction} className="shrink-0 gap-1.5">
+                  <Sparkles className="h-4 w-4" /> Ask AI
+                </Button>
               </form>
-              {comments.length === 0 ? (
+              {visibleComments.length === 0 ? (
                 <p className="mt-4 text-muted">No discussion yet — start the conversation.</p>
               ) : (
                 <ul className="mt-4 space-y-4">
-                  {comments.map((c) => {
-                    const mineComment = c.user_id === user.id;
-                    const canDelete = mineComment || isCoordinator || isManager;
+                  {visibleComments.map((c) => {
+                    const isAi = c.kind === "ai";
+                    const mineComment = !isAi && c.user_id === user.id;
+                    const canDelete = c.user_id === user.id || isCoordinator || isManager;
                     return (
                       <li key={c.id} className="flex gap-3">
-                        {c.author_avatar ? (
+                        {isAi ? (
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Sparkles className="h-4 w-4" /></div>
+                        ) : c.author_avatar ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={c.author_avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
                         ) : (
@@ -968,10 +993,13 @@ export default async function RequestPage({
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm">
-                            <span className="font-medium text-text">{c.author_name ?? "Member"}</span>
+                            <span className="font-medium text-text">{isAi ? "CohortBuy AI" : c.author_name ?? "Member"}</span>
                             <span className="ml-2 text-xs text-subtle">{timeAgo(c.created_at)}</span>
+                            {discAll && c.stage && (
+                              <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-subtle">{STAGE_LABELS[c.stage as RequestStatus] ?? c.stage}</span>
+                            )}
                           </p>
-                          <p className="mt-0.5 whitespace-pre-wrap text-text">{c.body}</p>
+                          <p className={"mt-0.5 whitespace-pre-wrap " + (isAi ? "rounded-xl bg-primary/5 p-3 text-text" : "text-text")}>{c.body}</p>
                           {(mineComment || canDelete) && (
                             <div className="mt-1 flex items-center gap-3 text-xs">
                               {mineComment && (
