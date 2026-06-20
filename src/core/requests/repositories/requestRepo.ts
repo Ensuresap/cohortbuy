@@ -20,6 +20,10 @@ export function createRequest(db: SupabaseClient, input: CreateRequestInput) {
   });
 }
 
+export function cohortProjectCards(db: SupabaseClient, cohortId: string) {
+  return db.rpc("cohort_project_cards", { p_cohort: cohortId });
+}
+
 export function listByCohort(db: SupabaseClient, cohortId: string) {
   return db
     .from("service_requests")

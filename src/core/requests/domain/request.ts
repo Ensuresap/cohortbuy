@@ -236,6 +236,23 @@ export const PAYMENT_MODE_LABELS: Record<"pooled_escrow" | "individual_direct", 
   pooled_escrow: "Pooled escrow (platform-held) — coming later",
 };
 
+export interface ProjectCard {
+  id: string;
+  slug: string | null;
+  title: string;
+  category: string | null;
+  status: RequestStatus;
+  project_type: "service" | "group_buy";
+  target_date: string | null;
+  min_size: number;
+  join_policy: "auto" | "approval";
+  participants: number;
+  benchmark_low_cents: number | null;
+  benchmark_high_cents: number | null;
+  agreed_amount_cents: number | null;
+  currency: string;
+}
+
 export interface Participant {
   id: string;
   request_id: string;

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Users, CalendarClock, Tag, Lock } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -10,8 +10,8 @@ import {
   getTagCatalog,
 } from "@/core/cohorts/services/cohortService";
 import type { DirectoryMember, TagCatalogItem } from "@/core/cohorts/domain/cohort";
-import { listCohortRequests } from "@/core/requests/services/requestService";
-import { STAGE_LABELS } from "@/core/requests/domain/request";
+import { listCohortProjectCards } from "@/core/requests/services/requestService";
+import { STAGE_LABELS, type ProjectCard } from "@/core/requests/domain/request";
 import { listFeed } from "@/core/posts/services/postService";
 import type { FeedPost } from "@/core/posts/domain/post";
 import AppShell from "@/components/app/AppShell";
@@ -40,6 +40,16 @@ function isOnline(t: string | null) {
 }
 function monthYear(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+function fmtCardDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+function fmtMoney(cents: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(cents / 100);
+  } catch {
+    return `${(cents / 100).toFixed(0)} ${currency}`;
+  }
 }
 function timeAgo(iso: string) {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -76,13 +86,13 @@ export default async function CohortPage({ params }: { params: { handle: string 
 
   const [dirRes, projRes, feedRes, catRes] = await Promise.all([
     isApproved ? getMemberDirectory(ctx, cohort.id) : Promise.resolve({ ok: true, data: [] as DirectoryMember[] }),
-    isApproved ? listCohortRequests(ctx, cohort.id) : Promise.resolve({ ok: true, data: [] }),
+    isApproved ? listCohortProjectCards(ctx, cohort.id) : Promise.resolve({ ok: true, data: [] }),
     listFeed(ctx, cohort.id),
     isManager ? getTagCatalog(ctx) : Promise.resolve({ ok: true, data: [] as TagCatalogItem[] }),
   ]);
   const directory = (dirRes.ok ? dirRes.data : []) as DirectoryMember[];
   const tagCatalog = (catRes.ok ? catRes.data : []) as TagCatalogItem[];
-  const projects = (projRes.ok ? projRes.data : []) as Array<{ id: string; title: string; status: keyof typeof STAGE_LABELS }>;
+  const projects = (projRes.ok ? projRes.data : []) as ProjectCard[];
   const posts = (feedRes.ok ? feedRes.data : []) as FeedPost[];
 
   let requests: Array<{
@@ -184,14 +194,52 @@ export default async function CohortPage({ params }: { params: { handle: string 
                   </p>
                 ) : (
                   <ul className="mt-3 space-y-2">
-                    {projects.map((p) => (
-                      <li key={p.id}>
-                        <Link href={`/requests/${p.id}`} className="flex items-center justify-between rounded-xl border border-border px-4 py-3 hover:bg-surface-2">
-                          <span className="font-medium text-text">{p.title}</span>
-                          <span className="text-xs text-subtle">{STAGE_LABELS[p.status]}</span>
-                        </Link>
-                      </li>
-                    ))}
+                    {projects.map((p) => {
+                      const done = p.status === "completed";
+                      const price =
+                        p.agreed_amount_cents != null
+                          ? fmtMoney(p.agreed_amount_cents, p.currency)
+                          : p.benchmark_low_cents != null && p.benchmark_high_cents != null
+                            ? `${fmtMoney(p.benchmark_low_cents, p.currency)}–${fmtMoney(p.benchmark_high_cents, p.currency)} est.`
+                            : null;
+                      return (
+                        <li key={p.id}>
+                          <Link href={`/requests/${p.id}`} className="block rounded-xl border border-border px-4 py-3 transition hover:bg-surface-2">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-medium text-text">{p.title}</p>
+                                <p className="mt-0.5 text-xs text-subtle">
+                                  {p.category || (p.project_type === "group_buy" ? "Group buy" : "Service")}
+                                </p>
+                              </div>
+                              <span className={"shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium " + (done ? "bg-primary/10 text-primary" : "bg-surface-2 text-text")}>
+                                {STAGE_LABELS[p.status]}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                              <span className="inline-flex items-center gap-1">
+                                <Users className="h-3.5 w-3.5 text-subtle" /> {p.participants}/{p.min_size}+ joined
+                              </span>
+                              {p.target_date && (
+                                <span className="inline-flex items-center gap-1">
+                                  <CalendarClock className="h-3.5 w-3.5 text-subtle" /> by {fmtCardDate(p.target_date)}
+                                </span>
+                              )}
+                              {price && (
+                                <span className="inline-flex items-center gap-1">
+                                  <Tag className="h-3.5 w-3.5 text-subtle" /> {price}
+                                </span>
+                              )}
+                              {p.join_policy === "approval" && !done && (
+                                <span className="inline-flex items-center gap-1 text-subtle">
+                                  <Lock className="h-3.5 w-3.5" /> approval to join
+                                </span>
+                              )}
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </section>
