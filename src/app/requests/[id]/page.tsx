@@ -56,7 +56,6 @@ import {
 import { trackFor, STAGE_GUIDE, advanceBlockedReason } from "@/core/requests/domain/lifecycle";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
-import SafetyNote from "@/components/app/SafetyNote";
 import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
 import RfqDraftEditor from "@/components/app/RfqDraftEditor";
 import QuoteWizard from "@/components/app/QuoteWizard";
@@ -927,8 +926,11 @@ export default async function RequestPage({
                     })}
                   </ul>
                 )}
-                <div className="mt-3"><SafetyNote /></div>
-                <p className="mt-2 text-xs text-subtle">Payments settle directly between members and the vendor, off-platform. This tracker records who has paid — CohortBuy never holds money.</p>
+                <p className="mt-3 text-xs text-subtle">
+                  Payments settle directly between members and the vendor, off-platform — this tracker only records who has paid.
+                  CohortBuy never holds money or asks for bank/card details, SSN or OTP; if anyone requests those, report it to{" "}
+                  <a href="mailto:helpline@cohortbuy.com" className="font-medium text-primary underline">helpline@cohortbuy.com</a>.
+                </p>
               </Panel>
             )}
 
