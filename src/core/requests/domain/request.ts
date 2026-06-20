@@ -41,6 +41,7 @@ export const CreateRequestInput = z.object({
   splitMethod: z.enum(["even", "by_quantity", "by_usage", "custom"]).optional(),
   locked: z.boolean().optional(),
   joinPolicy: z.enum(["auto", "approval"]).optional(),
+  decisionPolicy: z.enum(["coordinator", "vote"]).optional(),
   minSize: z.number().int().min(1).max(100).default(2),
 });
 export type CreateRequestInput = z.infer<typeof CreateRequestInput>;
@@ -48,6 +49,10 @@ export type CreateRequestInput = z.infer<typeof CreateRequestInput>;
 export const JOIN_POLICY_LABELS: Record<"auto" | "approval", string> = {
   auto: "Anyone in the cohort can join instantly",
   approval: "Joining needs coordinator approval",
+};
+export const DECISION_POLICY_LABELS: Record<"coordinator" | "vote", string> = {
+  coordinator: "Coordinator decides",
+  vote: "Group vote (advisory) + coordinator decides",
 };
 
 export interface JoinRequestItem {
@@ -96,6 +101,7 @@ export const EditRequestInput = z.object({
   minSize: z.number().int().min(1).max(100).optional(),
   locked: z.boolean().optional(),
   joinPolicy: z.enum(["auto", "approval"]).optional(),
+  decisionPolicy: z.enum(["coordinator", "vote"]).optional(),
 });
 export type EditRequestInput = z.infer<typeof EditRequestInput>;
 
@@ -152,6 +158,9 @@ export interface ServiceRequest {
   split_method: "even" | "by_quantity" | "by_usage" | "custom";
   locked: boolean;
   join_policy: "auto" | "approval";
+  decision_policy: "coordinator" | "vote";
+  ai_recommendation: string | null;
+  ai_recommended_quote_id: string | null;
   contract_structure: "combined" | "individual";
   payment_mode: "pooled_escrow" | "individual_direct";
   benchmark_low_cents: number | null;

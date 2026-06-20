@@ -141,6 +141,12 @@ export default function AddProjectButton({
                   <option value="approval">I approve each join request</option>
                 </Select>
               </Field>
+              <Field label="Who decides the vendor" htmlFor="decisionPolicy">
+                <Select id="decisionPolicy" name="decisionPolicy" defaultValue="coordinator">
+                  <option value="coordinator">I decide as coordinator</option>
+                  <option value="vote">Members vote (advisory) — I confirm</option>
+                </Select>
+              </Field>
               <label className="flex items-start gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm text-text">
                 <input name="locked" type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" />
                 <span>

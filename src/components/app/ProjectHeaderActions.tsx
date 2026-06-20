@@ -32,6 +32,7 @@ export interface ProjectSummary {
   splitMethod: "even" | "by_quantity" | "by_usage" | "custom";
   minSize: number;
   joinPolicy: "auto" | "approval";
+  decisionPolicy: "coordinator" | "vote";
   locked: boolean;
   stageLabel: string;
   cohortId: string;
@@ -157,6 +158,7 @@ export default function ProjectHeaderActions({
           splitMethod={project.splitMethod}
           minSize={project.minSize}
           joinPolicy={project.joinPolicy}
+          decisionPolicy={project.decisionPolicy}
           locked={project.locked}
         />
       )}

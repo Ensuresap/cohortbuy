@@ -20,6 +20,7 @@ export default function EditProjectButton({
   splitMethod,
   minSize,
   joinPolicy,
+  decisionPolicy,
   locked,
 }: {
   requestId: string;
@@ -32,6 +33,7 @@ export default function EditProjectButton({
   splitMethod: "even" | "by_quantity" | "by_usage" | "custom";
   minSize: number;
   joinPolicy: "auto" | "approval";
+  decisionPolicy: "coordinator" | "vote";
   locked: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -83,6 +85,12 @@ export default function EditProjectButton({
               <Select id="joinPolicy" name="joinPolicy" defaultValue={joinPolicy}>
                 <option value="auto">Anyone in the cohort joins instantly</option>
                 <option value="approval">I approve each join request</option>
+              </Select>
+            </Field>
+            <Field label="Who decides the vendor" htmlFor="decisionPolicy">
+              <Select id="decisionPolicy" name="decisionPolicy" defaultValue={decisionPolicy}>
+                <option value="coordinator">I decide as coordinator</option>
+                <option value="vote">Members vote (advisory) — I confirm</option>
               </Select>
             </Field>
             <label className="flex items-start gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm text-text">

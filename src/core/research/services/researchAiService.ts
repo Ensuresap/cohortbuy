@@ -149,6 +149,45 @@ export async function extractQuote(ctx: Ctx, args: { text: string }): Promise<Re
   }
 }
 
+const RECOMMEND_TOOL: LlmTool = {
+  name: "propose_recommendation",
+  description: "Pick the best-value quote for the group and explain why briefly.",
+  input_schema: {
+    type: "object",
+    properties: {
+      choice: { type: "integer", description: "The 1-based number of the recommended quote from the list" },
+      rationale: { type: "string", description: "One or two sentences on why it's the best value (price vs timeline/warranty/scope)" },
+    },
+    required: ["choice", "rationale"],
+  },
+};
+
+export async function recommendQuote(
+  ctx: Ctx,
+  args: { cohortId: string; context: string }
+): Promise<Result<{ choice: number; rationale: string }>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const m = await resolveModel(ctx, { cohortId: args.cohortId });
+  const provider = (m.ok ? m.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
+  const model = m.ok ? m.data.model : "claude-sonnet-4-6";
+  try {
+    const r = await runMessages({
+      provider,
+      model,
+      system:
+        "Recommend the best-value quote for a neighbor group, weighing price against timeline, warranty and scope fit — not just the cheapest. Always call propose_recommendation with the quote's number.",
+      messages: [{ role: "user", content: args.context }],
+      tools: [RECOMMEND_TOOL],
+    });
+    if (r.kind !== "tool") return err("ai_error", "No recommendation returned");
+    const i = r.input as { choice?: number; rationale?: string };
+    if (typeof i.choice !== "number") return err("ai_error", "No choice returned");
+    return ok({ choice: i.choice, rationale: i.rationale || "" });
+  } catch (e) {
+    return mapAiErr(e);
+  }
+}
+
 function mapAiErr(e: unknown) {
   if (e instanceof LlmConfigError) return err("ai_unconfigured", "AI isn't configured yet — set an API key (see SETUP.md).");
   return err("ai_error", e instanceof Error ? e.message : "AI request failed");

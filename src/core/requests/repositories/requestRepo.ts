@@ -15,6 +15,7 @@ export function createRequest(db: SupabaseClient, input: CreateRequestInput) {
     p_split: input.splitMethod ?? "even",
     p_locked: input.locked ?? false,
     p_join_policy: input.joinPolicy ?? "auto",
+    p_decision_policy: input.decisionPolicy ?? "coordinator",
     p_min_size: input.minSize,
   });
 }
@@ -128,6 +129,22 @@ export function joinRequest(
   });
 }
 
+export function castVote(db: SupabaseClient, args: { requestId: string; quoteId: string }) {
+  return db.rpc("cast_vote", { p_request: args.requestId, p_quote: args.quoteId });
+}
+export function clearVote(db: SupabaseClient, requestId: string) {
+  return db.rpc("clear_vote", { p_request: requestId });
+}
+export function myVote(db: SupabaseClient, requestId: string) {
+  return db.rpc("my_vote", { p_request: requestId });
+}
+export function voteTally(db: SupabaseClient, requestId: string) {
+  return db.rpc("vote_tally", { p_request: requestId });
+}
+export function setAiRecommendation(db: SupabaseClient, args: { requestId: string; quoteId: string; text: string }) {
+  return db.rpc("set_ai_recommendation", { p_request: args.requestId, p_quote: args.quoteId, p_text: args.text });
+}
+
 export function setRfqDraft(db: SupabaseClient, args: { requestId: string; text: string }) {
   return db.rpc("set_rfq_draft", { p_request: args.requestId, p_text: args.text });
 }
@@ -158,6 +175,7 @@ export function updateProject(
     minSize: number;
     locked: boolean;
     joinPolicy: string;
+    decisionPolicy: string;
   }
 ) {
   return db
@@ -173,6 +191,7 @@ export function updateProject(
       min_size: args.minSize,
       locked: args.locked,
       join_policy: args.joinPolicy,
+      decision_policy: args.decisionPolicy,
       last_activity_at: new Date().toISOString(),
     })
     .eq("id", args.requestId)

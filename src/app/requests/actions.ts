@@ -9,6 +9,9 @@ import {
   leaveProject,
   respondJoin,
   setRfqDraft,
+  castVote,
+  clearVote,
+  setAiRecommendation,
   advanceStatus,
   addComment,
   editProject,
@@ -34,7 +37,8 @@ import {
   setBenchmark,
   approveShortlist,
 } from "@/core/research/services/researchService";
-import { estimateBenchmark, suggestVendors, draftRfq } from "@/core/research/services/researchAiService";
+import { estimateBenchmark, suggestVendors, draftRfq, recommendQuote } from "@/core/research/services/researchAiService";
+import { listQuotes } from "@/core/quotes/services/quoteService";
 import { createPost } from "@/core/posts/services/postService";
 
 async function getCtx() {
@@ -75,6 +79,7 @@ export async function createRequestAction(formData: FormData) {
     minSize: Number(formData.get("minSize")) || undefined,
     locked: formData.get("locked") === "on" || formData.get("locked") === "true",
     joinPolicy: (String(formData.get("joinPolicy") ?? "") || undefined) as "auto" | "approval" | undefined,
+    decisionPolicy: (String(formData.get("decisionPolicy") ?? "") || undefined) as "coordinator" | "vote" | undefined,
   });
   if (!res.ok) {
     redirect(`/${handle}?error=${encodeURIComponent(res.error.message)}`);
@@ -106,7 +111,37 @@ export async function updateProjectAction(formData: FormData) {
     minSize: Number(formData.get("minSize")) || undefined,
     locked: formData.get("locked") === "on" || formData.get("locked") === "true",
     joinPolicy: (String(formData.get("joinPolicy") ?? "") || undefined) as "auto" | "approval" | undefined,
+    decisionPolicy: (String(formData.get("decisionPolicy") ?? "") || undefined) as "coordinator" | "vote" | undefined,
   });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function voteAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const quoteId = String(formData.get("quoteId") ?? "");
+  if (quoteId) await castVote(ctx, { requestId, quoteId });
+  else await clearVote(ctx, requestId);
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function aiRecommendQuoteAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const ctxData = await researchContext(ctx, requestId);
+  const quotesRes = await listQuotes(ctx, requestId);
+  const quotes = quotesRes.ok ? quotesRes.data : [];
+  if (ctxData && quotes.length) {
+    const list = quotes
+      .map((q, i) => `${i + 1}. ${q.vendor_name} — ${(q.amount_cents / 100).toFixed(0)} ${q.currency}${q.timeline ? `, ${q.timeline}` : ""}${q.warranty ? `, ${q.warranty} warranty` : ""}${q.notes ? ` (${q.notes})` : ""}`)
+      .join("\n");
+    const context = `${ctxData.context}\n\nQuotes:\n${list}`;
+    const rec = await recommendQuote(ctx, { cohortId: ctxData.request.cohort_id, context });
+    if (rec.ok) {
+      const idx = Math.min(Math.max(rec.data.choice, 1), quotes.length) - 1;
+      await setAiRecommendation(ctx, { requestId, quoteId: quotes[idx].id, text: rec.data.rationale });
+    }
+  }
   revalidatePath(`/requests/${requestId}`);
 }
 

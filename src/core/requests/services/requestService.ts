@@ -91,6 +91,7 @@ export async function editProject(ctx: Ctx, raw: unknown): Promise<Result<true>>
     minSize: p.data.minSize ?? 2,
     locked: p.data.locked ?? false,
     joinPolicy: p.data.joinPolicy ?? "auto",
+    decisionPolicy: p.data.decisionPolicy ?? "coordinator",
   });
   if (error) return err("db_error", error.message);
   if (!data || data.length === 0)
@@ -121,6 +122,51 @@ export async function joinServiceRequest(ctx: Ctx, raw: unknown): Promise<Result
   });
   if (error) {
     if (error.code === "23505") return err("already_joined", "You're already in this project");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+export async function castVote(ctx: Ctx, args: { requestId: string; quoteId: string }): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.castVote(ctx.db, args);
+  if (error) {
+    if (error.message?.includes("not_participant")) return err("forbidden", "Join the project to vote");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
+export async function clearVote(ctx: Ctx, requestId: string): Promise<Result<true>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.clearVote(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  return ok(true);
+}
+
+export async function myVote(ctx: Ctx, requestId: string): Promise<Result<string | null>> {
+  if (!ctx.actor?.id) return ok(null);
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.myVote(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  return ok((data as string | null) ?? null);
+}
+
+export async function getVoteTally(ctx: Ctx, requestId: string): Promise<Result<Record<string, number>>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.voteTally(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  const map: Record<string, number> = {};
+  for (const row of (data ?? []) as Array<{ quote_id: string; votes: number }>) map[row.quote_id] = Number(row.votes);
+  return ok(map);
+}
+
+export async function setAiRecommendation(ctx: Ctx, args: { requestId: string; quoteId: string; text: string }): Promise<Result<true>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.setAiRecommendation(ctx.db, args);
+  if (error) {
+    if (error.message?.includes("not_coordinator")) return err("forbidden", "Only the coordinator can set this");
     return err("db_error", error.message);
   }
   return ok(true);

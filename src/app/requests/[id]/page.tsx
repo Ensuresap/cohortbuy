@@ -30,6 +30,8 @@ import {
   listCostShares,
   myParticipation,
   listJoinRequests,
+  myVote,
+  getVoteTally,
 } from "@/core/requests/services/requestService";
 import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { listScope } from "@/core/scope/services/scopeService";
@@ -44,6 +46,7 @@ import {
   JOINABLE_STATUSES,
   CONTRACT_STRUCTURE_LABELS,
   PAYMENT_MODE_LABELS,
+  DECISION_POLICY_LABELS,
   PROJECT_TYPE_LABELS,
   SERVICE_SCOPE_LABELS,
   SPLIT_METHOD_LABELS,
@@ -77,6 +80,8 @@ import {
   aiEstimateBenchmarkAction,
   aiSuggestVendorsAction,
   respondJoinAction,
+  voteAction,
+  aiRecommendQuoteAction,
   selectQuoteAction,
   recordContractAction,
   setTermsAction,
@@ -145,7 +150,7 @@ export default async function RequestPage({
   const req = reqRes.ok ? reqRes.data : null;
   if (!req) notFound();
 
-  const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes, candRes, myPartRes, joinReqRes, mineRes] = await Promise.all([
+  const [partsRes, scopeRes, quotesRes, commentsRes, sharesRes, candRes, myPartRes, joinReqRes, myVoteRes, tallyRes, mineRes] = await Promise.all([
     listParticipantsFeed(ctx, params.id),
     listScope(ctx, params.id),
     listQuotes(ctx, params.id),
@@ -154,11 +159,15 @@ export default async function RequestPage({
     listCandidates(ctx, params.id),
     myParticipation(ctx, params.id),
     listJoinRequests(ctx, params.id),
+    myVote(ctx, params.id),
+    getVoteTally(ctx, params.id),
     listMyCohorts(ctx),
   ]);
   const participants = partsRes.ok ? partsRes.data : [];
   const myStatus = myPartRes.ok ? myPartRes.data : null;
   const joinRequests = joinReqRes.ok ? joinReqRes.data : [];
+  const myVoteId = myVoteRes.ok ? myVoteRes.data : null;
+  const tally = tallyRes.ok ? tallyRes.data : {};
   const scopeItems = scopeRes.ok ? scopeRes.data : [];
   const quotes = quotesRes.ok ? quotesRes.data : [];
   const comments = commentsRes.ok ? commentsRes.data : [];
@@ -271,6 +280,7 @@ export default async function RequestPage({
                     splitMethod: req.split_method,
                     minSize: req.min_size,
                     joinPolicy: req.join_policy,
+                    decisionPolicy: req.decision_policy,
                     locked: req.locked,
                     stageLabel: STAGE_LABELS[req.status],
                     cohortId: req.cohort_id,
@@ -666,6 +676,27 @@ export default async function RequestPage({
                     )}
                   </div>
                 )}
+                {at("deciding") && (
+                  <div className="mt-2 rounded-xl border border-primary/15 bg-primary/5 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-text">Deciding · {DECISION_POLICY_LABELS[req.decision_policy]}</p>
+                      {(isCoordinator || isManager) && quotes.length > 0 && (
+                        <form action={aiRecommendQuoteAction}>
+                          <input type="hidden" name="requestId" value={req.id} />
+                          <button type="submit" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                            <Sparkles className="h-3.5 w-3.5" /> Recommend with AI
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                    {req.ai_recommendation && (
+                      <p className="mt-1 text-sm text-muted"><span className="font-medium text-text">AI:</span> {req.ai_recommendation}</p>
+                    )}
+                    {req.decision_policy === "vote" && (
+                      <p className="mt-1 text-xs text-subtle">Members vote below; the coordinator confirms the winner.</p>
+                    )}
+                  </div>
+                )}
                 {quotes.length === 0 ? (
                   <p className="mt-2 text-muted">No quotes recorded yet.</p>
                 ) : (
@@ -684,6 +715,12 @@ export default async function RequestPage({
                               {!hasSelection && i === 0 && (
                                 <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Best price</span>
                               )}
+                              {q.id === req.ai_recommended_quote_id && (
+                                <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-primary/40 px-2 py-0.5 text-[11px] font-medium text-primary"><Sparkles className="h-3 w-3" /> AI pick</span>
+                              )}
+                              {req.decision_policy === "vote" && tally[q.id] ? (
+                                <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-text">{tally[q.id]} vote{tally[q.id] === 1 ? "" : "s"}</span>
+                              ) : null}
                             </span>
                             <span className="font-display text-lg font-semibold text-primary">{fmt(q.amount_cents, q.currency)}</span>
                           </div>
@@ -693,13 +730,24 @@ export default async function RequestPage({
                             {q.warranty ? ` · ${q.warranty}` : ""}
                           </p>
                           {q.notes && <p className="mt-1 text-sm text-muted">{q.notes}</p>}
-                          {at("deciding") && isCoordinator && !selected && (
-                            <form action={selectQuoteAction} className="mt-2">
-                              <input type="hidden" name="requestId" value={req.id} />
-                              <input type="hidden" name="quoteId" value={q.id} />
-                              <button type="submit" className={subtleBtnClass}>Select this quote</button>
-                            </form>
-                          )}
+                          <div className="mt-2 flex flex-wrap items-center gap-3">
+                            {at("deciding") && isCoordinator && !selected && (
+                              <form action={selectQuoteAction}>
+                                <input type="hidden" name="requestId" value={req.id} />
+                                <input type="hidden" name="quoteId" value={q.id} />
+                                <button type="submit" className={subtleBtnClass}>Select this quote</button>
+                              </form>
+                            )}
+                            {req.decision_policy === "vote" && at("deciding") && isParticipant && (
+                              <form action={voteAction}>
+                                <input type="hidden" name="requestId" value={req.id} />
+                                <input type="hidden" name="quoteId" value={myVoteId === q.id ? "" : q.id} />
+                                <button type="submit" className={myVoteId === q.id ? "text-xs font-semibold text-primary hover:underline" : "text-xs font-medium text-primary hover:underline"}>
+                                  {myVoteId === q.id ? "✓ Your vote — remove" : "Vote for this"}
+                                </button>
+                              </form>
+                            )}
+                          </div>
                           {canManageQuote && (
                             <div className="mt-2 flex items-center gap-3 text-xs">
                               <details>
@@ -998,6 +1046,7 @@ export default async function RequestPage({
                 {req.join_deadline && <Row label="Join by" value={fmtDate(req.join_deadline)} />}
                 <Row label="Min group" value={`${req.min_size} members`} />
                 <Row label="Joining" value={req.join_policy === "approval" ? "Approval needed" : "Open to cohort"} />
+                <Row label="Decision" value={req.decision_policy === "vote" ? "Group vote" : "Coordinator"} />
                 {req.cohort && <Row label="Cohort" value={req.cohort.name} />}
               </dl>
             </section>
