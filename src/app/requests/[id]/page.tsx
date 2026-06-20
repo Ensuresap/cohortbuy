@@ -57,6 +57,7 @@ import SafetyNote from "@/components/app/SafetyNote";
 import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
 import RfqDraftEditor from "@/components/app/RfqDraftEditor";
 import QuoteWizard from "@/components/app/QuoteWizard";
+import CardTitle from "@/components/ui/CardTitle";
 import {
   addScopeAction,
   updateScopeAction,
@@ -365,7 +366,7 @@ export default async function RequestPage({
             })}
           </nav>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/15 bg-primary/5 p-4">
             <p className="min-w-0 text-sm text-muted">{STAGE_GUIDE[viewedStep]}</p>
             {viewingCurrent && isCoordinator && nextStage && !isCompleted && (
               <form action={advanceRequestAction} className="shrink-0">
@@ -898,8 +899,8 @@ export default async function RequestPage({
 
             {/* Discussion */}
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <h2 className="font-display text-lg font-semibold text-text">Discussion</h2>
-              <form action={addCommentAction} className="mt-3 flex gap-2">
+              <CardTitle>Discussion</CardTitle>
+              <form action={addCommentAction} className="flex gap-2">
                 <input type="hidden" name="requestId" value={req.id} />
                 <input name="body" required placeholder="Add a comment…" className={fieldClass} />
                 <Button type="submit">Post</Button>
@@ -959,11 +960,11 @@ export default async function RequestPage({
           </div>
 
           {/* Side */}
-          <div className="space-y-6">
+          <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
             {(isCoordinator || isManager) && joinRequests.length > 0 && (
               <section className="rounded-2xl border border-primary/30 bg-surface p-5 shadow-soft">
-                <h2 className="font-display text-lg font-semibold text-text">Join requests ({joinRequests.length})</h2>
-                <ul className="mt-3 space-y-2">
+                <CardTitle>Join requests ({joinRequests.length})</CardTitle>
+                <ul className="space-y-2">
                   {joinRequests.map((jr) => (
                     <li key={jr.user_id} className="flex items-center justify-between gap-2 text-sm">
                       <span className="truncate text-text">{jr.member_name ?? "Member"}</span>
@@ -988,8 +989,8 @@ export default async function RequestPage({
             )}
 
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <h2 className="text-sm font-medium text-muted">Details</h2>
-              <dl className="mt-3 space-y-3 text-sm">
+              <CardTitle>Details</CardTitle>
+              <dl className="space-y-3 text-sm">
                 <Row label="Status" value={STAGE_LABELS[req.status]} />
                 <Row label="Type" value={PROJECT_TYPE_LABELS[req.project_type]} />
                 <Row label="Includes" value={SERVICE_SCOPE_LABELS[req.service_scope]} />
@@ -1004,8 +1005,8 @@ export default async function RequestPage({
             </section>
 
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <h2 className="font-display text-lg font-semibold text-text">Participants</h2>
-              <ul className="mt-3 space-y-2">
+              <CardTitle>Participants</CardTitle>
+              <ul className="space-y-2">
                 {participants.map((p) => {
                   const isCreator = p.user_id === req.created_by;
                   return (
@@ -1050,7 +1051,7 @@ export default async function RequestPage({
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-      <h2 className="font-display text-lg font-semibold text-text">{title}</h2>
+      <CardTitle>{title}</CardTitle>
       {children}
     </section>
   );

@@ -8,6 +8,7 @@ import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Field, Textarea, Select } from "@/components/ui/Field";
+import CardTitle from "@/components/ui/CardTitle";
 import { addVendorAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +50,7 @@ export default async function AdminVendorsPage() {
         <p className="mt-1 text-muted">Curated vendors that cohorts can shortlist during research.</p>
 
         <section className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-soft">
-          <h2 className="font-display text-lg font-semibold text-text">Add a vendor</h2>
+          <CardTitle>Add a vendor</CardTitle>
           <form action={addVendorAction} className="mt-3 space-y-3">
             <Field label="Name" htmlFor="name">
               <Input id="name" name="name" required placeholder="Apex Fencing" />
@@ -87,7 +88,7 @@ export default async function AdminVendorsPage() {
         </section>
 
         <section className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-soft">
-          <h2 className="font-display text-lg font-semibold text-text">Registry ({vendors.length})</h2>
+          <CardTitle>Registry ({vendors.length})</CardTitle>
           {vendors.length === 0 ? (
             <p className="mt-2 text-muted">No vendors yet.</p>
           ) : (
