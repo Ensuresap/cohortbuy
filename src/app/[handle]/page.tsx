@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, ArrowLeft } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -110,12 +110,6 @@ export default async function CohortPage({ params }: { params: { handle: string 
               // eslint-disable-next-line @next/next/no-img-element
               <img src={cohort.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
             )}
-            <Link
-              href="/cohorts"
-              className="absolute left-4 top-4 z-10 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur transition hover:bg-white/25"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" /> Cohorts
-            </Link>
           </div>
           <div className="relative z-10 px-6 pb-6">
             <div className="-mt-10 flex items-end justify-between gap-4">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/Button";
@@ -15,6 +16,7 @@ import {
   MoreHorizontal,
   LogOut,
   X,
+  ArrowLeft,
   type LucideIcon,
 } from "lucide-react";
 
@@ -76,6 +78,14 @@ export default function CohortHeaderActions({
 
   return (
     <div className="flex items-center gap-1.5">
+      <Link
+        href="/cohorts"
+        aria-label="Back to cohorts"
+        title="Cohorts"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition hover:bg-surface-2 hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2} />
+      </Link>
       <IconButton label="About" onClick={() => setModal("about")} Icon={Info} />
       <IconButton label="Copy link" onClick={copyLink} Icon={Share2} />
       {isManager && (

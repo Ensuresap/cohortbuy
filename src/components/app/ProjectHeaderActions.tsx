@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   Info,
   Share2,
@@ -11,6 +12,7 @@ import {
   Link2,
   MessageCircle,
   Megaphone,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
@@ -50,6 +52,8 @@ export default function ProjectHeaderActions({
   canAnnounce,
   joinPending,
   joinClosedReason,
+  backHref,
+  backLabel,
 }: {
   project: ProjectSummary;
   canEdit: boolean;
@@ -58,6 +62,8 @@ export default function ProjectHeaderActions({
   canAnnounce: boolean;
   joinPending: boolean;
   joinClosedReason: string | null;
+  backHref?: string;
+  backLabel?: string;
 }) {
   const [about, setAbout] = useState(false);
   const [shareMenu, setShareMenu] = useState(false);
@@ -100,6 +106,16 @@ export default function ProjectHeaderActions({
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
+      {backHref && (
+        <Link
+          href={backHref}
+          aria-label={backLabel ?? "Back"}
+          title={backLabel ?? "Back"}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition hover:bg-surface-2 hover:text-text"
+        >
+          <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2} />
+        </Link>
+      )}
       <IconButton label="About this project" Icon={Info} onClick={() => setAbout(true)} />
 
       {/* Share & invite menu */}
