@@ -61,6 +61,7 @@ import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
 import RfqDraftEditor from "@/components/app/RfqDraftEditor";
 import QuoteWizard from "@/components/app/QuoteWizard";
 import CardTitle from "@/components/ui/CardTitle";
+import MarkdownLite from "@/components/ui/MarkdownLite";
 import {
   addScopeAction,
   updateScopeAction,
@@ -1012,7 +1013,13 @@ export default async function RequestPage({
                               <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-subtle">{STAGE_LABELS[c.stage as RequestStatus] ?? c.stage}</span>
                             )}
                           </p>
-                          <p className={"mt-0.5 whitespace-pre-wrap " + (isAi ? "rounded-xl bg-primary/5 p-3 text-text" : "text-text")}>{c.body}</p>
+                          {isAi ? (
+                            <div className="mt-0.5 rounded-xl bg-primary/5 p-3 text-text">
+                              <MarkdownLite text={c.body} />
+                            </div>
+                          ) : (
+                            <p className="mt-0.5 whitespace-pre-wrap text-text">{c.body}</p>
+                          )}
                           {(mineComment || canDelete) && (
                             <div className="mt-1 flex items-center gap-3 text-xs">
                               {mineComment && (

@@ -202,7 +202,7 @@ export async function answerDiscussion(
       model,
       maxTokens: 700,
       system:
-        "You are a helpful assistant in a neighbor group-buying project's discussion. Answer the member's question using the project context. Be concise, practical and friendly. If it's outside what you can know, say so and suggest who to ask. Do not invent specific prices or vendors.",
+        "You are a helpful assistant in a neighbor group-buying project's discussion. Answer the member's question using the project context. Be concise, practical and friendly. Format for readability with light Markdown — short paragraphs, bullet points (`- `) for lists, and **bold** for key terms; keep it brief. If it's outside what you can know, say so and suggest who to ask. Do not invent specific prices or vendors.",
       messages: [{ role: "user", content: `${args.context}\n\nMember question: ${args.question}` }],
     });
     return ok(r.kind === "text" ? r.text : "…");
