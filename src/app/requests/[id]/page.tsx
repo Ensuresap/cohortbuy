@@ -641,7 +641,10 @@ export default async function RequestPage({
 
             {/* Vendors & quotes (service) */}
             {showQuotes && (
-              <Panel title="Vendors & quotes">
+              <Panel
+                title="Vendors & quotes"
+                action={at("rfq") && isParticipant ? <QuoteWizard requestId={req.id} /> : undefined}
+              >
                 {(isCoordinator || isManager) && !isCompleted && (
                   <div className="mt-2 rounded-xl border border-border p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -731,11 +734,6 @@ export default async function RequestPage({
                     })}
                   </ul>
                 )}
-                {at("rfq") && isParticipant && (
-                  <div className="mt-4">
-                    <QuoteWizard requestId={req.id} />
-                  </div>
-                )}
               </Panel>
             )}
 
@@ -808,7 +806,17 @@ export default async function RequestPage({
 
             {/* Cost share */}
             {viewedStep === "funding" && (
-              <Panel title="Cost share">
+              <Panel
+                title="Cost share"
+                action={
+                  at("funding") && canManageMoney && req.agreed_amount_cents != null ? (
+                    <form action={generateCostSharesAction}>
+                      <input type="hidden" name="requestId" value={req.id} />
+                      <button type="submit" className={subtleBtnClass}>{shares.length === 0 ? "Generate even split" : "Regenerate split"}</button>
+                    </form>
+                  ) : undefined
+                }
+              >
                 {shares.length > 0 && req.agreed_amount_cents != null && (
                   <p className="mt-1 text-xs text-subtle">
                     {fmt(collectedCents, shareCurrency)} of {fmt(req.agreed_amount_cents, shareCurrency)} collected
@@ -853,12 +861,6 @@ export default async function RequestPage({
                       );
                     })}
                   </ul>
-                )}
-                {at("funding") && canManageMoney && req.agreed_amount_cents != null && (
-                  <form action={generateCostSharesAction} className="mt-3">
-                    <input type="hidden" name="requestId" value={req.id} />
-                    <button type="submit" className={subtleBtnClass}>{shares.length === 0 ? "Generate even split" : "Regenerate split"}</button>
-                  </form>
                 )}
                 <div className="mt-3"><SafetyNote /></div>
                 <p className="mt-2 text-xs text-subtle">Payments settle directly between members and the vendor, off-platform. This tracker records who has paid — CohortBuy never holds money.</p>
@@ -1044,10 +1046,10 @@ export default async function RequestPage({
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-      <CardTitle>{title}</CardTitle>
+      <CardTitle right={action}>{title}</CardTitle>
       {children}
     </section>
   );
