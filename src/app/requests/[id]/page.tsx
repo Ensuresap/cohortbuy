@@ -696,7 +696,13 @@ export default async function RequestPage({
                       <p className="mt-1 text-sm text-muted"><span className="font-medium text-text">AI:</span> {req.ai_recommendation}</p>
                     )}
                     {req.decision_policy === "vote" && (
-                      <p className="mt-1 text-xs text-subtle">Members vote below; the coordinator confirms the winner.</p>
+                      <p className="mt-1 text-xs text-subtle">Members vote below to advise; the coordinator makes the final pick.</p>
+                    )}
+                    {isCoordinator && !hasSelection && (
+                      <p className="mt-2 text-sm font-medium text-text">To decide, press <span className="text-primary">Select as winner</span> on your chosen quote below.</p>
+                    )}
+                    {hasSelection && (
+                      <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary"><CheckCircle2 className="h-4 w-4" /> Winner: {req.contract_vendor}. Move to Contracting when ready.</p>
                     )}
                   </div>
                 )}
@@ -738,8 +744,15 @@ export default async function RequestPage({
                               <form action={selectQuoteAction}>
                                 <input type="hidden" name="requestId" value={req.id} />
                                 <input type="hidden" name="quoteId" value={q.id} />
-                                <button type="submit" className={subtleBtnClass}>Select this quote</button>
+                                <Button type="submit" size="md" className="gap-1.5">
+                                  <CheckCircle2 className="h-4 w-4" /> Select as winner
+                                </Button>
                               </form>
+                            )}
+                            {at("deciding") && isCoordinator && selected && (
+                              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+                                <CheckCircle2 className="h-4 w-4" /> Chosen winner
+                              </span>
                             )}
                             {req.decision_policy === "vote" && at("deciding") && isParticipant && (
                               <form action={voteAction}>
