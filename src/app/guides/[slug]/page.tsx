@@ -52,7 +52,7 @@ export default async function GuidePage({ params }: { params: { slug: string } }
   return (
     <main className="min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <header className="container-prose flex items-center justify-between py-6">
+      <header className="container-prose flex items-center justify-between py-6 pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <Link href="/" className="font-display text-xl font-semibold text-primary">CohortBuy</Link>
         <div className="flex items-center gap-3">
           <Link href="/guides" className="hidden text-sm font-medium text-muted hover:text-primary sm:inline">All guides</Link>

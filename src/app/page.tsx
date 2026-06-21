@@ -102,7 +102,7 @@ export default async function Home() {
   return (
     <main className="min-h-screen">
       {/* Nav */}
-      <header className="container-prose flex items-center justify-between py-6">
+      <header className="container-prose flex items-center justify-between py-6 pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <div className="flex items-center gap-2">
           <Logo />
           <span className="font-display text-xl font-semibold text-primary">
