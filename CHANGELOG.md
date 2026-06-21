@@ -6,6 +6,9 @@ Update the `[Unreleased]` section with **every** feature (see `CLAUDE.md` → "K
 ## [Unreleased]
 
 ### Changed
+- **Dashboard shows value + community wins (gamification)** — two engagement upgrades:
+  - **Active-project cards now lead with value**, not just status: each card shows **N neighbors pooling**, the money (**Agreed $X/home** once decided, else **Est. $A–$B/home** from the benchmark), and a green **"save ~$Y"** pill when the agreed price beats the benchmark. `my_active_projects()` recreated to also return participant count + benchmark/agreed amounts.
+  - **"Community wins" banner** — a celebratory strip at the top: "Neighbors have saved **$X** together", with horizontally-scrollable cards of recently completed projects ("Saved ~$1,200 · Backyard fence · Katy Ranch Group · 8 neighbors"). Social proof / FOMO across public + your cohorts via `community_wins()` (savings = (benchmark_high − agreed) × members). Migration `20260618080000_dashboard_value.sql`.
 - **Dashboard redesigned for engagement** — the post-login dashboard now leads with the things that pull a member back into the app, grounded in the plan's token/nudge/referral model:
   - **"Your turn"** — a prominent, precise to-do card surfacing only actions that need *this* user now: add your scope, cast your vote, pick the winning quote, record the signed agreement, confirm your payment, or (for cohort managers) review N neighbors waiting to join. Computed server-side per-user (`my_action_items()`), not just by stage — e.g. scoping only shows if *you* haven't added scope; funding only if *you* have an unpaid share.
   - **Status & tokens progress** — current tier with a **progress bar to the next tier** (Newcomer → Neighbor → Connector → Pillar), "X more to reach Connector", and an "Earn more" list (refer +25, complete +50, rate +5) from `EARN_RULES`. New `tierProgress()` helper.

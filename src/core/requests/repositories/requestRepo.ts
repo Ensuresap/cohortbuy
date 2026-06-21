@@ -36,6 +36,10 @@ export function discoverableProjects(db: SupabaseClient) {
   return db.rpc("discoverable_projects");
 }
 
+export function communityWins(db: SupabaseClient) {
+  return db.rpc("community_wins");
+}
+
 export function listByCohort(db: SupabaseClient, cohortId: string) {
   return db
     .from("service_requests")

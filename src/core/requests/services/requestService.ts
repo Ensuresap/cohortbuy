@@ -19,6 +19,7 @@ import {
   type MyActiveProject,
   type ActionItem,
   type DiscoverProject,
+  type CommunityWin,
   type Participant,
   type ParticipantFeedItem,
   type JoinRequestItem,
@@ -92,6 +93,14 @@ export async function listDiscoverProjects(ctx: Ctx): Promise<Result<DiscoverPro
   const { data, error } = await repo.discoverableProjects(ctx.db);
   if (error) return err("db_error", error.message);
   return ok((data ?? []) as DiscoverProject[]);
+}
+
+/** Recently completed projects with estimated savings (social proof). */
+export async function listCommunityWins(ctx: Ctx): Promise<Result<CommunityWin[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.communityWins(ctx.db);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as CommunityWin[]);
 }
 
 /** Projects the signed-in user participates in (with cohort + stage). */

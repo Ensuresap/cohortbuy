@@ -294,6 +294,22 @@ export interface MyActiveProject {
   last_comment_author: string | null;
   last_comment_kind: "member" | "ai" | null;
   last_comment_at: string | null;
+  participants: number;
+  benchmark_low_cents: number | null;
+  benchmark_high_cents: number | null;
+  agreed_amount_cents: number | null;
+  currency: string;
+}
+
+export interface CommunityWin {
+  id: string;
+  title: string;
+  cohort_name: string;
+  cohort_handle: string;
+  participants: number;
+  saved_cents: number;
+  currency: string;
+  completed_at: string | null;
 }
 
 export interface Participant {

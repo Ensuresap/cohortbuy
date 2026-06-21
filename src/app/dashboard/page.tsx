@@ -8,6 +8,7 @@ import {
   listMyActiveProjects,
   listMyActionItems,
   listDiscoverProjects,
+  listCommunityWins,
 } from "@/core/requests/services/requestService";
 import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { joinRequestAction } from "@/app/requests/actions";
@@ -20,13 +21,14 @@ import {
   type MyActiveProject,
   type ActionItem,
   type DiscoverProject,
+  type CommunityWin,
 } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import InviteNeighborsCard from "@/components/app/InviteNeighborsCard";
 import {
   MessageSquare, Sparkles, ListChecks, Vote, Trophy, FileSignature,
-  CreditCard, UserPlus, ArrowRight, Users, CheckCircle2, Coins,
+  CreditCard, UserPlus, ArrowRight, Users, CheckCircle2, Coins, PartyPopper, TrendingDown,
 } from "lucide-react";
 
 type CohortRow = { status: string; access_level: string; cohort: { id: string; handle: string; name: string } | null };
@@ -34,6 +36,17 @@ type CohortRow = { status: string; access_level: string; cohort: { id: string; h
 function pct(status: RequestStatus): number {
   const i = PIPELINE.indexOf(status);
   return i < 0 ? 0 : Math.round(((i + 1) / PIPELINE.length) * 100);
+}
+
+function fmtMoney(cents: number | null, currency = "USD"): string {
+  if (cents == null) return "";
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency", currency, maximumFractionDigits: 0,
+    }).format(cents / 100);
+  } catch {
+    return `$${Math.round(cents / 100).toLocaleString()}`;
+  }
 }
 
 function timeAgo(iso: string | null): string {
@@ -70,10 +83,11 @@ export default async function DashboardPage() {
   const profile = profileRes.ok ? profileRes.data : null;
   if (!profile?.display_name) redirect("/onboarding");
 
-  const [projectsRes, actionsRes, discoverRes, cohortsRes, balRes] = await Promise.all([
+  const [projectsRes, actionsRes, discoverRes, winsRes, cohortsRes, balRes] = await Promise.all([
     listMyActiveProjects(ctx),
     listMyActionItems(ctx),
     listDiscoverProjects(ctx),
+    listCommunityWins(ctx),
     listMyCohorts(ctx),
     getBalance(ctx, { userId: user.id }),
   ]);
@@ -81,6 +95,8 @@ export default async function DashboardPage() {
   const active = (projectsRes.ok ? projectsRes.data : []) as MyActiveProject[];
   const actions = (actionsRes.ok ? actionsRes.data : []) as ActionItem[];
   const discover = (discoverRes.ok ? discoverRes.data : []) as DiscoverProject[];
+  const wins = (winsRes.ok ? winsRes.data : []) as CommunityWin[];
+  const totalSaved = wins.reduce((s, w) => s + (w.saved_cents || 0), 0);
   const cohorts = (cohortsRes.ok ? cohortsRes.data : []) as CohortRow[];
   const tokens = balRes.ok ? balRes.data : { balance: 0, lifetimeEarned: 0, tier: "Newcomer" };
   const tp = tierProgress(tokens.lifetimeEarned);
@@ -109,7 +125,49 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        {/* Community wins — social proof / gamification */}
+        {wins.length > 0 && (
+          <section className="mt-6 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 shadow-soft">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <PartyPopper className="h-5 w-5 text-primary" />
+              <h2 className="font-display text-lg font-semibold text-text">Community wins</h2>
+              {totalSaved > 0 && (
+                <span className="text-sm text-muted">
+                  Neighbors have saved{" "}
+                  <span className="font-semibold text-primary">{fmtMoney(totalSaved)}</span> together
+                </span>
+              )}
+            </div>
+            <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+              {wins.map((w) => (
+                <Link
+                  key={w.id}
+                  href={`/requests/${w.id}`}
+                  className="flex w-60 shrink-0 flex-col rounded-xl border border-border bg-surface p-3 transition hover:border-primary/40"
+                >
+                  {w.saved_cents > 0 ? (
+                    <span className="flex items-center gap-1 text-sm font-semibold text-primary">
+                      <TrendingDown className="h-4 w-4" />
+                      Saved ~{fmtMoney(w.saved_cents, w.currency)}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-sm font-semibold text-primary">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Completed
+                    </span>
+                  )}
+                  <span className="mt-1 truncate text-sm font-medium text-text">{w.title}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-subtle">
+                    {w.cohort_name}
+                    <span className="inline-flex items-center gap-0.5"><Users className="h-3 w-3" />{w.participants}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Main column */}
           <div className="space-y-6 lg:col-span-2">
             {/* Your turn */}
@@ -188,7 +246,28 @@ export default async function DashboardPage() {
                         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-2">
                           <div className="h-full rounded-full bg-primary" style={{ width: `${pct(p.status)}%` }} />
                         </div>
-                        <div className="mt-2.5 flex items-center gap-2 text-xs text-subtle">
+                        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                          <span className="inline-flex items-center gap-1 font-medium text-muted">
+                            <Users className="h-3.5 w-3.5" />
+                            {p.participants} {p.participants === 1 ? "neighbor" : "neighbors"} pooling
+                          </span>
+                          {p.agreed_amount_cents != null ? (
+                            <span className="font-medium text-text">Agreed {fmtMoney(p.agreed_amount_cents, p.currency)}/home</span>
+                          ) : p.benchmark_low_cents != null && p.benchmark_high_cents != null ? (
+                            <span className="text-muted">
+                              Est. {fmtMoney(p.benchmark_low_cents, p.currency)}–{fmtMoney(p.benchmark_high_cents, p.currency)}/home
+                            </span>
+                          ) : null}
+                          {p.agreed_amount_cents != null &&
+                            p.benchmark_high_cents != null &&
+                            p.benchmark_high_cents > p.agreed_amount_cents && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">
+                                <TrendingDown className="h-3 w-3" />
+                                save ~{fmtMoney(p.benchmark_high_cents - p.agreed_amount_cents, p.currency)}
+                              </span>
+                            )}
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-2 text-xs text-subtle">
                           {p.last_comment ? (
                             <>
                               {p.last_comment_kind === "ai" ? (
