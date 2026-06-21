@@ -655,7 +655,7 @@ export default async function RequestPage({
             {/* Vendors & quotes (service) */}
             {showQuotes && (
               <Panel
-                title="Vendors & quotes"
+                title={at("rfq") ? "Vendors & quotes" : "Compare & select"}
                 action={at("rfq") && isParticipant ? <QuoteWizard requestId={req.id} /> : undefined}
               >
                 {at("rfq") && (isCoordinator || isManager) && !isCompleted && (
@@ -727,7 +727,7 @@ export default async function RequestPage({
                               {q.id === req.ai_recommended_quote_id && (
                                 <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-primary/40 px-2 py-0.5 text-[11px] font-medium text-primary"><Sparkles className="h-3 w-3" /> AI pick</span>
                               )}
-                              {req.decision_policy === "vote" && tally[q.id] ? (
+                              {at("deciding") && req.decision_policy === "vote" && tally[q.id] ? (
                                 <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-text">{tally[q.id]} vote{tally[q.id] === 1 ? "" : "s"}</span>
                               ) : null}
                             </span>
@@ -764,7 +764,7 @@ export default async function RequestPage({
                               </form>
                             )}
                           </div>
-                          {canManageQuote && (
+                          {at("rfq") && canManageQuote && (
                             <div className="mt-2 flex items-center gap-3 text-xs">
                               <details>
                                 <summary className="cursor-pointer text-primary hover:underline">Edit</summary>
