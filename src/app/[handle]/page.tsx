@@ -315,51 +315,74 @@ export default async function CohortPage({ params }: { params: { handle: string 
           <div className="space-y-6">
             {isApproved && (
               <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-display text-lg font-semibold text-text">Members</h2>
-                  <span className="text-xs text-subtle">{onlineCount} online</span>
+                <div className="flex items-center justify-between border-b-2 border-primary/15 pb-3">
+                  <h2 className="font-display text-lg font-semibold text-text">
+                    Members <span className="text-subtle font-normal">· {directory.length}</span>
+                  </h2>
+                  {onlineCount > 0 && (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                      {onlineCount} online
+                    </span>
+                  )}
                 </div>
-                <ul className="mt-4 space-y-3">
+                <ul className="mt-2 divide-y divide-border/60">
                   {directory.map((m) => {
                     const owner = m.user_id === cohort.created_by;
                     const role = owner ? "Owner" : m.access_level === "manager" ? "Co-admin" : "Member";
+                    const roleClass = owner
+                      ? "bg-primary/10 text-primary"
+                      : m.access_level === "manager"
+                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                        : "bg-surface-2 text-subtle";
+                    const canManage = isManager && !owner;
                     return (
-                      <li key={m.user_id} className="space-y-2">
+                      <li key={m.user_id} className="py-3 first:pt-1">
                         <div className="flex items-center gap-3">
-                          <div className="relative">
+                          <div className="relative shrink-0">
                             <Avatar url={m.avatar_url} name={m.display_name} />
                             <span className={"absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface " + (isOnline(m.last_seen_at) ? "bg-green-500" : "bg-subtle")} />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium text-text">
-                              {m.display_name ?? "Member"}{m.user_id === user.id ? " (you)" : ""}
+                              {m.display_name ?? "Member"}
+                              {m.user_id === user.id && <span className="text-subtle font-normal"> (you)</span>}
                             </p>
                             <p className="truncate text-xs text-subtle">
-                              {role}{m.title ? ` · ${m.title}` : ""} · since {monthYear(m.member_since)}
+                              {m.title ? `${m.title} · ` : ""}since {monthYear(m.member_since)}
                             </p>
                           </div>
+                          <span className={"shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium " + roleClass}>
+                            {role}
+                          </span>
                         </div>
-                        {isManager && !owner && (
-                          <div className="flex flex-wrap items-center gap-1.5 pl-12">
-                            <form action={setTitleAction} className="flex items-center gap-1">
-                              <input type="hidden" name="cohortId" value={cohort.id} />
-                              <input type="hidden" name="userId" value={m.user_id} />
-                              <input type="hidden" name="handle" value={cohort.handle} />
-                              <input name="title" defaultValue={m.title ?? ""} placeholder="Title" className="h-8 w-24 rounded-lg border border-border bg-surface-2 px-2 text-xs text-text outline-none focus:ring-2 focus:ring-ring" />
-                              <Button type="submit" size="md" variant="secondary">Set</Button>
-                            </form>
-                            {isOwner && (
-                              <form action={setComanagerAction}>
+                        {canManage && (
+                          <details className="group mt-1.5 pl-12">
+                            <summary className="cursor-pointer list-none text-xs font-medium text-muted hover:text-text">
+                              <span className="group-open:hidden">Manage</span>
+                              <span className="hidden group-open:inline">Close</span>
+                            </summary>
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <form action={setTitleAction} className="flex items-center gap-1">
                                 <input type="hidden" name="cohortId" value={cohort.id} />
                                 <input type="hidden" name="userId" value={m.user_id} />
                                 <input type="hidden" name="handle" value={cohort.handle} />
-                                <input type="hidden" name="make" value={m.access_level === "manager" ? "false" : "true"} />
-                                <Button type="submit" size="md" variant="ghost">
-                                  {m.access_level === "manager" ? "Demote" : "Co-admin"}
-                                </Button>
+                                <input name="title" defaultValue={m.title ?? ""} placeholder="Title" className="h-8 w-28 rounded-lg border border-border bg-surface-2 px-2 text-xs text-text outline-none focus:ring-2 focus:ring-ring" />
+                                <Button type="submit" size="md" variant="secondary">Set</Button>
                               </form>
-                            )}
-                          </div>
+                              {isOwner && (
+                                <form action={setComanagerAction}>
+                                  <input type="hidden" name="cohortId" value={cohort.id} />
+                                  <input type="hidden" name="userId" value={m.user_id} />
+                                  <input type="hidden" name="handle" value={cohort.handle} />
+                                  <input type="hidden" name="make" value={m.access_level === "manager" ? "false" : "true"} />
+                                  <Button type="submit" size="md" variant="ghost">
+                                    {m.access_level === "manager" ? "Demote" : "Make co-admin"}
+                                  </Button>
+                                </form>
+                              )}
+                            </div>
+                          </details>
                         )}
                       </li>
                     );
