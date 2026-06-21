@@ -655,7 +655,7 @@ export default async function RequestPage({
             {/* Vendors & quotes (service) */}
             {showQuotes && (
               <Panel
-                title={at("rfq") ? "Vendors & quotes" : "Compare & select"}
+                title={viewedStep === "rfq" ? "Vendors & quotes" : "Compare & select"}
                 action={at("rfq") && isParticipant ? <QuoteWizard requestId={req.id} /> : undefined}
               >
                 {at("rfq") && (isCoordinator || isManager) && !isCompleted && (
