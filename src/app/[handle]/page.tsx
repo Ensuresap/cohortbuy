@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, Users, CalendarClock, Tag } from "lucide-react";
+import { Sparkles, Users, CalendarClock, Tag, Pencil } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -336,33 +336,45 @@ export default async function CohortPage({ params }: { params: { handle: string 
                         ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                         : "bg-surface-2 text-subtle";
                     const canManage = isManager && !owner;
-                    return (
-                      <li key={m.user_id} className="py-3 first:pt-1">
-                        <div className="flex items-center gap-3">
-                          <div className="relative shrink-0">
-                            <Avatar url={m.avatar_url} name={m.display_name} />
-                            <span className={"absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface " + (isOnline(m.last_seen_at) ? "bg-green-500" : "bg-subtle")} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-text">
-                              {m.display_name ?? "Member"}
-                              {m.user_id === user.id && <span className="text-subtle font-normal"> (you)</span>}
-                            </p>
-                            <p className="truncate text-xs text-subtle">
-                              {m.title ? `${m.title} · ` : ""}since {monthYear(m.member_since)}
-                            </p>
-                          </div>
-                          <span className={"shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium " + roleClass}>
+                    const rowMain = (
+                      <>
+                        <div className="relative shrink-0">
+                          <Avatar url={m.avatar_url} name={m.display_name} />
+                          <span className={"absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface " + (isOnline(m.last_seen_at) ? "bg-green-500" : "bg-subtle")} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-text">
+                            {m.display_name ?? "Member"}
+                            {m.user_id === user.id && <span className="text-subtle font-normal"> (you)</span>}
+                          </p>
+                          <p className="truncate text-xs text-subtle">
+                            {m.title ? `${m.title} · ` : ""}since {monthYear(m.member_since)}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <span className={"rounded-full px-2 py-0.5 text-[11px] font-medium " + roleClass}>
                             {role}
                           </span>
+                          {canManage && (
+                            <span
+                              className="text-subtle transition-colors group-hover:text-muted group-open:text-primary"
+                              title="Edit member"
+                              aria-label="Edit member"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </span>
+                          )}
                         </div>
-                        {canManage && (
-                          <details className="group mt-1.5 pl-12">
-                            <summary className="cursor-pointer list-none text-xs font-medium text-muted hover:text-text">
-                              <span className="group-open:hidden">Manage</span>
-                              <span className="hidden group-open:inline">Close</span>
+                      </>
+                    );
+                    return (
+                      <li key={m.user_id} className="py-3 first:pt-1">
+                        {canManage ? (
+                          <details className="group">
+                            <summary className="flex cursor-pointer list-none items-center gap-3">
+                              {rowMain}
                             </summary>
-                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-12">
                               <form action={setTitleAction} className="flex items-center gap-1">
                                 <input type="hidden" name="cohortId" value={cohort.id} />
                                 <input type="hidden" name="userId" value={m.user_id} />
@@ -383,6 +395,8 @@ export default async function CohortPage({ params }: { params: { handle: string 
                               )}
                             </div>
                           </details>
+                        ) : (
+                          <div className="flex items-center gap-3">{rowMain}</div>
                         )}
                       </li>
                     );
