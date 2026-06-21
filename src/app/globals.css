@@ -60,3 +60,32 @@
     @apply mx-auto w-full max-w-6xl px-6;
   }
 }
+
+/* Sunrise landing: warm gradient wash, floating glow, scroll reveals */
+.sunrise-hero {
+  background:
+    radial-gradient(55% 75% at 12% -5%, rgb(var(--highlight) / 0.16), transparent 60%),
+    radial-gradient(45% 65% at 98% 8%, rgb(var(--accent) / 0.14), transparent 55%),
+    radial-gradient(75% 90% at 50% 115%, rgb(var(--primary) / 0.08), transparent 60%);
+}
+.glow {
+  background: radial-gradient(circle, rgb(var(--highlight) / 0.5) 0%, rgb(var(--accent) / 0) 70%);
+  animation: cb-blob 7s ease-in-out infinite;
+}
+@keyframes cb-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(16px, -14px) scale(1.1); }
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .glow { animation: none; }
+}

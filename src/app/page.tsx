@@ -1,14 +1,10 @@
 import Image from "next/image";
 import WaitlistForm from "@/components/WaitlistForm";
 import ThemeToggle from "@/components/ThemeToggle";
+import Reveal from "@/components/Reveal";
+import CountUp from "@/components/CountUp";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicStats } from "@/core/cohorts/services/cohortService";
-
-function compactMoney(cents: number): string {
-  const n = Math.round(cents / 100);
-  if (n >= 1000) return `$${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
-  return `$${n.toLocaleString()}`;
-}
 
 // Hero photo — swap this for your own:
 //  • Local file: drop an image into /public and set HERO_PHOTO = "/your-file.jpg"
@@ -101,6 +97,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen">
+      <Reveal />
       {/* Nav */}
       <header className="container-prose flex items-center justify-between py-6 pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <div className="flex items-center gap-2">
@@ -141,9 +138,10 @@ export default async function Home() {
       </header>
 
       {/* Hero */}
-      <section className="relative">
-        <div className="container-prose grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-2">
-          <div>
+      <section className="sunrise-hero relative overflow-hidden">
+        <div className="glow pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full" aria-hidden="true" />
+        <div className="container-prose relative grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-2">
+          <div className="reveal">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-surface-2 px-3 py-1 text-sm font-medium text-primary">
               <span className="h-2 w-2 rounded-full bg-accent" />
               Now forming neighborhood cohorts
@@ -200,14 +198,15 @@ export default async function Home() {
       {/* Proof band — live aggregate stats from public cohorts */}
       {hasStats ? (
         <section className="border-y border-border bg-surface/60">
-          <div className="container-prose grid grid-cols-2 gap-6 py-8 text-center sm:grid-cols-4">
-            <Stat value={stats.cohorts.toLocaleString()} label="neighborhood cohorts" />
-            <Stat value={stats.projects.toLocaleString()} label="group projects" />
-            <Stat value={compactMoney(stats.value_cents)} label="value facilitated" />
-            <Stat
-              value={stats.saved_cents > 0 ? compactMoney(stats.saved_cents) : "~30%"}
-              label={stats.saved_cents > 0 ? "saved together" : "typical group savings"}
-            />
+          <div className="container-prose reveal grid grid-cols-2 gap-6 py-8 text-center sm:grid-cols-4">
+            <CountStat n={stats.cohorts} label="neighborhood cohorts" />
+            <CountStat n={stats.projects} label="group projects" />
+            <CountStat n={Math.round(stats.value_cents / 100)} prefix="$" label="value facilitated" />
+            {stats.saved_cents > 0 ? (
+              <CountStat n={Math.round(stats.saved_cents / 100)} prefix="$" label="saved together" />
+            ) : (
+              <Stat value="~30%" label="typical group savings" />
+            )}
           </div>
         </section>
       ) : (
@@ -224,7 +223,7 @@ export default async function Home() {
 
       {/* Conversation */}
       <section className="container-prose py-20 sm:py-24">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
+        <div className="reveal grid items-center gap-12 lg:grid-cols-2">
           <div className="order-2 lg:order-1">
             <ChatPreview />
           </div>
@@ -266,7 +265,7 @@ export default async function Home() {
             the calls that matter.
           </p>
         </div>
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="reveal mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((s) => (
             <div
               key={s.n}
@@ -296,7 +295,7 @@ export default async function Home() {
               savings actually happen.
             </p>
           </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
+          <div className="reveal mt-12 grid gap-6 sm:grid-cols-2">
             {values.map((v) => (
               <div
                 key={v.title}
@@ -414,6 +413,15 @@ function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>
       <div className="font-display text-3xl font-semibold text-primary sm:text-4xl">{value}</div>
+      <div className="mt-1 text-sm text-muted">{label}</div>
+    </div>
+  );
+}
+
+function CountStat({ n, label, prefix }: { n: number; label: string; prefix?: string }) {
+  return (
+    <div>
+      <CountUp value={n} prefix={prefix} className="font-display text-3xl font-semibold text-primary sm:text-4xl" />
       <div className="mt-1 text-sm text-muted">{label}</div>
     </div>
   );
