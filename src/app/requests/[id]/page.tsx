@@ -202,6 +202,11 @@ export default async function RequestPage({
   const viewingCurrent = viewedStep === req.status;
   const viewedIdx = track.indexOf(viewedStep);
   const viewingPast = curIdx >= 0 && viewedIdx >= 0 && viewedIdx < curIdx;
+  // Tab-scoped flags: a block must belong to the VIEWED step, not just the
+  // project's current status, so e.g. the Select-vendor block never leaks onto
+  // the Getting-quotes tab. Mutating actions still also require at(step).
+  const onRfqStep = viewedStep === "rfq";
+  const onDecideStep = viewedStep === "deciding";
   const discAll = searchParams?.disc === "all";
   const visibleComments = discAll ? comments : comments.filter((c) => c.stage === viewedStep || !c.stage);
 
@@ -658,7 +663,7 @@ export default async function RequestPage({
                 title={viewedStep === "rfq" ? "Vendors & quotes" : "Compare & select"}
                 action={at("rfq") && isParticipant ? <QuoteWizard requestId={req.id} /> : undefined}
               >
-                {at("rfq") && (isCoordinator || isManager) && !isCompleted && (
+                {onRfqStep && at("rfq") && (isCoordinator || isManager) && !isCompleted && (
                   <div className="mt-2 rounded-xl border border-border p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-medium text-text">Request for quote</p>
@@ -679,7 +684,7 @@ export default async function RequestPage({
                     )}
                   </div>
                 )}
-                {at("deciding") && (
+                {onDecideStep && at("deciding") && (
                   <div className="mt-2 rounded-xl border border-primary/15 bg-primary/5 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-medium text-text">Select vendor · {DECISION_POLICY_LABELS[req.decision_policy]}</p>
@@ -727,7 +732,7 @@ export default async function RequestPage({
                               {q.id === req.ai_recommended_quote_id && (
                                 <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-primary/40 px-2 py-0.5 text-[11px] font-medium text-primary"><Sparkles className="h-3 w-3" /> AI pick</span>
                               )}
-                              {at("deciding") && req.decision_policy === "vote" && tally[q.id] ? (
+                              {onDecideStep && at("deciding") && req.decision_policy === "vote" && tally[q.id] ? (
                                 <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-text">{tally[q.id]} vote{tally[q.id] === 1 ? "" : "s"}</span>
                               ) : null}
                             </span>
@@ -740,7 +745,7 @@ export default async function RequestPage({
                           </p>
                           {q.notes && <p className="mt-1 text-sm text-muted">{q.notes}</p>}
                           <div className="mt-2 flex flex-wrap items-center gap-3">
-                            {at("deciding") && isCoordinator && !selected && (
+                            {onDecideStep && at("deciding") && isCoordinator && !selected && (
                               <form action={selectQuoteAction}>
                                 <input type="hidden" name="requestId" value={req.id} />
                                 <input type="hidden" name="quoteId" value={q.id} />
@@ -749,12 +754,12 @@ export default async function RequestPage({
                                 </Button>
                               </form>
                             )}
-                            {at("deciding") && isCoordinator && selected && (
+                            {onDecideStep && at("deciding") && isCoordinator && selected && (
                               <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
                                 <CheckCircle2 className="h-4 w-4" /> Chosen winner
                               </span>
                             )}
-                            {req.decision_policy === "vote" && at("deciding") && isParticipant && (
+                            {req.decision_policy === "vote" && onDecideStep && at("deciding") && isParticipant && (
                               <form action={voteAction}>
                                 <input type="hidden" name="requestId" value={req.id} />
                                 <input type="hidden" name="quoteId" value={myVoteId === q.id ? "" : q.id} />
@@ -764,7 +769,7 @@ export default async function RequestPage({
                               </form>
                             )}
                           </div>
-                          {at("rfq") && canManageQuote && (
+                          {onRfqStep && at("rfq") && canManageQuote && (
                             <div className="mt-2 flex items-center gap-3 text-xs">
                               <details>
                                 <summary className="cursor-pointer text-primary hover:underline">Edit</summary>
