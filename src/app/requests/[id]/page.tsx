@@ -235,7 +235,9 @@ export default async function RequestPage({
     shares: shares.length,
     agreedAmount: req.agreed_amount_cents != null,
     shortlistApproved: req.shortlist_approved,
-  });
+    pricedOptions: deal ? deal.variants.filter((v) => v.unit_price_cents != null).length : 0,
+    committedUnits: deal ? deal.totalUnits : 0,
+  }, req.project_type);
 
   const joinPending = myStatus === "requested";
   const canSeeWork = isParticipant || isManager;
