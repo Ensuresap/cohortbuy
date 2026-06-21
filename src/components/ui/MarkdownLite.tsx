@@ -58,8 +58,16 @@ function renderBlock(block: string, key: number): ReactNode {
 }
 
 function inline(s: string): ReactNode[] {
-  const parts = s.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g).filter(Boolean);
+  const parts = s.split(/(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g).filter(Boolean);
   return parts.map((p, i) => {
+    const link = p.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (link) {
+      const text = link[1];
+      // Only internal site paths are clickable; anything else renders as plain text.
+      const path = link[2].replace(/^https?:\/\/[^/]+/, "");
+      if (path.startsWith("/")) return <a key={i} href={path} className="font-medium text-primary underline">{text}</a>;
+      return <span key={i}>{text}</span>;
+    }
     if (/^\*\*[^*]+\*\*$/.test(p)) return <strong key={i} className="font-semibold text-text">{p.slice(2, -2)}</strong>;
     if (/^`[^`]+`$/.test(p)) return <code key={i} className="rounded bg-surface-2 px-1 py-0.5 text-[0.85em]">{p.slice(1, -1)}</code>;
     if (/^\*[^*]+\*$/.test(p)) return <em key={i}>{p.slice(1, -1)}</em>;

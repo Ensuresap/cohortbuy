@@ -122,9 +122,14 @@ export default function CohortChat() {
             )}
           </div>
 
+          <div className="flex flex-wrap gap-1.5 border-t border-border px-3 pt-2.5">
+            <a href="/cohorts" className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15">Browse cohorts</a>
+            <a href="/guides" className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15">Guides</a>
+            <a href="/cohorts/new" className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15">Start a cohort</a>
+          </div>
           <form
             onSubmit={(e) => { e.preventDefault(); send(input); }}
-            className="flex items-center gap-2 border-t border-border px-3 py-2.5"
+            className="flex items-center gap-2 px-3 py-2.5"
           >
             <input
               value={input}
