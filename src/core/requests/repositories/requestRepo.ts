@@ -32,6 +32,10 @@ export function myActionItems(db: SupabaseClient) {
   return db.rpc("my_action_items");
 }
 
+export function projectPendingMembers(db: SupabaseClient, requestId: string) {
+  return db.rpc("project_pending_members", { p_request: requestId });
+}
+
 export function discoverableProjects(db: SupabaseClient) {
   return db.rpc("discoverable_projects");
 }

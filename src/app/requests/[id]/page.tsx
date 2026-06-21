@@ -23,6 +23,7 @@ import {
   Phone,
   Package,
   TrendingDown,
+  Bell,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -40,6 +41,7 @@ import { listScope } from "@/core/scope/services/scopeService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
 import { listCandidates, listRegistryVendors } from "@/core/research/services/researchService";
 import { getDeal } from "@/core/groupbuy/services/groupbuyService";
+import { listPendingMembers } from "@/core/requests/services/requestService";
 import {
   CANDIDATE_STATUS_LABELS,
   CANDIDATE_SOURCE_LABELS,
@@ -89,6 +91,8 @@ import {
   deleteVariantAction,
   setMyOrderAction,
   addRegistryCandidateAction,
+  nudgeMemberAction,
+  nudgeStragglersAction,
   aiSuggestVendorsAction,
   respondJoinAction,
   voteAction,
@@ -207,6 +211,12 @@ export default async function RequestPage({
   }>;
   const membership = mine.find((m) => m.cohort?.id === req.cohort_id);
   const isManager = membership?.status === "approved" && membership?.access_level === "manager";
+
+  // Coordinator nudge roster — who's done the current step vs who's holding it up.
+  const pendingRes = isCoordinator || isManager ? await listPendingMembers(ctx, params.id) : null;
+  const pendingMembers = pendingRes && pendingRes.ok ? pendingRes.data : [];
+  const waitingCount = pendingMembers.filter((m) => !m.acted).length;
+  const PER_MEMBER_STAGES: RequestStatus[] = ["scoping", "deciding", "funding"];
 
   // ── Configurable lifecycle + tabbed navigation ─────────────────────────
   const type = req.project_type;
@@ -427,6 +437,59 @@ export default async function RequestPage({
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Main — the selected step's panel */}
           <div className="space-y-6 lg:col-span-2">
+            {/* Nudge roster — coordinator sees who still owes this step */}
+            {(isCoordinator || isManager) && viewingCurrent && PER_MEMBER_STAGES.includes(req.status) && pendingMembers.length > 0 && (
+              <Panel
+                title="Waiting on"
+                action={
+                  waitingCount > 0 ? (
+                    <form action={nudgeStragglersAction}>
+                      <input type="hidden" name="requestId" value={req.id} />
+                      <button type="submit" className="inline-flex items-center gap-1.5 rounded-xl border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-semibold text-primary transition hover:bg-primary/10">
+                        <Bell className="h-4 w-4" /> Nudge all {waitingCount}
+                      </button>
+                    </form>
+                  ) : undefined
+                }
+              >
+                {waitingCount === 0 ? (
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary"><CheckCircle2 className="h-4 w-4" /> Everyone&rsquo;s done this step.</p>
+                ) : (
+                  <p className="mt-1 text-xs text-subtle">{waitingCount} of {pendingMembers.length} haven&rsquo;t done this step yet. A nudge links them straight to it.</p>
+                )}
+                <ul className="mt-3 divide-y divide-border/60">
+                  {pendingMembers.map((m) => (
+                    <li key={m.user_id} className="flex items-center gap-3 py-2.5">
+                      {m.member_avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={m.member_avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[11px] font-semibold text-text">{initials(m.member_name)}</div>
+                      )}
+                      <span className="min-w-0 flex-1 truncate text-sm text-text">{m.user_id === user.id ? "You" : m.member_name ?? "Member"}</span>
+                      {m.acted ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-primary"><CheckCircle2 className="h-3.5 w-3.5" /> Done</span>
+                      ) : (
+                        <>
+                          <span className="text-xs text-subtle">Waiting</span>
+                          {m.user_id !== user.id && (
+                            <form action={nudgeMemberAction}>
+                              <input type="hidden" name="requestId" value={req.id} />
+                              <input type="hidden" name="userId" value={m.user_id} />
+                              <button type="submit" className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-text transition hover:bg-surface-2">
+                                <Bell className="h-3.5 w-3.5" /> Nudge
+                              </button>
+                            </form>
+                          )}
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-xs text-subtle">Nudges reach members on their preferred, consented channel; if none is set up they appear in-app.</p>
+              </Panel>
+            )}
+
             {!canSeeWork && (
               <Panel title="Join to take part">
                 <p className="mt-2 whitespace-pre-wrap text-muted">{req.description || "A neighbor group project."}</p>

@@ -333,6 +333,13 @@ export interface Participant {
   status: "joined" | "left";
 }
 
+export interface PendingMember {
+  user_id: string;
+  member_name: string | null;
+  member_avatar: string | null;
+  acted: boolean;
+}
+
 export interface ParticipantFeedItem {
   id: string;
   user_id: string;

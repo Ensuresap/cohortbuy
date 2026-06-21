@@ -20,6 +20,7 @@ import {
   type ActionItem,
   type DiscoverProject,
   type CommunityWin,
+  type PendingMember,
   type Participant,
   type ParticipantFeedItem,
   type JoinRequestItem,
@@ -93,6 +94,14 @@ export async function listDiscoverProjects(ctx: Ctx): Promise<Result<DiscoverPro
   const { data, error } = await repo.discoverableProjects(ctx.db);
   if (error) return err("db_error", error.message);
   return ok((data ?? []) as DiscoverProject[]);
+}
+
+/** Per-member "acted on the current stage?" roster (coordinator-gated in SQL). */
+export async function listPendingMembers(ctx: Ctx, requestId: string): Promise<Result<PendingMember[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.projectPendingMembers(ctx.db, requestId);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as PendingMember[]);
 }
 
 /** Recently completed projects with estimated savings (social proof). */

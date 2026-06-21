@@ -2,7 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { notifyActionDue } from "@/core/services/notificationService";
+import { listPendingMembers } from "@/core/requests/services/requestService";
+import type { RequestStatus } from "@/core/requests/domain/request";
 import {
   createServiceRequest,
   joinServiceRequest,
@@ -620,5 +624,64 @@ export async function addQuoteAction(formData: FormData) {
     notes: String(formData.get("notes") ?? "") || undefined,
     kind: String(formData.get("kind") ?? "indicative"),
   });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+// ---- Nudges (Phase-1): pull the right member back to the exact action --------
+function nudgeFor(status: RequestStatus): { event: string; verb: string } {
+  switch (status) {
+    case "scoping": return { event: "scope_signoff", verb: "add what you need to the scope" };
+    case "deciding": return { event: "vote_open", verb: "cast your vote on the quotes" };
+    case "rfq": return { event: "generic_action", verb: "take a look — we're collecting quotes" };
+    case "research": return { event: "generic_action", verb: "weigh in — we're lining up the deal" };
+    case "contracting": return { event: "signature_needed", verb: "review the agreement" };
+    case "funding": return { event: "payment_due", verb: "confirm your payment" };
+    default: return { event: "generic_action", verb: "there's an update for you" };
+  }
+}
+
+function baseUrl(): string {
+  const h = headers();
+  const host = h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
+async function sendNudge(
+  ctx: Awaited<ReturnType<typeof getCtx>>,
+  requestId: string,
+  status: RequestStatus,
+  title: string,
+  userId: string
+) {
+  const { event, verb } = nudgeFor(status);
+  await notifyActionDue(ctx, {
+    userId,
+    event,
+    message: `It's your turn on "${title}": ${verb}.`,
+    link: `${baseUrl()}/requests/${requestId}?step=${status}`,
+  });
+}
+
+export async function nudgeMemberAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const userId = String(formData.get("userId") ?? "");
+  const r = await getRequest(ctx, { requestId });
+  if (r.ok && r.data && userId) await sendNudge(ctx, requestId, r.data.status, r.data.title, userId);
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function nudgeStragglersAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const r = await getRequest(ctx, { requestId });
+  if (!r.ok || !r.data) return;
+  const pend = await listPendingMembers(ctx, requestId);
+  if (pend.ok) {
+    for (const m of pend.data.filter((x) => !x.acted)) {
+      await sendNudge(ctx, requestId, r.data.status, r.data.title, m.user_id);
+    }
+  }
   revalidatePath(`/requests/${requestId}`);
 }
