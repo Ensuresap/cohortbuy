@@ -94,6 +94,10 @@ export default async function CohortPage({ params }: { params: { handle: string 
   const directory = (dirRes.ok ? dirRes.data : []) as DirectoryMember[];
   const tagCatalog = (catRes.ok ? catRes.data : []) as TagCatalogItem[];
   const projects = (projRes.ok ? projRes.data : []) as ProjectCard[];
+  // Overall cohort value facilitated — sums every project's agreed amount,
+  // covering both service deals and group-buy product orders.
+  const totalValueCents = projects.reduce((s, p) => s + (p.agreed_amount_cents ?? 0), 0);
+  const statCurrency = projects.find((p) => p.agreed_amount_cents != null)?.currency ?? "USD";
   const posts = (feedRes.ok ? feedRes.data : []) as FeedPost[];
 
   let requests: Array<{
@@ -145,8 +149,22 @@ export default async function CohortPage({ params }: { params: { handle: string 
             <p className="mt-2 text-xs text-subtle">
               {cohort.visibility === "public" ? "Public" : "Private"} · /{cohort.handle} · Est. {estYear}
               {years > 0 ? ` · ${years} yr${years > 1 ? "s" : ""}` : ""}
-              {isApproved ? ` · ${directory.length} member${directory.length === 1 ? "" : "s"}` : ""}
             </p>
+            {isApproved && (
+              <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                <span className="rounded-full bg-surface-2 px-3 py-1 text-text">
+                  <span className="font-semibold">{directory.length}</span> <span className="text-subtle">member{directory.length === 1 ? "" : "s"}</span>
+                </span>
+                <span className="rounded-full bg-surface-2 px-3 py-1 text-text">
+                  <span className="font-semibold">{projects.length}</span> <span className="text-subtle">project{projects.length === 1 ? "" : "s"}</span>
+                </span>
+                {totalValueCents > 0 && (
+                  <span className="rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">
+                    {fmtMoney(totalValueCents, statCurrency)} <span className="font-normal">facilitated</span>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
