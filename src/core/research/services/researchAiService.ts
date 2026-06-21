@@ -211,6 +211,111 @@ export async function answerDiscussion(
   }
 }
 
+const PRODUCT_PRICE_TOOL: LlmTool = {
+  name: "propose_product_price",
+  description: "Return a realistic typical PER-UNIT retail/street price range for the described product, with the assumptions used.",
+  input_schema: {
+    type: "object",
+    properties: {
+      low: { type: "number", description: "Low end of the typical per-unit retail price (major currency units)" },
+      high: { type: "number", description: "High end of the typical per-unit retail price (major currency units)" },
+      currency: { type: "string", description: "ISO currency code, e.g. USD" },
+      assumptions: {
+        type: "array",
+        description: "What you assumed about the product to price it — e.g. 'Lenovo IdeaPad 15, Ryzen 5, 16GB/512GB', 'new, not refurbished', 'standard config'. Be concrete.",
+        items: { type: "string" },
+      },
+      rationale: { type: "string", description: "One short sentence on what drives the range and what to verify against the live seller price" },
+    },
+    required: ["low", "high", "currency", "assumptions"],
+  },
+};
+
+export async function estimateProductPrice(
+  ctx: Ctx,
+  args: { cohortId: string; context: string }
+): Promise<Result<{ low: number; high: number; currency: string; assumptions: string[]; rationale: string }>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const m = await resolveModel(ctx, { cohortId: args.cohortId });
+  const provider = (m.ok ? m.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
+  const model = m.ok ? m.data.model : "claude-sonnet-4-6";
+  try {
+    const r = await runMessages({
+      provider,
+      model,
+      system:
+        "You estimate a realistic typical PER-UNIT retail/street price range for a consumer product a neighbor group wants to bulk-buy, to anchor their negotiation. You do NOT have live web access, so this is a from-knowledge estimate — be honest, conservative, and state your assumptions (exact model, config, condition). Always call propose_product_price.",
+      messages: [{ role: "user", content: args.context }],
+      tools: [PRODUCT_PRICE_TOOL],
+    });
+    if (r.kind !== "tool") return err("ai_error", "No estimate returned");
+    const i = r.input as { low?: number; high?: number; currency?: string; assumptions?: string[]; rationale?: string };
+    if (typeof i.low !== "number" || typeof i.high !== "number") return err("ai_error", "Incomplete estimate");
+    return ok({
+      low: i.low,
+      high: i.high,
+      currency: i.currency || "USD",
+      assumptions: Array.isArray(i.assumptions) ? i.assumptions.filter(Boolean) : [],
+      rationale: i.rationale || "",
+    });
+  } catch (e) {
+    return mapAiErr(e);
+  }
+}
+
+const EXTRACT_PRODUCT_TOOL: LlmTool = {
+  name: "propose_product",
+  description: "Extract a product's details from the supplied text (a product page, listing or pasted description).",
+  input_schema: {
+    type: "object",
+    properties: {
+      name: { type: "string", description: "Product name incl. brand & model" },
+      specs: { type: "string", description: "Key specs as a short readable line, e.g. 'Ryzen 5, 16GB RAM, 512GB SSD, 15.6\" FHD'" },
+      url: { type: "string", description: "Product URL if present in the text" },
+      price: { type: "number", description: "Listed/retail per-unit price as a number in major currency units, if present" },
+      currency: { type: "string", description: "ISO currency code, e.g. USD" },
+    },
+    required: ["name"],
+  },
+};
+
+export interface ExtractedProduct {
+  name: string;
+  specs: string;
+  url: string;
+  price: number | null;
+  currency: string;
+}
+
+export async function extractProduct(ctx: Ctx, args: { text: string }): Promise<Result<ExtractedProduct>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const m = await resolveModel(ctx, {});
+  const provider = (m.ok ? m.data.provider : "anthropic") === "openai" ? "openai" : "anthropic";
+  const model = m.ok ? m.data.model : "claude-sonnet-4-6";
+  try {
+    const r = await runMessages({
+      provider,
+      model,
+      system:
+        "Extract the product's details from the text (a product page or pasted description). Capture brand+model, key specs, URL and listed price if present. Leave fields empty if not present — do not invent values. Always call propose_product.",
+      messages: [{ role: "user", content: args.text.slice(0, 12000) }],
+      tools: [EXTRACT_PRODUCT_TOOL],
+    });
+    if (r.kind !== "tool") return err("ai_error", "Couldn't read a product from that");
+    const i = r.input as Partial<ExtractedProduct>;
+    if (!i.name) return err("ai_error", "No product found — try manual entry");
+    return ok({
+      name: i.name,
+      specs: i.specs || "",
+      url: i.url || "",
+      price: typeof i.price === "number" ? i.price : null,
+      currency: i.currency || "USD",
+    });
+  } catch (e) {
+    return mapAiErr(e);
+  }
+}
+
 function mapAiErr(e: unknown) {
   if (e instanceof LlmConfigError) return err("ai_unconfigured", "AI isn't configured yet — set an API key (see SETUP.md).");
   return err("ai_error", e instanceof Error ? e.message : "AI request failed");

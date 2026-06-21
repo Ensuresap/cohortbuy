@@ -5,6 +5,9 @@ Update the `[Unreleased]` section with **every** feature (see `CLAUDE.md` → "K
 
 ## [Unreleased]
 
+### Added
+- **Group-buy Research → "Product & deal"** — the group-buy Research phase is no longer just a price box. It now walks the coordinator through three steps: (1) **Product spec** — capture name, specs, link and image, either by hand or by **pasting a product page → AI extract** (`ProductWizard` → `/api/extract-product` → `extractProduct`); (2) **Market price (reference)** — an **Estimate with AI** button returns a typical per-unit retail range with its assumptions (`estimateProductPrice`), honestly labeled as a from-knowledge estimate to verify against the live seller (no web access yet); (3) **Negotiated group price** — the coordinator records the secured price, and the panel shows **"save ~$X vs retail"** against the reference. New `product_name/url/specs/image_url` columns + `set_product_info` RPC (migration `20260618090000_group_buy_product.sql`); reference range reuses `benchmark_*`, negotiated price reuses `agreed_*`. Future upgrade path: swap the AI estimate for live web-search pricing in the same slot, and add the volume tier-ladder / countdown (Addenda A–C).
+
 ### Changed
 - **Dashboard shows value + community wins (gamification)** — two engagement upgrades:
   - **Active-project cards now lead with value**, not just status: each card shows **N neighbors pooling**, the money (**Agreed $X/home** once decided, else **Est. $A–$B/home** from the benchmark), and a green **"save ~$Y"** pill when the agreed price beats the benchmark. `my_active_projects()` recreated to also return participant count + benchmark/agreed amounts.

@@ -171,6 +171,10 @@ export interface ServiceRequest {
   benchmark_high_cents: number | null;
   benchmark_currency: string | null;
   benchmark_basis: string | null;
+  product_name: string | null;
+  product_url: string | null;
+  product_specs: string | null;
+  product_image_url: string | null;
   research_notes: string | null;
   shortlist_approved: boolean;
   rfq_draft: string | null;
@@ -220,6 +224,15 @@ export const CompleteProjectInput = z.object({
   requestId: z.string().uuid(),
   note: z.string().trim().max(1000).optional(),
 });
+
+export const SetProductInfoInput = z.object({
+  requestId: z.string().uuid(),
+  name: z.string().trim().max(160).optional(),
+  url: z.string().trim().max(2000).optional(),
+  specs: z.string().trim().max(4000).optional(),
+  imageUrl: z.string().trim().max(2000).optional(),
+});
+export type SetProductInfoInput = z.infer<typeof SetProductInfoInput>;
 
 export const SetTermsInput = z.object({
   requestId: z.string().uuid(),

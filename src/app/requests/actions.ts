@@ -35,9 +35,10 @@ import {
   deleteCandidate,
   setResearch,
   setBenchmark,
+  setProductInfo,
   approveShortlist,
 } from "@/core/research/services/researchService";
-import { estimateBenchmark, suggestVendors, draftRfq, recommendQuote, answerDiscussion } from "@/core/research/services/researchAiService";
+import { estimateBenchmark, estimateProductPrice, suggestVendors, draftRfq, recommendQuote, answerDiscussion } from "@/core/research/services/researchAiService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
 import { createPost } from "@/core/posts/services/postService";
 
@@ -455,6 +456,49 @@ export async function aiEstimateBenchmarkAction(formData: FormData) {
   const ctxData = await researchContext(ctx, requestId);
   if (ctxData) {
     const est = await estimateBenchmark(ctx, { cohortId: ctxData.request.cohort_id, context: ctxData.context });
+    if (est.ok) {
+      const basis =
+        est.data.assumptions.map((a) => `• ${a}`).join("\n") +
+        (est.data.rationale ? `\n\n${est.data.rationale}` : "");
+      await setBenchmark(ctx, {
+        requestId,
+        lowCents: Math.round(est.data.low * 100),
+        highCents: Math.round(est.data.high * 100),
+        currency: est.data.currency,
+        basis,
+      });
+    }
+  }
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function setProductInfoAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await setProductInfo(ctx, {
+    requestId,
+    name: String(formData.get("name") ?? ""),
+    url: String(formData.get("url") ?? ""),
+    specs: String(formData.get("specs") ?? ""),
+    imageUrl: String(formData.get("imageUrl") ?? ""),
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function aiEstimateProductPriceAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const r = await getRequest(ctx, { requestId });
+  if (r.ok && r.data) {
+    const req = r.data;
+    const context = [
+      `Product: ${req.product_name ?? req.title}`,
+      req.product_specs ? `Specs: ${req.product_specs}` : "",
+      req.product_url ? `Listing: ${req.product_url}` : "",
+      req.category ? `Category: ${req.category}` : "",
+      `This is a neighbor group bulk-buy; estimate the typical per-unit retail price.`,
+    ].filter(Boolean).join("\n");
+    const est = await estimateProductPrice(ctx, { cohortId: req.cohort_id, context });
     if (est.ok) {
       const basis =
         est.data.assumptions.map((a) => `• ${a}`).join("\n") +

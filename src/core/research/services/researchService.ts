@@ -91,6 +91,19 @@ export async function setBenchmark(
   return ok(true);
 }
 
+export async function setProductInfo(
+  ctx: Ctx,
+  args: { requestId: string; name: string; url: string; specs: string; imageUrl: string }
+): Promise<Result<true>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.setProductInfo(ctx.db, args);
+  if (error) {
+    if (error.message?.includes("not_coordinator")) return err("forbidden", "Only the coordinator can set product details");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
 export async function approveShortlist(ctx: Ctx, requestId: string): Promise<Result<true>> {
   if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
   if (!ctx.db) return err("not_configured", "Database is not configured");

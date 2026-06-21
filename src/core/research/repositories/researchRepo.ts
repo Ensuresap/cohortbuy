@@ -69,6 +69,19 @@ export function setBenchmark(
   });
 }
 
+export function setProductInfo(
+  db: SupabaseClient,
+  args: { requestId: string; name: string; url: string; specs: string; imageUrl: string }
+) {
+  return db.rpc("set_product_info", {
+    p_request: args.requestId,
+    p_name: args.name,
+    p_url: args.url,
+    p_specs: args.specs,
+    p_image: args.imageUrl,
+  });
+}
+
 export function approveShortlist(db: SupabaseClient, requestId: string) {
   return db.rpc("approve_shortlist", { p_request: requestId });
 }

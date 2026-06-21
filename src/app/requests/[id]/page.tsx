@@ -21,6 +21,8 @@ import {
   MapPin,
   Globe,
   Phone,
+  Package,
+  TrendingDown,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -59,6 +61,7 @@ import { Button } from "@/components/ui/Button";
 import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
 import RfqDraftEditor from "@/components/app/RfqDraftEditor";
 import QuoteWizard from "@/components/app/QuoteWizard";
+import ProductWizard from "@/components/app/ProductWizard";
 import AiPickBadge from "@/components/app/AiPickBadge";
 import CardTitle from "@/components/ui/CardTitle";
 import MarkdownLite from "@/components/ui/MarkdownLite";
@@ -80,6 +83,7 @@ import {
   setResearchAction,
   approveShortlistAction,
   aiEstimateBenchmarkAction,
+  aiEstimateProductPriceAction,
   aiSuggestVendorsAction,
   respondJoinAction,
   voteAction,
@@ -485,27 +489,108 @@ export default async function RequestPage({
               </Panel>
             )}
 
-            {/* Product & price (group buy) */}
+            {/* Product & deal (group buy) */}
             {showPrice && (
-              <Panel title="Product & price">
-                {req.agreed_amount_cents != null ? (
-                  <p className="mt-2 font-display text-xl font-semibold text-primary">
-                    {fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-muted">No price set yet.</p>
-                )}
-                {at("research") && isCoordinator && (
-                  <form action={setAgreedAmountAction} className="mt-3 space-y-2 rounded-xl border border-border p-4">
-                    <p className="text-sm font-medium text-text">Set the negotiated price</p>
-                    <input type="hidden" name="requestId" value={req.id} />
-                    <div className="grid grid-cols-3 gap-2">
-                      <input name="amount" type="number" step="0.01" min="0" required placeholder="Total price" className={`${fieldClass} col-span-2`} />
-                      <input name="currency" defaultValue="USD" maxLength={3} className={fieldClass} />
+              <Panel
+                title="Product & deal"
+                action={
+                  at("research") && isCoordinator ? (
+                    <ProductWizard
+                      requestId={req.id}
+                      hasProduct={!!req.product_name}
+                      initial={{
+                        name: req.product_name ?? "",
+                        url: req.product_url ?? "",
+                        specs: req.product_specs ?? "",
+                        imageUrl: req.product_image_url ?? "",
+                      }}
+                    />
+                  ) : undefined
+                }
+              >
+                {/* 1 · Product */}
+                {req.product_name ? (
+                  <div className="mt-2 flex gap-3 rounded-xl border border-border p-4">
+                    {req.product_image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={req.product_image_url} alt={req.product_name} className="h-16 w-16 shrink-0 rounded-lg border border-border object-cover" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-text">{req.product_name}</p>
+                      {req.product_specs && <p className="mt-0.5 text-sm text-muted">{req.product_specs}</p>}
+                      {req.product_url && (
+                        <a href={req.product_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+                          <ExternalLink className="h-4 w-4" /> View listing
+                        </a>
+                      )}
                     </div>
-                    <Button type="submit">Save price</Button>
-                  </form>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex items-center gap-2 rounded-xl border border-dashed border-border p-4 text-muted">
+                    <Package className="h-4 w-4 shrink-0" />
+                    {at("research") && isCoordinator ? "Add the product you're buying together to research a price." : "No product set yet."}
+                  </div>
                 )}
+
+                {/* 2 · Reference (market) price */}
+                <div className="mt-3 rounded-xl border border-border p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-text">Market price (reference)</p>
+                    {at("research") && isCoordinator && req.product_name && (
+                      <form action={aiEstimateProductPriceAction}>
+                        <input type="hidden" name="requestId" value={req.id} />
+                        <button type="submit" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+                          <Sparkles className="h-3.5 w-3.5" /> {benchmark ? "Re-estimate" : "Estimate with AI"}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                  {benchmark ? (
+                    <>
+                      <p className="mt-1 font-display text-lg font-semibold text-text">{benchmark} <span className="text-sm font-normal text-subtle">/ unit</span></p>
+                      {req.benchmark_basis && (
+                        <details className="mt-1">
+                          <summary className="cursor-pointer text-xs font-medium text-primary hover:underline">How this was estimated</summary>
+                          <p className="mt-1 whitespace-pre-line text-xs text-muted">{req.benchmark_basis}</p>
+                        </details>
+                      )}
+                      <p className="mt-1.5 text-xs text-subtle">AI estimate from training data — verify against the live seller price.</p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted">
+                      {at("research") && isCoordinator ? "Add the product above, then estimate a typical retail price to anchor your negotiation." : "Not estimated yet."}
+                    </p>
+                  )}
+                </div>
+
+                {/* 3 · Negotiated group price */}
+                <div className="mt-3 rounded-xl border border-primary/15 bg-primary/5 p-4">
+                  <p className="text-sm font-medium text-text">Negotiated group price</p>
+                  {req.agreed_amount_cents != null ? (
+                    <div className="mt-1 flex flex-wrap items-baseline gap-2">
+                      <p className="font-display text-xl font-semibold text-primary">
+                        {fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")} <span className="text-sm font-normal text-subtle">/ unit</span>
+                      </p>
+                      {req.benchmark_high_cents != null && req.benchmark_high_cents > req.agreed_amount_cents && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                          <TrendingDown className="h-3 w-3" /> save ~{fmt(req.benchmark_high_cents - req.agreed_amount_cents, req.agreed_currency ?? "USD")} vs retail
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted">Not set yet — enter the price you secured for the group.</p>
+                  )}
+                  {at("research") && isCoordinator && (
+                    <form action={setAgreedAmountAction} className="mt-3 space-y-2">
+                      <input type="hidden" name="requestId" value={req.id} />
+                      <div className="grid grid-cols-3 gap-2">
+                        <input name="amount" type="number" step="0.01" min="0" required placeholder="Price per unit" className={`${fieldClass} col-span-2`} defaultValue={req.agreed_amount_cents != null ? (req.agreed_amount_cents / 100).toFixed(2) : ""} />
+                        <input name="currency" defaultValue={req.agreed_currency ?? "USD"} maxLength={3} className={fieldClass} />
+                      </div>
+                      <Button type="submit">Save price</Button>
+                    </form>
+                  )}
+                </div>
               </Panel>
             )}
 
