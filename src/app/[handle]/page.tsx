@@ -374,23 +374,26 @@ export default async function CohortPage({ params }: { params: { handle: string 
                             <summary className="flex cursor-pointer list-none items-center gap-3">
                               {rowMain}
                             </summary>
-                            <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-12">
-                              <form action={setTitleAction} className="flex items-center gap-1">
+                            <div className="ml-12 mt-2 space-y-2 rounded-xl border border-border bg-surface-2/60 p-3">
+                              <form action={setTitleAction} className="space-y-1.5">
                                 <input type="hidden" name="cohortId" value={cohort.id} />
                                 <input type="hidden" name="userId" value={m.user_id} />
                                 <input type="hidden" name="handle" value={cohort.handle} />
-                                <input name="title" defaultValue={m.title ?? ""} placeholder="Title" className="h-8 w-28 rounded-lg border border-border bg-surface-2 px-2 text-xs text-text outline-none focus:ring-2 focus:ring-ring" />
-                                <Button type="submit" size="md" variant="secondary">Set</Button>
+                                <label className="block text-[11px] font-medium uppercase tracking-wide text-subtle">Member title</label>
+                                <div className="flex items-center gap-1.5">
+                                  <input name="title" defaultValue={m.title ?? ""} placeholder="e.g. Treasurer" className="h-8 flex-1 rounded-lg border border-border bg-surface px-2.5 text-xs text-text outline-none focus:ring-2 focus:ring-ring" />
+                                  <button type="submit" className="h-8 shrink-0 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover">Save</button>
+                                </div>
                               </form>
                               {isOwner && (
-                                <form action={setComanagerAction}>
+                                <form action={setComanagerAction} className="border-t border-border pt-2">
                                   <input type="hidden" name="cohortId" value={cohort.id} />
                                   <input type="hidden" name="userId" value={m.user_id} />
                                   <input type="hidden" name="handle" value={cohort.handle} />
                                   <input type="hidden" name="make" value={m.access_level === "manager" ? "false" : "true"} />
-                                  <Button type="submit" size="md" variant="ghost">
-                                    {m.access_level === "manager" ? "Demote" : "Make co-admin"}
-                                  </Button>
+                                  <button type="submit" className="inline-flex h-8 items-center rounded-lg border border-border bg-surface px-3 text-xs font-medium text-text transition hover:bg-surface-2">
+                                    {m.access_level === "manager" ? "Remove co-admin" : "Make co-admin"}
+                                  </button>
                                 </form>
                               )}
                             </div>
