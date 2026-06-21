@@ -246,11 +246,14 @@ export interface ProjectCard {
   target_date: string | null;
   min_size: number;
   join_policy: "auto" | "approval";
+  locked: boolean;
   participants: number;
   benchmark_low_cents: number | null;
   benchmark_high_cents: number | null;
   agreed_amount_cents: number | null;
   currency: string;
+  my_role: "coordinator" | "treasurer" | "participant" | null;
+  my_status: "joined" | "requested" | "left" | "declined" | null;
 }
 
 export interface Participant {

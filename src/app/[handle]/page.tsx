@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, Users, CalendarClock, Tag, Lock } from "lucide-react";
+import { Sparkles, Users, CalendarClock, Tag } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -11,7 +11,8 @@ import {
 } from "@/core/cohorts/services/cohortService";
 import type { DirectoryMember, TagCatalogItem } from "@/core/cohorts/domain/cohort";
 import { listCohortProjectCards } from "@/core/requests/services/requestService";
-import { STAGE_LABELS, type ProjectCard } from "@/core/requests/domain/request";
+import { STAGE_LABELS, JOINABLE_STATUSES, PARTICIPANT_ROLE_LABELS, type ProjectCard } from "@/core/requests/domain/request";
+import { joinRequestAction } from "@/app/requests/actions";
 import { listFeed } from "@/core/posts/services/postService";
 import type { FeedPost } from "@/core/posts/domain/post";
 import AppShell from "@/components/app/AppShell";
@@ -202,41 +203,56 @@ export default async function CohortPage({ params }: { params: { handle: string 
                           : p.benchmark_low_cents != null && p.benchmark_high_cents != null
                             ? `${fmtMoney(p.benchmark_low_cents, p.currency)}–${fmtMoney(p.benchmark_high_cents, p.currency)} est.`
                             : null;
+                      const isMine = p.my_status === "joined";
+                      const pending = p.my_status === "requested";
+                      const joinable = !p.locked && !done && JOINABLE_STATUSES.includes(p.status);
                       return (
-                        <li key={p.id}>
-                          <Link href={`/requests/${p.id}`} className="block rounded-xl border border-border px-4 py-3 transition hover:bg-surface-2">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="font-medium text-text">{p.title}</p>
-                                <p className="mt-0.5 text-xs text-subtle">
-                                  {p.category || (p.project_type === "group_buy" ? "Group buy" : "Service")}
-                                </p>
-                              </div>
-                              <span className={"shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium " + (done ? "bg-primary/10 text-primary" : "bg-surface-2 text-text")}>
-                                {STAGE_LABELS[p.status]}
-                              </span>
+                        <li key={p.id} className="rounded-xl border border-border px-4 py-3 transition hover:bg-surface-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <Link href={`/requests/${p.id}`} className="font-medium text-text hover:text-primary">{p.title}</Link>
+                              <p className="mt-0.5 text-xs text-subtle">
+                                {p.category || (p.project_type === "group_buy" ? "Group buy" : "Service")}
+                              </p>
                             </div>
-                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                            <span className={"shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium " + (done ? "bg-primary/10 text-primary" : "bg-surface-2 text-text")}>
+                              {STAGE_LABELS[p.status]}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                            <span className="inline-flex items-center gap-1">
+                              <Users className="h-3.5 w-3.5 text-subtle" /> {p.participants}/{p.min_size}+ joined
+                            </span>
+                            {p.target_date && (
                               <span className="inline-flex items-center gap-1">
-                                <Users className="h-3.5 w-3.5 text-subtle" /> {p.participants}/{p.min_size}+ joined
+                                <CalendarClock className="h-3.5 w-3.5 text-subtle" /> by {fmtCardDate(p.target_date)}
                               </span>
-                              {p.target_date && (
-                                <span className="inline-flex items-center gap-1">
-                                  <CalendarClock className="h-3.5 w-3.5 text-subtle" /> by {fmtCardDate(p.target_date)}
-                                </span>
-                              )}
-                              {price && (
-                                <span className="inline-flex items-center gap-1">
-                                  <Tag className="h-3.5 w-3.5 text-subtle" /> {price}
-                                </span>
-                              )}
-                              {p.join_policy === "approval" && !done && (
-                                <span className="inline-flex items-center gap-1 text-subtle">
-                                  <Lock className="h-3.5 w-3.5" /> approval to join
-                                </span>
-                              )}
-                            </div>
-                          </Link>
+                            )}
+                            {price && (
+                              <span className="inline-flex items-center gap-1">
+                                <Tag className="h-3.5 w-3.5 text-subtle" /> {price}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2 flex items-center justify-between gap-2">
+                            {isMine && p.my_role ? (
+                              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+                                You · {PARTICIPANT_ROLE_LABELS[p.my_role]}
+                              </span>
+                            ) : pending ? (
+                              <span className="text-xs text-subtle">Request pending</span>
+                            ) : joinable ? (
+                              <form action={joinRequestAction}>
+                                <input type="hidden" name="requestId" value={p.id} />
+                                <button type="submit" className="inline-flex min-h-touch items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover">
+                                  {p.join_policy === "approval" ? "Request to join" : "Join"}
+                                </button>
+                              </form>
+                            ) : (
+                              <span className="text-xs text-subtle">{p.locked ? "Joining locked" : "Joining closed"}</span>
+                            )}
+                            <Link href={`/requests/${p.id}`} className="text-xs font-medium text-primary hover:underline">View →</Link>
+                          </div>
                         </li>
                       );
                     })}
