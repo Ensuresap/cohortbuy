@@ -29,7 +29,7 @@ import InviteNeighborsCard from "@/components/app/InviteNeighborsCard";
 import CommunityWinsTicker from "@/components/app/CommunityWinsTicker";
 import {
   ListChecks, Vote, Trophy, FileSignature,
-  CreditCard, UserPlus, ArrowRight, Users, CheckCircle2, Coins, TrendingDown,
+  CreditCard, UserPlus, ArrowRight, Users, Coins, TrendingDown,
 } from "lucide-react";
 
 type CohortRow = { status: string; access_level: string; cohort: { id: string; handle: string; name: string } | null };
@@ -132,6 +132,19 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
+        {/* Metric strip */}
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Tile label="Needs you" value={actions.length} accent={actions.length > 0} />
+          <Tile label="Active projects" value={active.length} />
+          <Tile label="Cohorts" value={cohorts.length} />
+          <Tile
+            label={`Tokens · ${tp.tier}`}
+            value={tokens.balance}
+            progress={tp.next ? tp.pct : 100}
+            sub={tp.next ? `${tp.toNext} to ${tp.next}` : "Top tier"}
+          />
+        </div>
+
         {/* Community wins — single-line auto-scroll ticker (coordinators/managers only) */}
         {!lean && <CommunityWinsTicker wins={wins} totalSaved={totalSaved} />}
 
@@ -176,7 +189,7 @@ export default async function DashboardPage() {
             )}
 
             {/* Active projects */}
-            <section className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
+            <section className="rounded-2xl border border-border bg-surface p-6">
               <h2 className="border-b-2 border-primary/15 pb-3 font-display text-lg font-semibold text-text">
                 Active projects{active.length > 0 && <span className="font-normal text-subtle"> · {active.length}</span>}
               </h2>
@@ -250,7 +263,7 @@ export default async function DashboardPage() {
 
             {/* Discover */}
             {discover.length > 0 && (
-              <section className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
+              <section className="rounded-2xl border border-border bg-surface p-6">
                 <h2 className="border-b-2 border-primary/15 pb-3 font-display text-lg font-semibold text-text">
                   Join a project near you
                 </h2>
@@ -290,40 +303,6 @@ export default async function DashboardPage() {
 
           {/* Side column */}
           <div className="space-y-6">
-            {/* Status & tokens */}
-            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-medium text-muted">Your status</h2>
-                <Link href="/account" className="text-xs font-medium text-primary hover:underline">Details</Link>
-              </div>
-              <div className="mt-1.5 flex items-end gap-2">
-                <span className="font-display text-3xl font-semibold text-primary">{tokens.balance}</span>
-                <span className="mb-1 text-sm text-muted">tokens</span>
-                <span className="mb-1 ml-auto rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{tp.tier}</span>
-              </div>
-              {tp.next ? (
-                <div className="mt-3">
-                  <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${tp.pct}%` }} />
-                  </div>
-                  <p className="mt-1.5 text-xs text-subtle">
-                    <span className="font-medium text-muted">{tp.toNext}</span> more to reach{" "}
-                    <span className="font-medium text-text">{tp.next}</span>
-                  </p>
-                </div>
-              ) : (
-                <p className="mt-3 text-xs text-subtle">Top tier reached — you&rsquo;re a community Pillar.</p>
-              )}
-              {!lean && (
-                <div className="mt-4 space-y-1.5 border-t border-border pt-3">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">Earn more</p>
-                  <EarnRow label="Refer a neighbor" amount={EARN_RULES.refer_neighbor} />
-                  <EarnRow label="Complete a project" amount={EARN_RULES.complete_project} />
-                  <EarnRow label="Leave a rating" amount={EARN_RULES.leave_rating} />
-                </div>
-              )}
-            </section>
-
             {/* Invite / referral — fuller card for coordinators; a slim line for members */}
             {lean ? (
               primaryCohort && (
@@ -344,7 +323,7 @@ export default async function DashboardPage() {
             )}
 
             {/* Your cohorts */}
-            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+            <section className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-medium text-muted">Your cohorts</h2>
                 <Link href="/cohorts" className="text-xs font-medium text-primary hover:underline">All</Link>
@@ -383,14 +362,17 @@ export default async function DashboardPage() {
   );
 }
 
-function EarnRow({ label, amount }: { label: string; amount: number }) {
+function Tile({ label, value, sub, accent, progress }: { label: string; value: number; sub?: string; accent?: boolean; progress?: number }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="flex items-center gap-1.5 text-muted">
-        <CheckCircle2 className="h-3.5 w-3.5 text-primary/70" />
-        {label}
-      </span>
-      <span className="font-semibold text-primary">+{amount}</span>
+    <div className="rounded-2xl bg-surface-2 p-4 sm:p-5">
+      <p className="truncate text-[13px] text-subtle">{label}</p>
+      <p className={"mt-1 font-display text-3xl font-semibold " + (accent ? "text-primary" : "text-text")}>{value}</p>
+      {progress != null && (
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+        </div>
+      )}
+      {sub && <p className="mt-1.5 truncate text-xs text-subtle">{sub}</p>}
     </div>
   );
 }
