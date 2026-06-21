@@ -4,6 +4,14 @@ export function getById(db: SupabaseClient, id: string) {
   return db.from("profiles").select("*").eq("id", id).maybeSingle();
 }
 
+export function exportMyData(db: SupabaseClient) {
+  return db.rpc("export_my_data");
+}
+
+export function requestAccountDeletion(db: SupabaseClient) {
+  return db.rpc("request_account_deletion");
+}
+
 export function touchLastSeen(db: SupabaseClient, userId: string) {
   return db
     .from("profiles")

@@ -12,6 +12,7 @@ import {
 import { STAGE_LABELS, type RequestStatus } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
 import MaskedValue from "@/components/app/MaskedValue";
+import { getAuditLog } from "@/core/audit/services/auditService";
 
 function fmt(cents: number, currency = "USD") {
   try {
@@ -55,16 +56,20 @@ export default async function AdminPage() {
   }
 
   const ov = ovRes.data;
-  const [projRes, inactiveRes, leadsRes, waitRes] = await Promise.all([
+  const [projRes, inactiveRes, leadsRes, waitRes, auditRes] = await Promise.all([
     getRecentProjects(ctx, 12),
     getInactiveCohorts(ctx, 30),
     getVendorLeads(ctx, 50),
     getWaitlist(ctx, 100),
+    getAuditLog(ctx, 40),
   ]);
   const projects = projRes.ok ? projRes.data : [];
   const inactive = inactiveRes.ok ? inactiveRes.data : [];
   const leads = leadsRes.ok ? leadsRes.data : [];
   const waitlist = waitRes.ok ? waitRes.data : [];
+  const audit = auditRes.ok ? auditRes.data : [];
+  const auditLabel = (a: string) =>
+    ({ pii_reveal: "Revealed contact", data_export: "Exported own data", account_deletion: "Closed own account" } as Record<string, string>)[a] ?? a;
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const stages = Object.entries(ov.by_stage).sort((a, b) => b[1] - a[1]);
 
@@ -225,6 +230,27 @@ export default async function AdminPage() {
             )}
           </section>
         </div>
+
+        {/* Audit log — sensitive actions */}
+        <section className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-soft">
+          <h2 className="font-display text-lg font-semibold text-text">Audit log</h2>
+          {audit.length === 0 ? (
+            <p className="mt-2 text-muted">No audited actions yet.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-border text-sm">
+              {audit.map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-3 py-2">
+                  <span className="min-w-0 truncate text-text">
+                    <span className="font-medium">{a.actor_name ?? "Someone"}</span>
+                    <span className="text-muted"> · {auditLabel(a.action)}</span>
+                    {a.target_type ? <span className="text-subtle"> ({a.target_type})</span> : null}
+                  </span>
+                  <span className="shrink-0 text-xs text-subtle">{new Date(a.created_at).toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
     </AppShell>
   );

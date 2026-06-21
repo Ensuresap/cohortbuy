@@ -3,6 +3,28 @@ import { OnboardingInput, SetLocationInput, type Profile } from "../domain/profi
 import * as repo from "../repositories/profileRepo";
 import { ok, err, type Result } from "../../result";
 
+/** Export everything the platform holds about the signed-in user (their own data). */
+export async function exportMyData(ctx: Ctx): Promise<Result<unknown>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.exportMyData(ctx.db);
+  if (error) return err("db_error", error.message);
+  return ok(data);
+}
+
+/** Close the account: anonymize PII + mark for deletion (handoff required if coordinating). */
+export async function requestAccountDeletion(ctx: Ctx): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { error } = await repo.requestAccountDeletion(ctx.db);
+  if (error) {
+    if (error.message?.includes("reassign_first"))
+      return err("reassign_first", "Hand off or finish the projects you coordinate before deleting your account.");
+    return err("db_error", error.message);
+  }
+  return ok(true);
+}
+
 /** The signed-in user's profile (null if none yet). */
 export async function getMyProfile(ctx: Ctx): Promise<Result<Profile | null>> {
   if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");

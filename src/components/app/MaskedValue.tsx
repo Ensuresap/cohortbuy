@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { logPiiRevealAction } from "@/app/admin/actions";
 
 function maskEmail(v: string): string {
   const [local, domain] = v.split("@");
@@ -31,7 +32,7 @@ export default function MaskedValue({ value, type = "text" }: { value: string; t
   return (
     <button
       type="button"
-      onClick={() => setShown(true)}
+      onClick={() => { setShown(true); void logPiiRevealAction(type); }}
       className="inline-flex items-center gap-1 text-subtle hover:text-text"
       title="Click to reveal"
     >
