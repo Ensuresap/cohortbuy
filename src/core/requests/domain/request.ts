@@ -256,6 +256,22 @@ export interface ProjectCard {
   my_status: "joined" | "requested" | "left" | "declined" | null;
 }
 
+export interface MyActiveProject {
+  id: string;
+  title: string;
+  status: RequestStatus;
+  project_type: "service" | "group_buy";
+  target_date: string | null;
+  role: "coordinator" | "treasurer" | "participant";
+  cohort_handle: string;
+  cohort_name: string;
+  last_activity_at: string;
+  last_comment: string | null;
+  last_comment_author: string | null;
+  last_comment_kind: "member" | "ai" | null;
+  last_comment_at: string | null;
+}
+
 export interface Participant {
   id: string;
   request_id: string;

@@ -3,28 +3,40 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/core/profiles/services/profileService";
 import { getBalance } from "@/core/tokens/services/tokenService";
-import { listMyProjects } from "@/core/requests/services/requestService";
+import { listMyActiveProjects } from "@/core/requests/services/requestService";
 import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { listMyNotifications } from "@/core/services/notificationService";
-import { PIPELINE, STAGE_LABELS, type RequestStatus } from "@/core/requests/domain/request";
+import {
+  PIPELINE,
+  STAGE_LABELS,
+  PARTICIPANT_ROLE_LABELS,
+  PROJECT_TYPE_LABELS,
+  type RequestStatus,
+  type MyActiveProject,
+} from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
+import { MessageSquare, Sparkles } from "lucide-react";
 
-type ProjectRow = {
-  role: string;
-  request: {
-    id: string;
-    title: string;
-    status: RequestStatus;
-    cohort: { handle: string; name: string } | null;
-  } | null;
-};
 type CohortRow = { status: string; access_level: string; cohort: { id: string; handle: string; name: string } | null };
 type Notif = { id: string; event: string; channel: string; status: string; payload: { message?: string } | null; created_at: string };
 
 function pct(status: RequestStatus): number {
   const i = PIPELINE.indexOf(status);
   return i < 0 ? 0 : Math.round(((i + 1) / PIPELINE.length) * 100);
+}
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.round(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.round(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export default async function DashboardPage() {
@@ -40,20 +52,16 @@ export default async function DashboardPage() {
   if (!profile?.display_name) redirect("/onboarding");
 
   const [projectsRes, cohortsRes, notifsRes, balRes] = await Promise.all([
-    listMyProjects(ctx),
+    listMyActiveProjects(ctx),
     listMyCohorts(ctx),
     listMyNotifications(ctx, 8),
     getBalance(ctx, { userId: user.id }),
   ]);
 
-  const projects = (projectsRes.ok ? projectsRes.data : []) as ProjectRow[];
+  const active = (projectsRes.ok ? projectsRes.data : []) as MyActiveProject[];
   const cohorts = (cohortsRes.ok ? cohortsRes.data : []) as CohortRow[];
   const notifs = (notifsRes.ok ? notifsRes.data : []) as Notif[];
   const tokens = balRes.ok ? balRes.data : { balance: 0, lifetimeEarned: 0, tier: "Newcomer" };
-
-  const active = projects.filter(
-    (p) => p.request && p.request.status !== "completed" && p.request.status !== "cancelled"
-  );
 
   return (
     <AppShell>
@@ -77,7 +85,9 @@ export default async function DashboardPage() {
           {/* Main column */}
           <div className="space-y-6 lg:col-span-2">
             <section className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
-              <h2 className="font-display text-lg font-semibold text-text">Active projects</h2>
+              <h2 className="border-b-2 border-primary/15 pb-3 font-display text-lg font-semibold text-text">
+                Active projects{active.length > 0 && <span className="text-subtle font-normal"> · {active.length}</span>}
+              </h2>
               {active.length === 0 ? (
                 <div className="mt-4 rounded-xl border border-dashed border-border p-6 text-center">
                   <p className="text-muted">No active projects yet.</p>
@@ -88,30 +98,50 @@ export default async function DashboardPage() {
               ) : (
                 <ul className="mt-4 space-y-3">
                   {active.map((p) => (
-                    <li key={p.request!.id}>
+                    <li key={p.id}>
                       <Link
-                        href={`/requests/${p.request!.id}`}
+                        href={`/requests/${p.id}`}
                         className="block rounded-xl border border-border p-4 transition hover:bg-surface-2"
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-medium text-text">{p.request!.title}</span>
-                          <span className="shrink-0 text-xs text-subtle">
-                            {p.request!.cohort?.name}
-                          </span>
-                        </div>
-                        <div className="mt-3 flex items-center gap-3">
-                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${pct(p.request!.status)}%` }} />
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-text">{p.title}</p>
+                            <p className="mt-0.5 truncate text-xs text-subtle">
+                              {p.cohort_name} · {PROJECT_TYPE_LABELS[p.project_type].split(" — ")[0]}
+                            </p>
                           </div>
-                          <span className="shrink-0 text-xs font-medium text-primary">
-                            {STAGE_LABELS[p.request!.status]}
-                          </span>
+                          <div className="flex shrink-0 flex-col items-end gap-1">
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                              {STAGE_LABELS[p.status]}
+                            </span>
+                            {p.role !== "participant" && (
+                              <span className="text-[11px] text-subtle">You {PARTICIPANT_ROLE_LABELS[p.role].toLowerCase()}</span>
+                            )}
+                          </div>
                         </div>
-                        {p.role === "coordinator" && (
-                          <span className="mt-2 inline-block rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-text">
-                            You coordinate
-                          </span>
-                        )}
+                        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                          <div className="h-full rounded-full bg-primary" style={{ width: `${pct(p.status)}%` }} />
+                        </div>
+                        <div className="mt-2.5 flex items-center gap-2 text-xs text-subtle">
+                          {p.last_comment ? (
+                            <>
+                              {p.last_comment_kind === "ai" ? (
+                                <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+                              ) : (
+                                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                              )}
+                              <span className="min-w-0 flex-1 truncate">
+                                <span className="font-medium text-muted">
+                                  {p.last_comment_kind === "ai" ? "AI" : (p.last_comment_author ?? "Member")}:
+                                </span>{" "}
+                                {p.last_comment}
+                              </span>
+                              <span className="shrink-0">{timeAgo(p.last_comment_at)}</span>
+                            </>
+                          ) : (
+                            <span>Updated {timeAgo(p.last_activity_at)}</span>
+                          )}
+                        </div>
                       </Link>
                     </li>
                   ))}

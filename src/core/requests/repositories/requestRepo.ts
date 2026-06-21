@@ -24,6 +24,10 @@ export function cohortProjectCards(db: SupabaseClient, cohortId: string) {
   return db.rpc("cohort_project_cards", { p_cohort: cohortId });
 }
 
+export function myActiveProjects(db: SupabaseClient) {
+  return db.rpc("my_active_projects");
+}
+
 export function listByCohort(db: SupabaseClient, cohortId: string) {
   return db
     .from("service_requests")

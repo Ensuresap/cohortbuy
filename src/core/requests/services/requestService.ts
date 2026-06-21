@@ -16,6 +16,7 @@ import {
   JOINABLE_STATUSES,
   type ServiceRequest,
   type ProjectCard,
+  type MyActiveProject,
   type Participant,
   type ParticipantFeedItem,
   type JoinRequestItem,
@@ -62,6 +63,15 @@ export async function listCohortProjectCards(ctx: Ctx, cohortId: string): Promis
   const { data, error } = await repo.cohortProjectCards(ctx.db, cohortId);
   if (error) return err("db_error", error.message);
   return ok((data ?? []) as ProjectCard[]);
+}
+
+/** Active (in-flight) projects for the dashboard, with last activity + latest chat. */
+export async function listMyActiveProjects(ctx: Ctx): Promise<Result<MyActiveProject[]>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.myActiveProjects(ctx.db);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as MyActiveProject[]);
 }
 
 /** Projects the signed-in user participates in (with cohort + stage). */
