@@ -5,6 +5,11 @@ Update the `[Unreleased]` section with **every** feature (see `CLAUDE.md` → "K
 
 ## [Unreleased]
 
+### Security
+- **Least-privilege admin access** — removed the blanket platform-staff `SELECT` policies on private user-content tables (profiles, cohort_members, scope_items, quotes, cohort_posts, token_accounts/transactions, notifications, service_requests, request_participants, cohorts). The admin panel is unaffected — it reads through curated security-definer RPCs (`admin_*`, `platform_public_stats`) — but admins can no longer pull raw private rows (phones, message payloads, scope, quotes, token ledgers) directly via the API. AI-config/memory staff policies kept (admin features). Migration `20260618150000_least_privilege_admin.sql`.
+- **PII masking in admin UI** — emails and phone numbers in the admin inbox are masked by default (`MaskedValue`) and revealed only on explicit click.
+- **Admin data-access policy** — documented least-privilege, PII minimisation, purpose limitation, consent boundaries, and the deferred audit-log/retention items in `Legal_Terms_and_Liability_Notes.md`.
+
 ### Added
 - **Admin inbox (vendor leads + waitlist)** — the `/admin` panel now lists inbound **vendor leads** (business, contact, email/phone, categories, service area, message) and **waitlist** signups (email, ZIP, source, date), newest first. Both via staff-gated `admin_vendor_leads()` / `admin_waitlist()` RPCs (the tables have no public select), with `getVendorLeads` / `getWaitlist`. Migration `20260618140000_admin_inbox.sql`.
 - **Four more guides** — added gutter-cleaning checklist, fair cost-splitting, HOA/building bulk buys, and being a good coordinator (now 8 guides, each its own SEO entry point in the sitemap).

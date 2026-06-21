@@ -11,6 +11,7 @@ import {
 } from "@/core/admin/services/adminService";
 import { STAGE_LABELS, type RequestStatus } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
+import MaskedValue from "@/components/app/MaskedValue";
 
 function fmt(cents: number, currency = "USD") {
   try {
@@ -184,10 +185,10 @@ export default async function AdminPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium text-text">{l.business}</p>
-                        <p className="mt-0.5 text-xs text-muted">
-                          {l.contact_name ? `${l.contact_name} · ` : ""}
-                          <a href={`mailto:${l.email}`} className="text-primary hover:underline">{l.email}</a>
-                          {l.phone ? ` · ${l.phone}` : ""}
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
+                          {l.contact_name ? <span>{l.contact_name} ·</span> : null}
+                          <MaskedValue value={l.email} type="email" />
+                          {l.phone ? <><span>·</span><MaskedValue value={l.phone} type="phone" /></> : null}
                         </p>
                         <p className="mt-0.5 text-xs text-subtle">
                           {[l.categories, l.service_area].filter(Boolean).join(" · ") || "—"}
@@ -213,8 +214,8 @@ export default async function AdminPage() {
               <ul className="mt-3 divide-y divide-border">
                 {waitlist.map((w) => (
                   <li key={w.id} className="flex items-center justify-between gap-3 py-2.5">
-                    <div className="min-w-0">
-                      <a href={`mailto:${w.email}`} className="truncate text-sm font-medium text-text hover:text-primary">{w.email}</a>
+                    <div className="min-w-0 text-sm">
+                      <MaskedValue value={w.email} type="email" />
                       <p className="text-xs text-subtle">{w.zip ? `ZIP ${w.zip} · ` : ""}{w.source}</p>
                     </div>
                     <span className="shrink-0 text-xs text-subtle">{fmtDate(w.created_at)}</span>
