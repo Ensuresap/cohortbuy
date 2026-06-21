@@ -3,15 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import GuideBody from "@/components/GuideBody";
-import { GUIDES, getGuide, guideImage } from "@/content/guides";
+import { guideImage } from "@/content/guides";
+import { createClient } from "@/lib/supabase/server";
+import { listPublicGuides, getPublicGuide } from "@/core/guides/services/guideService";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 
-export function generateStaticParams() {
-  return GUIDES.map((g) => ({ slug: g.slug }));
-}
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const g = getGuide(params.slug);
+  const g = await getPublicGuide({ db: createClient(), actor: undefined }, params.slug);
   if (!g) return { title: "Guide not found — CohortBuy" };
   const url = `${SITE_URL}/guides/${g.slug}`;
   return {
@@ -30,9 +30,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default function GuidePage({ params }: { params: { slug: string } }) {
-  const g = getGuide(params.slug);
+export default async function GuidePage({ params }: { params: { slug: string } }) {
+  const ctx = { db: createClient(), actor: undefined };
+  const g = await getPublicGuide(ctx, params.slug);
   if (!g) notFound();
+  const others = (await listPublicGuides(ctx)).filter((o) => o.slug !== g.slug).slice(0, 3);
 
   const url = `${SITE_URL}/guides/${g.slug}`;
   const jsonLd = {
@@ -88,7 +90,7 @@ export default function GuidePage({ params }: { params: { slug: string } }) {
         <div className="mt-12 border-t border-border pt-8">
           <p className="text-sm font-medium text-subtle">More guides</p>
           <ul className="mt-3 space-y-2">
-            {GUIDES.filter((o) => o.slug !== g.slug).slice(0, 3).map((o) => (
+            {others.map((o) => (
               <li key={o.slug}>
                 <Link href={`/guides/${o.slug}`} className="font-medium text-primary hover:underline">{o.title}</Link>
               </li>

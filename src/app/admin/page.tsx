@@ -91,7 +91,8 @@ export default async function AdminPage() {
         </div>
         <p className="mt-1 text-muted">
           Operations overview across all cohorts.{" "}
-          <Link href="/admin/vendors" className="font-medium text-primary hover:underline">Vendor registry →</Link>
+          <Link href="/admin/vendors" className="font-medium text-primary hover:underline">Vendor registry →</Link>{" "}
+          <Link href="/admin/guides" className="font-medium text-primary hover:underline">Guides →</Link>
         </p>
 
         {/* KPI cards */}

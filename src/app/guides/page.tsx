@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
-import { GUIDES, guideImage } from "@/content/guides";
+import { guideImage } from "@/content/guides";
+import { createClient } from "@/lib/supabase/server";
+import { listPublicGuides } from "@/core/guides/services/guideService";
 import { SITE_URL } from "@/lib/site";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Guides — saving on home projects & group buys | CohortBuy",
@@ -17,7 +21,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function GuidesIndex() {
+export default async function GuidesIndex() {
+  const guides = await listPublicGuides({ db: createClient(), actor: undefined });
   return (
     <main className="min-h-screen">
       <header className="container-prose flex items-center justify-between py-6">
@@ -38,7 +43,7 @@ export default function GuidesIndex() {
         </p>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
-          {GUIDES.map((g) => (
+          {guides.map((g) => (
             <Link
               key={g.slug}
               href={`/guides/${g.slug}`}
