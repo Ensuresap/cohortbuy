@@ -117,7 +117,7 @@ export default async function Home() {
             <a href="#why" className="hover:text-primary">
               Why CohortBuy
             </a>
-            <a href="#vendors" className="hover:text-primary">
+            <a href="/vendors" className="hover:text-primary">
               For vendors
             </a>
           </nav>
@@ -369,10 +369,10 @@ export default async function Home() {
               <li className="flex gap-3"><span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" /> Get listed &amp; featured in neighborhood shortlists</li>
             </ul>
             <a
-              href="mailto:partners@cohortbuy.com?subject=Get%20listed%20on%20CohortBuy"
+              href="/vendors"
               className="mt-8 inline-block rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground transition hover:bg-primary-hover"
             >
-              Get listed
+              Learn more &amp; get listed
             </a>
           </div>
           <div className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
