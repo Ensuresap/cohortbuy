@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import GuideBody from "@/components/GuideBody";
-import { GUIDES, getGuide } from "@/content/guides";
+import { GUIDES, getGuide, guideImage } from "@/content/guides";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 
 export function generateStaticParams() {
@@ -24,8 +24,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       url,
       type: "article",
       publishedTime: g.updated,
+      images: [{ url: guideImage(g.slug, 1200, 630), width: 1200, height: 630 }],
     },
-    twitter: { card: "summary_large_image", title: g.title, description: g.description },
+    twitter: { card: "summary_large_image", title: g.title, description: g.description, images: [guideImage(g.slug, 1200, 630)] },
   };
 }
 
@@ -63,10 +64,17 @@ export default function GuidePage({ params }: { params: { slug: string } }) {
         <p className="mt-4 text-xs font-medium uppercase tracking-wide text-primary">{g.category}</p>
         <h1 className="mt-2 font-display text-4xl font-semibold leading-tight text-text sm:text-5xl">{g.title}</h1>
         <p className="mt-3 text-sm text-subtle">{g.readMins} min read · Updated {new Date(g.updated).toLocaleDateString(undefined, { month: "long", year: "numeric" })}</p>
-        <p className="mt-6 text-xl leading-relaxed text-muted">{g.description}</p>
 
-        <div className="mt-8 border-t border-border pt-8">
-          <GuideBody body={g.body} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={guideImage(g.slug, 1280, 560)}
+          alt=""
+          loading="eager"
+          className="mt-6 aspect-[16/7] w-full rounded-2xl border border-border object-cover"
+        />
+
+        <div className="mt-8">
+          <GuideBody body={`${g.description}\n\n${g.body}`} />
         </div>
 
         <div className="mt-12 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center">

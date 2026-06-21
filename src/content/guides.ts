@@ -19,6 +19,8 @@ export const GUIDES: Guide[] = [
     updated: "2026-06-18",
     body: `Buying as a group is how a whole street quietly pays less for the same work. The discount was always there — vendors love serving several homes in one trip — the hard part is the coordination. Here's how to run it without the spreadsheet chaos.
 
+> The savings were always there. The coordination was the hard part.
+
 ## 1. Find the shared need
 Start with something neighbors visibly have in common: gutters before the rainy season, fences along a shared boundary, a repaint, solar, even a bulk order of the same appliance. The clearer and more standard the job, the easier it is to quote as a group.
 
@@ -114,6 +116,8 @@ A group rate is only worth it if the installer is solid — compare at least two
     readMins: 5,
     updated: "2026-06-18",
     body: `"Up to 30% off" makes a nice headline, but the honest answer is: it depends on the category and how much of the vendor's cost is fixed. Here's how to think about it realistically.
+
+> The more of a job's price is the trip, not the materials, the more a group saves.
 
 ## The savings come from fixed costs you share
 Every job has costs that don't grow much whether a vendor serves one home or six: travel and setup, sales and quoting, inspection trips, equipment hauling. Spread those across a group and the per-home price falls. The more a job's cost is fixed (vs materials), the bigger the group discount.
@@ -244,4 +248,13 @@ You're a facilitator, not a contractor and not everyone's banker. Keep the money
 
 export function getGuide(slug: string): Guide | undefined {
   return GUIDES.find((g) => g.slug === slug);
+}
+
+/**
+ * Free, stable editorial image per guide (Lorem Picsum — no attribution needed).
+ * Seeded by slug so each guide keeps the same photo. Swap for topical photography
+ * later by adding an `image` field to the guide and reading it here.
+ */
+export function guideImage(slug: string, w: number, h: number): string {
+  return `https://picsum.photos/seed/cb-${slug}/${w}/${h}`;
 }

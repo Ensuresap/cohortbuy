@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
-import { GUIDES } from "@/content/guides";
+import { GUIDES, guideImage } from "@/content/guides";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -42,12 +42,21 @@ export default function GuidesIndex() {
             <Link
               key={g.slug}
               href={`/guides/${g.slug}`}
-              className="block rounded-2xl border border-border bg-surface p-6 shadow-sm transition hover:shadow-soft"
+              className="group block overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition hover:shadow-soft"
             >
-              <span className="text-xs font-medium uppercase tracking-wide text-primary">{g.category}</span>
-              <h2 className="mt-2 font-display text-xl font-semibold text-text">{g.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{g.description}</p>
-              <p className="mt-3 text-xs text-subtle">{g.readMins} min read</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={guideImage(g.slug, 720, 400)}
+                alt=""
+                loading="lazy"
+                className="aspect-[16/9] w-full object-cover transition group-hover:opacity-95"
+              />
+              <div className="p-6">
+                <span className="text-xs font-medium uppercase tracking-wide text-primary">{g.category}</span>
+                <h2 className="mt-2 font-display text-xl font-semibold text-text">{g.title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{g.description}</p>
+                <p className="mt-3 text-xs text-subtle">{g.readMins} min read</p>
+              </div>
             </Link>
           ))}
         </div>
