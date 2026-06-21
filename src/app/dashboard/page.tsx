@@ -3,9 +3,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/core/profiles/services/profileService";
 import { getBalance } from "@/core/tokens/services/tokenService";
-import { listMyActiveProjects } from "@/core/requests/services/requestService";
+import { tierProgress, EARN_RULES } from "@/core/tokens/domain/tokens";
+import {
+  listMyActiveProjects,
+  listMyActionItems,
+  listDiscoverProjects,
+} from "@/core/requests/services/requestService";
 import { listMyCohorts } from "@/core/cohorts/services/cohortService";
-import { listMyNotifications } from "@/core/services/notificationService";
+import { joinRequestAction } from "@/app/requests/actions";
 import {
   PIPELINE,
   STAGE_LABELS,
@@ -13,13 +18,18 @@ import {
   PROJECT_TYPE_LABELS,
   type RequestStatus,
   type MyActiveProject,
+  type ActionItem,
+  type DiscoverProject,
 } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
-import { MessageSquare, Sparkles } from "lucide-react";
+import InviteNeighborsCard from "@/components/app/InviteNeighborsCard";
+import {
+  MessageSquare, Sparkles, ListChecks, Vote, Trophy, FileSignature,
+  CreditCard, UserPlus, ArrowRight, Users, CheckCircle2, Coins,
+} from "lucide-react";
 
 type CohortRow = { status: string; access_level: string; cohort: { id: string; handle: string; name: string } | null };
-type Notif = { id: string; event: string; channel: string; status: string; payload: { message?: string } | null; created_at: string };
 
 function pct(status: RequestStatus): number {
   const i = PIPELINE.indexOf(status);
@@ -39,6 +49,15 @@ function timeAgo(iso: string | null): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+const ACTION_ICON = {
+  scope: ListChecks,
+  vote: Vote,
+  decide: Trophy,
+  contract: FileSignature,
+  pay: CreditCard,
+  join_requests: UserPlus,
+} as const;
+
 export default async function DashboardPage() {
   const supabase = createClient();
   const {
@@ -51,17 +70,21 @@ export default async function DashboardPage() {
   const profile = profileRes.ok ? profileRes.data : null;
   if (!profile?.display_name) redirect("/onboarding");
 
-  const [projectsRes, cohortsRes, notifsRes, balRes] = await Promise.all([
+  const [projectsRes, actionsRes, discoverRes, cohortsRes, balRes] = await Promise.all([
     listMyActiveProjects(ctx),
+    listMyActionItems(ctx),
+    listDiscoverProjects(ctx),
     listMyCohorts(ctx),
-    listMyNotifications(ctx, 8),
     getBalance(ctx, { userId: user.id }),
   ]);
 
   const active = (projectsRes.ok ? projectsRes.data : []) as MyActiveProject[];
+  const actions = (actionsRes.ok ? actionsRes.data : []) as ActionItem[];
+  const discover = (discoverRes.ok ? discoverRes.data : []) as DiscoverProject[];
   const cohorts = (cohortsRes.ok ? cohortsRes.data : []) as CohortRow[];
-  const notifs = (notifsRes.ok ? notifsRes.data : []) as Notif[];
   const tokens = balRes.ok ? balRes.data : { balance: 0, lifetimeEarned: 0, tier: "Newcomer" };
+  const tp = tierProgress(tokens.lifetimeEarned);
+  const primaryCohort = cohorts.find((c) => c.cohort)?.cohort ?? null;
 
   return (
     <AppShell>
@@ -71,22 +94,65 @@ export default async function DashboardPage() {
             <h1 className="font-display text-3xl font-semibold text-text">
               Welcome back, {profile.display_name.split(" ")[0]}
             </h1>
-            <p className="mt-1 text-muted">Here&rsquo;s what&rsquo;s moving across your cohorts.</p>
+            <p className="mt-1 text-muted">
+              {actions.length > 0
+                ? `${actions.length} thing${actions.length === 1 ? "" : "s"} need your attention.`
+                : "You're all caught up. Here's what's moving."}
+            </p>
           </div>
           <Link
             href="/account"
-            className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:bg-surface-2"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:bg-surface-2"
           >
-            <span className="font-semibold text-primary">{tokens.balance}</span> tokens · {tokens.tier}
+            <Coins className="h-4 w-4 text-primary" />
+            <span className="font-semibold text-primary">{tokens.balance}</span> · {tokens.tier}
           </Link>
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {/* Main column */}
           <div className="space-y-6 lg:col-span-2">
+            {/* Your turn */}
+            {actions.length > 0 && (
+              <section className="rounded-2xl border border-primary/30 bg-primary/5 p-6 shadow-soft">
+                <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-text">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                    {actions.length}
+                  </span>
+                  Your turn
+                </h2>
+                <ul className="mt-4 space-y-2">
+                  {actions.map((a, i) => {
+                    const Icon = ACTION_ICON[a.kind];
+                    const href = a.kind === "join_requests" ? `/${a.cohort_handle}` : `/requests/${a.request_id}`;
+                    return (
+                      <li key={a.request_id ?? `jr-${i}`}>
+                        <Link
+                          href={href}
+                          className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 transition hover:border-primary/40 hover:bg-surface-2"
+                        >
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-text">
+                              {a.kind === "join_requests" ? `${a.cnt} ${a.label}` : a.label}
+                            </p>
+                            <p className="truncate text-xs text-subtle">{a.title}</p>
+                          </div>
+                          <ArrowRight className="h-4 w-4 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
+
+            {/* Active projects */}
             <section className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
               <h2 className="border-b-2 border-primary/15 pb-3 font-display text-lg font-semibold text-text">
-                Active projects{active.length > 0 && <span className="text-subtle font-normal"> · {active.length}</span>}
+                Active projects{active.length > 0 && <span className="font-normal text-subtle"> · {active.length}</span>}
               </h2>
               {active.length === 0 ? (
                 <div className="mt-4 rounded-xl border border-dashed border-border p-6 text-center">
@@ -149,40 +215,89 @@ export default async function DashboardPage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
-              <h2 className="font-display text-lg font-semibold text-text">Recent activity</h2>
-              {notifs.length === 0 ? (
-                <p className="mt-4 text-muted">Nothing yet. We&rsquo;ll let you know when an action is due.</p>
-              ) : (
-                <ul className="mt-4 space-y-3">
-                  {notifs.map((n) => (
-                    <li key={n.id} className="flex items-start gap-3">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
-                      <div>
-                        <p className="text-sm text-text">{n.payload?.message ?? n.event}</p>
-                        <p className="text-xs text-subtle">
-                          {new Date(n.created_at).toLocaleString()}
+            {/* Discover */}
+            {discover.length > 0 && (
+              <section className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
+                <h2 className="border-b-2 border-primary/15 pb-3 font-display text-lg font-semibold text-text">
+                  Join a project near you
+                </h2>
+                <ul className="mt-4 space-y-2.5">
+                  {discover.map((d) => (
+                    <li key={d.id} className="flex items-center gap-3 rounded-xl border border-border p-3.5">
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/requests/${d.id}`} className="truncate text-sm font-medium text-text hover:text-primary">
+                          {d.title}
+                        </Link>
+                        <p className="mt-0.5 flex items-center gap-2 truncate text-xs text-subtle">
+                          <span>{d.cohort_name}</span>
+                          <span className="inline-flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {d.participants}/{d.min_size}
+                          </span>
+                          <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-muted">
+                            {STAGE_LABELS[d.status]}
+                          </span>
                         </p>
                       </div>
+                      <form action={joinRequestAction}>
+                        <input type="hidden" name="requestId" value={d.id} />
+                        <button
+                          type="submit"
+                          className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover"
+                        >
+                          {d.join_policy === "approval" ? "Request" : "Join"}
+                        </button>
+                      </form>
                     </li>
                   ))}
                 </ul>
-              )}
-            </section>
+              </section>
+            )}
           </div>
 
           {/* Side column */}
           <div className="space-y-6">
-            <section className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
-              <h2 className="text-sm font-medium text-muted">Tokens</h2>
-              <div className="mt-1 flex items-end gap-2">
-                <span className="font-display text-4xl font-semibold text-primary">{tokens.balance}</span>
-                <span className="mb-1 rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-text">{tokens.tier}</span>
+            {/* Status & tokens */}
+            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-medium text-muted">Your status</h2>
+                <Link href="/account" className="text-xs font-medium text-primary hover:underline">Details</Link>
               </div>
-              <p className="mt-1 text-xs text-subtle">{tokens.lifetimeEarned} earned all-time</p>
+              <div className="mt-1.5 flex items-end gap-2">
+                <span className="font-display text-3xl font-semibold text-primary">{tokens.balance}</span>
+                <span className="mb-1 text-sm text-muted">tokens</span>
+                <span className="mb-1 ml-auto rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{tp.tier}</span>
+              </div>
+              {tp.next ? (
+                <div className="mt-3">
+                  <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${tp.pct}%` }} />
+                  </div>
+                  <p className="mt-1.5 text-xs text-subtle">
+                    <span className="font-medium text-muted">{tp.toNext}</span> more to reach{" "}
+                    <span className="font-medium text-text">{tp.next}</span>
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-subtle">Top tier reached — you&rsquo;re a community Pillar.</p>
+              )}
+              <div className="mt-4 space-y-1.5 border-t border-border pt-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">Earn more</p>
+                <EarnRow label="Refer a neighbor" amount={EARN_RULES.refer_neighbor} />
+                <EarnRow label="Complete a project" amount={EARN_RULES.complete_project} />
+                <EarnRow label="Leave a rating" amount={EARN_RULES.leave_rating} />
+              </div>
             </section>
 
-            <section className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
+            {/* Invite / referral */}
+            <InviteNeighborsCard
+              handle={primaryCohort?.handle ?? null}
+              cohortName={primaryCohort?.name ?? null}
+              reward={EARN_RULES.refer_neighbor}
+            />
+
+            {/* Your cohorts */}
+            <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-medium text-muted">Your cohorts</h2>
                 <Link href="/cohorts" className="text-xs font-medium text-primary hover:underline">All</Link>
@@ -218,5 +333,17 @@ export default async function DashboardPage() {
         </div>
       </main>
     </AppShell>
+  );
+}
+
+function EarnRow({ label, amount }: { label: string; amount: number }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="flex items-center gap-1.5 text-muted">
+        <CheckCircle2 className="h-3.5 w-3.5 text-primary/70" />
+        {label}
+      </span>
+      <span className="font-semibold text-primary">+{amount}</span>
+    </div>
   );
 }

@@ -256,6 +256,30 @@ export interface ProjectCard {
   my_status: "joined" | "requested" | "left" | "declined" | null;
 }
 
+export interface ActionItem {
+  request_id: string | null;
+  title: string;
+  cohort_handle: string;
+  status: RequestStatus;
+  kind: "scope" | "vote" | "decide" | "contract" | "pay" | "join_requests";
+  label: string;
+  cnt: number;
+}
+
+export interface DiscoverProject {
+  id: string;
+  title: string;
+  category: string | null;
+  status: RequestStatus;
+  project_type: "service" | "group_buy";
+  cohort_handle: string;
+  cohort_name: string;
+  participants: number;
+  min_size: number;
+  join_policy: "auto" | "approval";
+  target_date: string | null;
+}
+
 export interface MyActiveProject {
   id: string;
   title: string;

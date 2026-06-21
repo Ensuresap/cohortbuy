@@ -17,6 +17,8 @@ import {
   type ServiceRequest,
   type ProjectCard,
   type MyActiveProject,
+  type ActionItem,
+  type DiscoverProject,
   type Participant,
   type ParticipantFeedItem,
   type JoinRequestItem,
@@ -72,6 +74,24 @@ export async function listMyActiveProjects(ctx: Ctx): Promise<Result<MyActivePro
   const { data, error } = await repo.myActiveProjects(ctx.db);
   if (error) return err("db_error", error.message);
   return ok((data ?? []) as MyActiveProject[]);
+}
+
+/** "Your turn" todos: stage-specific personal actions + join requests to review. */
+export async function listMyActionItems(ctx: Ctx): Promise<Result<ActionItem[]>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.myActionItems(ctx.db);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as ActionItem[]);
+}
+
+/** Joinable projects in my cohorts I haven't joined yet (Discover). */
+export async function listDiscoverProjects(ctx: Ctx): Promise<Result<DiscoverProject[]>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.discoverableProjects(ctx.db);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as DiscoverProject[]);
 }
 
 /** Projects the signed-in user participates in (with cohort + stage). */

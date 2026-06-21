@@ -28,6 +28,14 @@ export function myActiveProjects(db: SupabaseClient) {
   return db.rpc("my_active_projects");
 }
 
+export function myActionItems(db: SupabaseClient) {
+  return db.rpc("my_action_items");
+}
+
+export function discoverableProjects(db: SupabaseClient) {
+  return db.rpc("discoverable_projects");
+}
+
 export function listByCohort(db: SupabaseClient, cohortId: string) {
   return db
     .from("service_requests")

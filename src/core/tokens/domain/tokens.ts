@@ -59,3 +59,27 @@ export function statusTier(lifetimeEarned: number): string {
   for (const t of STATUS_TIERS) if (lifetimeEarned >= t.min) name = t.name;
   return name;
 }
+
+/** Current tier + progress toward the next one (for a status/progress widget). */
+export function tierProgress(lifetimeEarned: number): {
+  tier: string;
+  next: string | null;
+  toNext: number;
+  pct: number;
+} {
+  let i = 0;
+  for (let k = 0; k < STATUS_TIERS.length; k++) {
+    if (lifetimeEarned >= STATUS_TIERS[k].min) i = k;
+  }
+  const current = STATUS_TIERS[i];
+  const next = STATUS_TIERS[i + 1] ?? null;
+  if (!next) return { tier: current.name, next: null, toNext: 0, pct: 100 };
+  const span = next.min - current.min;
+  const done = lifetimeEarned - current.min;
+  return {
+    tier: current.name,
+    next: next.name,
+    toNext: Math.max(0, next.min - lifetimeEarned),
+    pct: Math.min(100, Math.max(0, Math.round((done / span) * 100))),
+  };
+}

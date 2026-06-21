@@ -161,6 +161,7 @@ export async function joinRequestAction(formData: FormData) {
   const requestId = String(formData.get("requestId") ?? "");
   await joinServiceRequest(ctx, { requestId });
   revalidatePath(`/requests/${requestId}`);
+  revalidatePath("/dashboard");
 }
 
 export async function announceProjectAction(formData: FormData) {
