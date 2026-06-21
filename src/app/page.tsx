@@ -117,6 +117,9 @@ export default async function Home() {
             <a href="#why" className="hover:text-primary">
               Why CohortBuy
             </a>
+            <a href="/guides" className="hover:text-primary">
+              Guides
+            </a>
             <a href="/vendors" className="hover:text-primary">
               For vendors
             </a>

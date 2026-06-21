@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "CohortBuy — Neighbors pool. Prices drop.",
   description:
     "CohortBuy helps neighbors band together on home projects. An AI agent forms the group, gathers quotes, and shares the cost — all from a chat. Join the waitlist.",
