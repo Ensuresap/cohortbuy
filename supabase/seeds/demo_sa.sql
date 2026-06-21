@@ -222,6 +222,15 @@ begin
   insert into public.request_comments (request_id, user_id, body) values
    (v_p, v_maya, 'Looks fantastic — thanks Tom for running this!');
 
+  -- benchmark ranges (typical solo price) so cards show value + savings vs the
+  -- group-agreed amount. benchmark_high is set above the agreed price on purpose.
+  update public.service_requests set benchmark_low_cents = 18000,   benchmark_high_cents = 28000,   benchmark_currency = 'USD', benchmark_basis = 'Typical single-home gutter clean in this area.'            where cohort_id = v_cohort and title = '[DEMO] Block gutter cleaning';
+  update public.service_requests set benchmark_low_cents = 430000,  benchmark_high_cents = 520000,  benchmark_currency = 'USD', benchmark_basis = 'Solo cedar privacy-fence replacement, per home.'             where cohort_id = v_cohort and title = '[DEMO] Backyard fence replacement';
+  update public.service_requests set benchmark_low_cents = 2900000, benchmark_high_cents = 3300000, benchmark_currency = 'USD', benchmark_basis = 'Single-home rooftop solar install before group discount.'    where cohort_id = v_cohort and title = '[DEMO] Rooftop solar group install';
+  update public.service_requests set benchmark_low_cents = 210000,  benchmark_high_cents = 240000,  benchmark_currency = 'USD', benchmark_basis = 'Standalone driveway reseal, one mobilisation.'              where cohort_id = v_cohort and title = '[DEMO] Driveway resealing';
+  update public.service_requests set benchmark_low_cents = 300000,  benchmark_high_cents = 340000,  benchmark_currency = 'USD', benchmark_basis = 'Single-home tree trim + haul before storm season.'          where cohort_id = v_cohort and title = '[DEMO] Street tree trimming';
+  update public.service_requests set benchmark_low_cents = 190000,  benchmark_high_cents = 220000,  benchmark_currency = 'USD', benchmark_basis = 'Separate holiday-light install + removal, per home.'         where cohort_id = v_cohort and title = '[DEMO] Holiday lighting install';
+
   -- target dates (relative to today) for the hero / stat strip
   update public.service_requests set target_date = current_date + 28 where cohort_id = v_cohort and title = '[DEMO] Block gutter cleaning';
   update public.service_requests set target_date = current_date + 21 where cohort_id = v_cohort and title = '[DEMO] Backyard fence replacement';

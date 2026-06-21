@@ -26,9 +26,10 @@ import {
 import AppShell from "@/components/app/AppShell";
 import { Button } from "@/components/ui/Button";
 import InviteNeighborsCard from "@/components/app/InviteNeighborsCard";
+import CommunityWinsTicker from "@/components/app/CommunityWinsTicker";
 import {
   MessageSquare, Sparkles, ListChecks, Vote, Trophy, FileSignature,
-  CreditCard, UserPlus, ArrowRight, Users, CheckCircle2, Coins, PartyPopper, TrendingDown,
+  CreditCard, UserPlus, ArrowRight, Users, CheckCircle2, Coins, TrendingDown,
 } from "lucide-react";
 
 type CohortRow = { status: string; access_level: string; cohort: { id: string; handle: string; name: string } | null };
@@ -125,47 +126,8 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {/* Community wins — social proof / gamification */}
-        {wins.length > 0 && (
-          <section className="mt-6 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 shadow-soft">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <PartyPopper className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-lg font-semibold text-text">Community wins</h2>
-              {totalSaved > 0 && (
-                <span className="text-sm text-muted">
-                  Neighbors have saved{" "}
-                  <span className="font-semibold text-primary">{fmtMoney(totalSaved)}</span> together
-                </span>
-              )}
-            </div>
-            <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-              {wins.map((w) => (
-                <Link
-                  key={w.id}
-                  href={`/requests/${w.id}`}
-                  className="flex w-60 shrink-0 flex-col rounded-xl border border-border bg-surface p-3 transition hover:border-primary/40"
-                >
-                  {w.saved_cents > 0 ? (
-                    <span className="flex items-center gap-1 text-sm font-semibold text-primary">
-                      <TrendingDown className="h-4 w-4" />
-                      Saved ~{fmtMoney(w.saved_cents, w.currency)}
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-sm font-semibold text-primary">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Completed
-                    </span>
-                  )}
-                  <span className="mt-1 truncate text-sm font-medium text-text">{w.title}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-subtle">
-                    {w.cohort_name}
-                    <span className="inline-flex items-center gap-0.5"><Users className="h-3 w-3" />{w.participants}</span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Community wins — single-line auto-scroll ticker */}
+        <CommunityWinsTicker wins={wins} totalSaved={totalSaved} />
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Main column */}
