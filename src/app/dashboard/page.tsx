@@ -26,6 +26,7 @@ import {
 import AppShell from "@/components/app/AppShell";
 import InviteNeighborsCard from "@/components/app/InviteNeighborsCard";
 import CommunityWinsTicker from "@/components/app/CommunityWinsTicker";
+import DashboardPromoSpot from "@/components/app/DashboardPromoSpot";
 import {
   ListChecks, Vote, Trophy, FileSignature,
   CreditCard, UserPlus, ArrowRight, Users, Coins, TrendingDown,
@@ -345,6 +346,8 @@ export default async function DashboardPage() {
                 <Plus className="h-4 w-4" /> Start a new cohort
               </Link>
             </section>
+
+            <DashboardPromoSpot />
           </div>
         </div>
       </main>

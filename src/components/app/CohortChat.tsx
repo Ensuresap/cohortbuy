@@ -17,6 +17,7 @@ const QUICK = [
 ];
 
 export default function CohortChat() {
+  const [hideFab, setHideFab] = useState(false);
   const [open, setOpen] = useState(false);
   const [teaser, setTeaser] = useState(false);
   const [dismissed, setDismissed] = useState(true);
@@ -26,11 +27,41 @@ export default function CohortChat() {
   const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    function hideFabLauncher() {
+      setHideFab(true);
+    }
+    function showFabLauncher() {
+      setHideFab(false);
+    }
+    window.addEventListener("cohortbuy:hide-chat-fab", hideFabLauncher);
+    window.addEventListener("cohortbuy:show-chat-fab", showFabLauncher);
+    return () => {
+      window.removeEventListener("cohortbuy:hide-chat-fab", hideFabLauncher);
+      window.removeEventListener("cohortbuy:show-chat-fab", showFabLauncher);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hideFab) return;
     const done = typeof window !== "undefined" && localStorage.getItem("cb-chat-seen");
     if (done) return;
     setDismissed(false);
     const t = setTimeout(() => setTeaser(true), 6000);
     return () => clearTimeout(t);
+  }, [hideFab]);
+
+  useEffect(() => {
+    function onOpen() {
+      setOpen(true);
+      setTeaser(false);
+      try {
+        localStorage.setItem("cb-chat-seen", "1");
+      } catch {
+        /* ignore */
+      }
+    }
+    window.addEventListener("cohortbuy:open-chat", onOpen);
+    return () => window.removeEventListener("cohortbuy:open-chat", onOpen);
   }, []);
 
   useEffect(() => {
@@ -70,9 +101,9 @@ export default function CohortChat() {
 
   return (
     <>
-      {/* Launcher */}
-      {!open && (
-        <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2">
+      {/* Launcher — hidden while dashboard promo owns the entry point */}
+      {!open && !hideFab && (
+        <div className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-end gap-2 sm:bottom-6 sm:right-6">
           {teaser && !dismissed && (
             <div className="max-w-[16rem] rounded-2xl border border-border bg-surface p-3 text-sm text-text shadow-lg">
               <button onClick={() => { setTeaser(false); setDismissed(true); markSeen(); }} className="float-right -mt-1 text-subtle hover:text-text" aria-label="Dismiss">
@@ -94,7 +125,7 @@ export default function CohortChat() {
 
       {/* Panel */}
       {open && (
-        <div className="fixed bottom-5 right-5 z-50 flex h-[32rem] max-h-[80vh] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
+        <div className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex h-[32rem] max-h-[70vh] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl sm:bottom-6 sm:right-6">
           <div className="flex items-center justify-between border-b border-border bg-primary/5 px-4 py-3">
             <span className="flex items-center gap-2 font-medium text-text">
               <Sparkles className="h-4 w-4 text-primary" /> CohortBuy helper

@@ -5,6 +5,12 @@ import CohortChat from "@/components/app/CohortChat";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "CohortBuy" },
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/favicon-32.png", sizes: "32x32", type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
   title: "CohortBuy — Neighbors pool. Prices drop.",
   description:
     "CohortBuy helps neighbors band together on home projects. An AI agent forms the group, gathers quotes, and shares the cost — all from a chat. Join the waitlist.",
@@ -17,6 +23,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#FBF7F0" },
     { media: "(prefers-color-scheme: dark)", color: "#101614" },

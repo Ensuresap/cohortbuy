@@ -54,6 +54,26 @@ const config: Config = {
       minWidth: {
         touch: "44px",
       },
+      keyframes: {
+        "promo-bob": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-3px)" },
+        },
+        "promo-pop": {
+          "0%, 100%": {
+            transform: "scale(1)",
+            boxShadow: "0 10px 25px rgb(var(--shadow-color) / 0.15)",
+          },
+          "50%": {
+            transform: "scale(1.06)",
+            boxShadow: "0 12px 28px rgb(var(--primary) / 0.35)",
+          },
+        },
+      },
+      animation: {
+        "promo-bob": "promo-bob 3s ease-in-out infinite",
+        "promo-pop": "promo-pop 2.4s ease-in-out infinite",
+      },
     },
   },
   plugins: [],

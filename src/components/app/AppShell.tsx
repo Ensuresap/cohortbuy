@@ -5,6 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import UserMenu from "./UserMenu";
 import Presence from "./Presence";
 import HeaderSearch from "./HeaderSearch";
+import MobileTabBar from "./MobileTabBar";
 
 function initialsFrom(name: string): string {
   return (
@@ -36,8 +37,8 @@ export default async function AppShell({ children }: { children: React.ReactNode
   return (
     <div className="min-h-screen">
       <Presence />
-      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-3">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/80 pt-[env(safe-area-inset-top)] backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 sm:px-6">
           <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
             <svg viewBox="0 0 32 32" className="h-7 w-7" aria-hidden="true">
               <circle cx="16" cy="16" r="15" fill="#1F6F5C" />
@@ -73,7 +74,8 @@ export default async function AppShell({ children }: { children: React.ReactNode
           </div>
         </div>
       </header>
-      {children}
+      <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0">{children}</div>
+      <MobileTabBar />
     </div>
   );
 }
