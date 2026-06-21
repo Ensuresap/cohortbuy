@@ -30,6 +30,7 @@ import CommunityWinsTicker from "@/components/app/CommunityWinsTicker";
 import {
   ListChecks, Vote, Trophy, FileSignature,
   CreditCard, UserPlus, ArrowRight, Users, Coins, TrendingDown,
+  Bell, LayoutGrid, type LucideIcon,
 } from "lucide-react";
 
 type CohortRow = { status: string; access_level: string; cohort: { id: string; handle: string; name: string } | null };
@@ -134,12 +135,13 @@ export default async function DashboardPage() {
 
         {/* Metric strip */}
         <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Tile label="Needs you" value={actions.length} accent={actions.length > 0} />
-          <Tile label="Active projects" value={active.length} />
-          <Tile label="Cohorts" value={cohorts.length} />
+          <Tile label="Needs you" value={actions.length} icon={Bell} accent={actions.length > 0} />
+          <Tile label="Active projects" value={active.length} icon={LayoutGrid} />
+          <Tile label="Cohorts" value={cohorts.length} icon={Users} />
           <Tile
             label={`Tokens · ${tp.tier}`}
             value={tokens.balance}
+            icon={Coins}
             progress={tp.next ? tp.pct : 100}
             sub={tp.next ? `${tp.toNext} to ${tp.next}` : "Top tier"}
           />
@@ -201,12 +203,12 @@ export default async function DashboardPage() {
                   </Link>
                 </div>
               ) : (
-                <ul className="mt-4 space-y-3">
+                <ul className="mt-2 divide-y divide-border">
                   {active.map((p) => (
                     <li key={p.id}>
                       <Link
                         href={`/requests/${p.id}`}
-                        className="block rounded-xl border border-border p-4 transition hover:bg-surface-2"
+                        className="-mx-2 block rounded-lg px-2 py-4 transition hover:bg-surface-2"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
@@ -267,9 +269,9 @@ export default async function DashboardPage() {
                 <h2 className="border-b-2 border-primary/15 pb-3 font-display text-lg font-semibold text-text">
                   Join a project near you
                 </h2>
-                <ul className="mt-4 space-y-2.5">
+                <ul className="mt-2 divide-y divide-border">
                   {discover.map((d) => (
-                    <li key={d.id} className="flex items-center gap-3 rounded-xl border border-border p-3.5">
+                    <li key={d.id} className="flex items-center gap-3 py-3.5">
                       <div className="min-w-0 flex-1">
                         <Link href={`/requests/${d.id}`} className="truncate text-sm font-medium text-text hover:text-primary">
                           {d.title}
@@ -362,17 +364,25 @@ export default async function DashboardPage() {
   );
 }
 
-function Tile({ label, value, sub, accent, progress }: { label: string; value: number; sub?: string; accent?: boolean; progress?: number }) {
+function Tile({ label, value, sub, accent, progress, icon: Icon }: { label: string; value: number; sub?: string; accent?: boolean; progress?: number; icon: LucideIcon }) {
   return (
-    <div className="rounded-2xl bg-surface-2 p-4 sm:p-5">
-      <p className="truncate text-[13px] text-subtle">{label}</p>
-      <p className={"mt-1 font-display text-3xl font-semibold " + (accent ? "text-primary" : "text-text")}>{value}</p>
+    <div className="rounded-2xl bg-surface-2 p-4">
+      <div className="flex items-center justify-between">
+        <p className="truncate text-[13px] text-subtle">{label}</p>
+        <Icon className={"h-4 w-4 " + (accent ? "text-primary" : "text-subtle")} />
+      </div>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className={"font-display text-2xl font-semibold " + (accent ? "text-primary" : "text-text")}>{value}</span>
+        {sub && progress == null && <span className="text-xs text-subtle">{sub}</span>}
+      </div>
       {progress != null && (
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
-        </div>
+        <>
+          <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-surface">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+          </div>
+          {sub && <p className="mt-1.5 truncate text-xs text-subtle">{sub}</p>}
+        </>
       )}
-      {sub && <p className="mt-1.5 truncate text-xs text-subtle">{sub}</p>}
     </div>
   );
 }
