@@ -103,6 +103,12 @@ export default async function DashboardPage() {
   const tp = tierProgress(tokens.lifetimeEarned);
   const primaryCohort = cohorts.find((c) => c.cohort)?.cohort ?? null;
 
+  // Members who only participate (don't coordinate a project or manage a cohort)
+  // get a calmer, focused dashboard — they're nudge-driven, not power users.
+  const coordinates = active.some((p) => p.role !== "participant");
+  const manages = cohorts.some((c) => c.access_level && c.access_level !== "member");
+  const lean = !coordinates && !manages;
+
   return (
     <AppShell>
       <main className="mx-auto w-full max-w-5xl px-6 py-10">
@@ -126,8 +132,8 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {/* Community wins — single-line auto-scroll ticker */}
-        <CommunityWinsTicker wins={wins} totalSaved={totalSaved} />
+        {/* Community wins — single-line auto-scroll ticker (coordinators/managers only) */}
+        {!lean && <CommunityWinsTicker wins={wins} totalSaved={totalSaved} />}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Main column */}
@@ -308,20 +314,34 @@ export default async function DashboardPage() {
               ) : (
                 <p className="mt-3 text-xs text-subtle">Top tier reached — you&rsquo;re a community Pillar.</p>
               )}
-              <div className="mt-4 space-y-1.5 border-t border-border pt-3">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">Earn more</p>
-                <EarnRow label="Refer a neighbor" amount={EARN_RULES.refer_neighbor} />
-                <EarnRow label="Complete a project" amount={EARN_RULES.complete_project} />
-                <EarnRow label="Leave a rating" amount={EARN_RULES.leave_rating} />
-              </div>
+              {!lean && (
+                <div className="mt-4 space-y-1.5 border-t border-border pt-3">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">Earn more</p>
+                  <EarnRow label="Refer a neighbor" amount={EARN_RULES.refer_neighbor} />
+                  <EarnRow label="Complete a project" amount={EARN_RULES.complete_project} />
+                  <EarnRow label="Leave a rating" amount={EARN_RULES.leave_rating} />
+                </div>
+              )}
             </section>
 
-            {/* Invite / referral */}
-            <InviteNeighborsCard
-              handle={primaryCohort?.handle ?? null}
-              cohortName={primaryCohort?.name ?? null}
-              reward={EARN_RULES.refer_neighbor}
-            />
+            {/* Invite / referral — fuller card for coordinators; a slim line for members */}
+            {lean ? (
+              primaryCohort && (
+                <Link
+                  href={`/${primaryCohort.handle}`}
+                  className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-surface px-5 py-3 text-sm shadow-soft hover:bg-surface-2"
+                >
+                  <span className="flex items-center gap-2 text-muted"><UserPlus className="h-4 w-4 text-primary" /> Invite a neighbor</span>
+                  <span className="text-xs font-medium text-primary">+{EARN_RULES.refer_neighbor}</span>
+                </Link>
+              )
+            ) : (
+              <InviteNeighborsCard
+                handle={primaryCohort?.handle ?? null}
+                cohortName={primaryCohort?.name ?? null}
+                reward={EARN_RULES.refer_neighbor}
+              />
+            )}
 
             {/* Your cohorts */}
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
