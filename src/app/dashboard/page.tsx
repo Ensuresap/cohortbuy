@@ -24,13 +24,12 @@ import {
   type CommunityWin,
 } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
-import { Button } from "@/components/ui/Button";
 import InviteNeighborsCard from "@/components/app/InviteNeighborsCard";
 import CommunityWinsTicker from "@/components/app/CommunityWinsTicker";
 import {
   ListChecks, Vote, Trophy, FileSignature,
   CreditCard, UserPlus, ArrowRight, Users, Coins, TrendingDown,
-  Bell, LayoutGrid, type LucideIcon,
+  Bell, LayoutGrid, Plus, type LucideIcon,
 } from "lucide-react";
 
 type CohortRow = { status: string; access_level: string; cohort: { id: string; handle: string; name: string } | null };
@@ -328,35 +327,29 @@ export default async function DashboardPage() {
             <section className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-medium text-muted">Your cohorts</h2>
-                <Link href="/cohorts" className="text-xs font-medium text-primary hover:underline">All</Link>
+                <Link href="/cohorts" className="text-xs font-medium text-primary hover:underline">Browse all</Link>
               </div>
               {cohorts.length === 0 ? (
-                <p className="mt-3 text-sm text-muted">None yet.</p>
+                <p className="mt-3 text-sm text-muted">You haven&rsquo;t joined a cohort yet.</p>
               ) : (
-                <ul className="mt-3 space-y-2">
+                <ul className="mt-3 space-y-1">
                   {cohorts.slice(0, 5).map((c) => (
                     <li key={c.cohort?.id ?? Math.random()}>
                       <Link
                         href={`/${c.cohort?.handle}`}
-                        className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-surface-2"
+                        className="-mx-2 flex items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-surface-2"
                       >
                         <span className="text-text">{c.cohort?.name}</span>
-                        <span className="text-xs text-subtle">{c.access_level}</span>
+                        <span className="text-xs text-subtle capitalize">{c.access_level}</span>
                       </Link>
                     </li>
                   ))}
                 </ul>
               )}
+              <Link href="/cohorts/new" className="mt-3 flex items-center gap-1.5 border-t border-border pt-3 text-sm font-medium text-primary hover:underline">
+                <Plus className="h-4 w-4" /> Start a new cohort
+              </Link>
             </section>
-
-            <div className="space-y-2">
-              <Link href="/cohorts/new" className="block">
-                <Button className="w-full">Create a cohort</Button>
-              </Link>
-              <Link href="/cohorts" className="block">
-                <Button variant="secondary" className="w-full">Browse cohorts</Button>
-              </Link>
-            </div>
           </div>
         </div>
       </main>
