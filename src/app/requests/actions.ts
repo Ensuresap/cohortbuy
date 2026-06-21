@@ -39,6 +39,12 @@ import {
   approveShortlist,
 } from "@/core/research/services/researchService";
 import { estimateBenchmark, estimateProductPrice, suggestVendors, draftRfq, recommendQuote, answerDiscussion } from "@/core/research/services/researchAiService";
+import {
+  setVariant,
+  deleteVariant,
+  setMyOrder,
+  generateShares as generateGroupBuyShares,
+} from "@/core/groupbuy/services/groupbuyService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
 import { createPost } from "@/core/posts/services/postService";
 
@@ -294,7 +300,45 @@ export async function recordContractAction(formData: FormData) {
 export async function generateCostSharesAction(formData: FormData) {
   const ctx = await getCtx();
   const requestId = String(formData.get("requestId") ?? "");
-  await generateCostShares(ctx, { requestId });
+  const r = await getRequest(ctx, { requestId });
+  if (r.ok && r.data?.project_type === "group_buy") {
+    await generateGroupBuyShares(ctx, requestId); // bill qty × unit price per member
+  } else {
+    await generateCostShares(ctx, { requestId }); // even split for services
+  }
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function setVariantAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  const id = String(formData.get("id") ?? "");
+  const priceStr = String(formData.get("price") ?? "").trim();
+  await setVariant(ctx, {
+    requestId,
+    id: id || undefined,
+    label: String(formData.get("label") ?? ""),
+    specs: String(formData.get("specs") ?? ""),
+    priceCents: priceStr ? Math.round(parseFloat(priceStr) * 100) : null,
+    currency: String(formData.get("currency") ?? "USD") || "USD",
+  });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function deleteVariantAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await deleteVariant(ctx, { id: String(formData.get("id") ?? "") });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function setMyOrderAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await setMyOrder(ctx, {
+    variantId: String(formData.get("variantId") ?? ""),
+    qty: String(formData.get("qty") ?? "0"),
+  });
   revalidatePath(`/requests/${requestId}`);
 }
 

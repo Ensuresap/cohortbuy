@@ -39,6 +39,7 @@ import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { listScope } from "@/core/scope/services/scopeService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
 import { listCandidates } from "@/core/research/services/researchService";
+import { getDeal } from "@/core/groupbuy/services/groupbuyService";
 import {
   CANDIDATE_STATUS_LABELS,
   CANDIDATE_SOURCE_LABELS,
@@ -84,6 +85,9 @@ import {
   approveShortlistAction,
   aiEstimateBenchmarkAction,
   aiEstimateProductPriceAction,
+  setVariantAction,
+  deleteVariantAction,
+  setMyOrderAction,
   aiSuggestVendorsAction,
   respondJoinAction,
   voteAction,
@@ -179,6 +183,12 @@ export default async function RequestPage({
   const comments = commentsRes.ok ? commentsRes.data : [];
   const shares = sharesRes.ok ? sharesRes.data : [];
   const candidates = candRes.ok ? candRes.data : [];
+
+  const dealRes = req.project_type === "group_buy" ? await getDeal(ctx, params.id) : null;
+  const deal = dealRes && dealRes.ok ? dealRes.data : null;
+  const myOrderTotal = deal
+    ? deal.variants.reduce((s, v) => s + (deal.myOrders[v.id] ?? 0) * (v.unit_price_cents ?? 0), 0)
+    : 0;
 
   const isParticipant = participants.some((p) => p.user_id === user.id);
   const isCoordinator = req.created_by === user.id;
@@ -563,34 +573,113 @@ export default async function RequestPage({
                   )}
                 </div>
 
-                {/* 3 · Negotiated group price */}
-                <div className="mt-3 rounded-xl border border-primary/15 bg-primary/5 p-4">
-                  <p className="text-sm font-medium text-text">Negotiated group price</p>
-                  {req.agreed_amount_cents != null ? (
-                    <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                      <p className="font-display text-xl font-semibold text-primary">
-                        {fmt(req.agreed_amount_cents, req.agreed_currency ?? "USD")} <span className="text-sm font-normal text-subtle">/ unit</span>
+                {/* 3 · Options & pricing (variants) */}
+                {deal && (
+                  <div className="mt-3 rounded-xl border border-border p-4">
+                    <p className="text-sm font-medium text-text">Options &amp; pricing</p>
+                    {deal.variants.length === 0 ? (
+                      <p className="mt-1 text-sm text-muted">
+                        {at("research") && isCoordinator
+                          ? "Add at least one option (e.g. a config or size) with its negotiated unit price."
+                          : "No options listed yet."}
                       </p>
-                      {req.benchmark_high_cents != null && req.benchmark_high_cents > req.agreed_amount_cents && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                          <TrendingDown className="h-3 w-3" /> save ~{fmt(req.benchmark_high_cents - req.agreed_amount_cents, req.agreed_currency ?? "USD")} vs retail
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-sm text-muted">Not set yet — enter the price you secured for the group.</p>
-                  )}
-                  {at("research") && isCoordinator && (
-                    <form action={setAgreedAmountAction} className="mt-3 space-y-2">
-                      <input type="hidden" name="requestId" value={req.id} />
-                      <div className="grid grid-cols-3 gap-2">
-                        <input name="amount" type="number" step="0.01" min="0" required placeholder="Price per unit" className={`${fieldClass} col-span-2`} defaultValue={req.agreed_amount_cents != null ? (req.agreed_amount_cents / 100).toFixed(2) : ""} />
-                        <input name="currency" defaultValue={req.agreed_currency ?? "USD"} maxLength={3} className={fieldClass} />
+                    ) : (
+                      <ul className="mt-2 space-y-2">
+                        {deal.variants.map((v) => {
+                          const myQty = deal.myOrders[v.id] ?? 0;
+                          const orderingOpen = (at("forming") || at("research")) && !req.locked;
+                          return (
+                            <li key={v.id} className="rounded-lg border border-border p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="font-medium text-text">{v.label}</p>
+                                  {v.specs && <p className="text-xs text-muted">{v.specs}</p>}
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <p className="font-semibold text-primary">
+                                    {v.unit_price_cents != null ? `${fmt(v.unit_price_cents, v.currency)}` : "price TBD"}
+                                    {v.unit_price_cents != null && <span className="text-xs font-normal text-subtle"> /unit</span>}
+                                  </p>
+                                  <p className="text-[11px] text-subtle">{v.committed_qty} committed · {fmt(v.line_total_cents, v.currency)}</p>
+                                </div>
+                              </div>
+                              {orderingOpen && isParticipant && v.unit_price_cents != null && (
+                                <form action={setMyOrderAction} className="mt-2 flex flex-wrap items-center gap-2">
+                                  <input type="hidden" name="requestId" value={req.id} />
+                                  <input type="hidden" name="variantId" value={v.id} />
+                                  <label className="text-xs text-subtle">Your qty</label>
+                                  <input name="qty" type="number" min="0" defaultValue={myQty} className="h-8 w-20 rounded-lg border border-border bg-surface px-2 text-sm text-text outline-none focus:ring-2 focus:ring-ring" />
+                                  <button type="submit" className="h-8 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary-hover">Save</button>
+                                  {myQty > 0 && <span className="text-xs font-medium text-primary">= {fmt(myQty * v.unit_price_cents, v.currency)}</span>}
+                                </form>
+                              )}
+                              {at("research") && isCoordinator && (
+                                <details className="mt-2 text-xs">
+                                  <summary className="cursor-pointer font-medium text-primary hover:underline">Edit option</summary>
+                                  <form action={setVariantAction} className="mt-2 space-y-2 rounded-lg border border-border p-3">
+                                    <input type="hidden" name="requestId" value={req.id} />
+                                    <input type="hidden" name="id" value={v.id} />
+                                    <input name="label" required defaultValue={v.label} placeholder="Option label" className={fieldClass} />
+                                    <input name="specs" defaultValue={v.specs ?? ""} placeholder="Specs (optional)" className={fieldClass} />
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <input name="price" type="number" step="0.01" min="0" defaultValue={v.unit_price_cents != null ? (v.unit_price_cents / 100).toFixed(2) : ""} placeholder="Unit price" className={`${fieldClass} col-span-2`} />
+                                      <input name="currency" defaultValue={v.currency} maxLength={3} className={fieldClass} />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <Button type="submit" size="md">Save</Button>
+                                    </div>
+                                  </form>
+                                  <form action={deleteVariantAction} className="mt-1">
+                                    <input type="hidden" name="requestId" value={req.id} />
+                                    <input type="hidden" name="id" value={v.id} />
+                                    <button type="submit" className="text-accent hover:underline">Delete option</button>
+                                  </form>
+                                </details>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                    {at("research") && isCoordinator && (
+                      <details className="mt-2 text-sm">
+                        <summary className="cursor-pointer font-medium text-primary hover:underline">+ Add option</summary>
+                        <form action={setVariantAction} className="mt-2 space-y-2 rounded-lg border border-border p-3">
+                          <input type="hidden" name="requestId" value={req.id} />
+                          <input name="label" required placeholder="Option label, e.g. '16GB / 512GB'" className={fieldClass} />
+                          <input name="specs" placeholder="Specs (optional)" className={fieldClass} />
+                          <div className="grid grid-cols-3 gap-2">
+                            <input name="price" type="number" step="0.01" min="0" placeholder="Negotiated unit price" className={`${fieldClass} col-span-2`} />
+                            <input name="currency" defaultValue="USD" maxLength={3} className={fieldClass} />
+                          </div>
+                          <Button type="submit" size="md">Add option</Button>
+                        </form>
+                      </details>
+                    )}
+                  </div>
+                )}
+
+                {/* 4 · Your order + deal totals */}
+                {deal && deal.variants.length > 0 && (
+                  <div className="mt-3 rounded-xl border border-primary/15 bg-primary/5 p-4">
+                    {isParticipant && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-subtle">Your order</span>
+                        <span className="font-semibold text-text">{myOrderTotal > 0 ? fmt(myOrderTotal, deal.currency) : "—"}</span>
                       </div>
-                      <Button type="submit">Save price</Button>
-                    </form>
-                  )}
-                </div>
+                    )}
+                    <div className="mt-1 flex items-end justify-between">
+                      <span className="text-sm text-subtle">Group total · {deal.buyers} {deal.buyers === 1 ? "buyer" : "buyers"} · {deal.totalUnits} units</span>
+                      <span className="font-display text-lg font-semibold text-primary">{fmt(deal.totalValueCents, deal.currency)}</span>
+                    </div>
+                    {deal.totalUnits > 0 && benchmark && req.benchmark_high_cents != null && (
+                      <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                        <TrendingDown className="h-3 w-3" /> Group price beats the ~{fmt(req.benchmark_high_cents, req.benchmark_currency ?? "USD")}/unit retail anchor
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-subtle">Quantities lock when the project moves to Funding, where each member is billed their order total.</p>
+                  </div>
+                )}
               </Panel>
             )}
 
@@ -978,10 +1067,12 @@ export default async function RequestPage({
               <Panel
                 title="Cost share"
                 action={
-                  at("funding") && canManageMoney && req.agreed_amount_cents != null ? (
+                  at("funding") && canManageMoney && (deal ? deal.totalValueCents > 0 : req.agreed_amount_cents != null) ? (
                     <form action={generateCostSharesAction}>
                       <input type="hidden" name="requestId" value={req.id} />
-                      <button type="submit" className={subtleBtnClass}>{shares.length === 0 ? "Generate even split" : "Regenerate split"}</button>
+                      <button type="submit" className={subtleBtnClass}>
+                        {shares.length === 0 ? (deal ? "Bill from orders" : "Generate even split") : "Regenerate split"}
+                      </button>
                     </form>
                   ) : undefined
                 }
@@ -993,7 +1084,13 @@ export default async function RequestPage({
                 )}
                 {shares.length === 0 ? (
                   <p className="mt-2 text-muted">
-                    {req.agreed_amount_cents != null ? "No split yet — generate an even split of the agreed amount." : "A price is needed before splitting the cost."}
+                    {deal
+                      ? deal.totalValueCents > 0
+                        ? "No split yet — bill each member from their order."
+                        : "Members haven't placed orders yet."
+                      : req.agreed_amount_cents != null
+                        ? "No split yet — generate an even split of the agreed amount."
+                        : "A price is needed before splitting the cost."}
                   </p>
                 ) : (
                   <ul className="mt-3 space-y-2">
