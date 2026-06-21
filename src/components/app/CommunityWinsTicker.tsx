@@ -66,7 +66,6 @@ export default function CommunityWinsTicker({ wins, totalSaved }: { wins: Commun
                 <span className="truncate">
                   <span className="font-medium text-text">{w.cohort_name}</span> saved{" "}
                   <span className="font-semibold text-primary">~{money(w.saved_cents, w.currency)}</span> on {title}
-                  <span className="text-subtle"> · {w.participants} neighbors</span>
                 </span>
               </>
             ) : (
@@ -74,7 +73,6 @@ export default function CommunityWinsTicker({ wins, totalSaved }: { wins: Commun
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-primary" />
                 <span className="truncate">
                   <span className="font-medium text-text">{w.cohort_name}</span> completed {title}
-                  <span className="text-subtle"> · {w.participants} neighbors</span>
                 </span>
               </>
             )}
