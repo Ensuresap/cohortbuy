@@ -1,6 +1,14 @@
 import Image from "next/image";
 import WaitlistForm from "@/components/WaitlistForm";
 import ThemeToggle from "@/components/ThemeToggle";
+import { createClient } from "@/lib/supabase/server";
+import { getPublicStats } from "@/core/cohorts/services/cohortService";
+
+function compactMoney(cents: number): string {
+  const n = Math.round(cents / 100);
+  if (n >= 1000) return `$${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+  return `$${n.toLocaleString()}`;
+}
 
 // Hero photo — swap this for your own:
 //  • Local file: drop an image into /public and set HERO_PHOTO = "/your-file.jpg"
@@ -85,7 +93,12 @@ const projects = [
   "Driveways",
 ];
 
-export default function Home() {
+export default async function Home() {
+  const supabase = createClient();
+  const statsRes = await getPublicStats({ db: supabase, actor: undefined });
+  const stats = statsRes.ok ? statsRes.data : { cohorts: 0, members: 0, projects: 0, value_cents: 0, saved_cents: 0 };
+  const hasStats = stats.cohorts > 0 || stats.value_cents > 0;
+
   return (
     <main className="min-h-screen">
       {/* Nav */}
@@ -103,6 +116,9 @@ export default function Home() {
             </a>
             <a href="#why" className="hover:text-primary">
               Why CohortBuy
+            </a>
+            <a href="#vendors" className="hover:text-primary">
+              For vendors
             </a>
           </nav>
           <a
@@ -130,20 +146,35 @@ export default function Home() {
               Now forming neighborhood cohorts
             </span>
             <h1 className="mt-5 font-display text-5xl font-semibold leading-[1.05] text-text sm:text-6xl">
-              Neighbors pool.
+              Stop overpaying.
               <br />
-              <span className="text-primary">Prices drop.</span>
+              <span className="text-primary">Buy with your block.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
-              CohortBuy turns one neighbor&rsquo;s home project into a group deal.
-              An AI agent forms the cohort, scopes the work, gathers real quotes,
-              and splits the cost fairly — all from a simple chat.
+              Gutter cleaning, a fence, solar, a bulk laptop order — whatever it
+              is, your neighbors probably want it too. CohortBuy pools the demand,
+              gets real quotes, and splits the cost fairly, so everyone pays the
+              group price instead of the going-it-alone price.
             </p>
-            <div id="waitlist" className="mt-8 max-w-xl scroll-mt-24">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <a
+                href="/login"
+                className="rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground transition hover:bg-primary-hover"
+              >
+                Find a cohort near you
+              </a>
+              <a
+                href="#how"
+                className="rounded-full border border-border px-6 py-3 font-semibold text-text transition hover:bg-surface-2"
+              >
+                See how it works
+              </a>
+            </div>
+            <div id="waitlist" className="mt-6 max-w-xl scroll-mt-24">
               <WaitlistForm />
               <p className="mt-3 text-sm text-subtle">
-                Be first in your neighborhood. No spam — just an invite when we
-                open your area.
+                Not in a cohort yet? Leave your email — we&rsquo;ll tell you when
+                your area opens. No spam.
               </p>
             </div>
           </div>
@@ -163,16 +194,30 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust strip */}
-      <section className="border-y border-border bg-surface/60">
-        <div className="container-prose flex flex-wrap items-center justify-center gap-x-10 gap-y-3 py-6 text-center text-sm font-medium text-muted">
-          <span>Up to ~30% off through group pricing</span>
-          <span className="hidden h-1 w-1 rounded-full bg-border sm:inline-block" />
-          <span>One contract, fair split</span>
-          <span className="hidden h-1 w-1 rounded-full bg-border sm:inline-block" />
-          <span>We never hold your money</span>
-        </div>
-      </section>
+      {/* Proof band — live aggregate stats from public cohorts */}
+      {hasStats ? (
+        <section className="border-y border-border bg-surface/60">
+          <div className="container-prose grid grid-cols-2 gap-6 py-8 text-center sm:grid-cols-4">
+            <Stat value={stats.cohorts.toLocaleString()} label="neighborhood cohorts" />
+            <Stat value={stats.projects.toLocaleString()} label="group projects" />
+            <Stat value={compactMoney(stats.value_cents)} label="value facilitated" />
+            <Stat
+              value={stats.saved_cents > 0 ? compactMoney(stats.saved_cents) : "~30%"}
+              label={stats.saved_cents > 0 ? "saved together" : "typical group savings"}
+            />
+          </div>
+        </section>
+      ) : (
+        <section className="border-y border-border bg-surface/60">
+          <div className="container-prose flex flex-wrap items-center justify-center gap-x-10 gap-y-3 py-6 text-center text-sm font-medium text-muted">
+            <span>Up to ~30% off through group pricing</span>
+            <span className="hidden h-1 w-1 rounded-full bg-border sm:inline-block" />
+            <span>One contract, fair split</span>
+            <span className="hidden h-1 w-1 rounded-full bg-border sm:inline-block" />
+            <span>We never hold your money</span>
+          </div>
+        </section>
+      )}
 
       {/* Conversation */}
       <section className="container-prose py-20 sm:py-24">
@@ -303,6 +348,46 @@ export default function Home() {
         </div>
       </section>
 
+      {/* For vendors */}
+      <section id="vendors" className="scroll-mt-20 bg-surface-2 py-20 sm:py-24">
+        <div className="container-prose grid items-center gap-10 lg:grid-cols-2">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-surface px-3 py-1 text-sm font-medium text-primary">
+              For vendors &amp; sellers
+            </span>
+            <h2 className="mt-4 font-display text-4xl font-semibold text-text">
+              One quote. A whole street of customers.
+            </h2>
+            <p className="mt-4 text-lg text-muted">
+              CohortBuy brings you demand that&rsquo;s already pooled — several
+              homes on one block, ready to buy together. Quote once, serve many,
+              skip the door-knocking.
+            </p>
+            <ul className="mt-6 space-y-3 text-muted">
+              <li className="flex gap-3"><span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" /> Reach committed group demand, not cold leads</li>
+              <li className="flex gap-3"><span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" /> Respond to clear, standardized requests for quote</li>
+              <li className="flex gap-3"><span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" /> Get listed &amp; featured in neighborhood shortlists</li>
+            </ul>
+            <a
+              href="mailto:partners@cohortbuy.com?subject=Get%20listed%20on%20CohortBuy"
+              className="mt-8 inline-block rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground transition hover:bg-primary-hover"
+            >
+              Get listed
+            </a>
+          </div>
+          <div className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
+            <p className="text-sm font-medium text-subtle">A typical request you&rsquo;d receive</p>
+            <p className="mt-2 font-display text-xl font-semibold text-text">6 homes on Katy Ranch want gutter cleaning</p>
+            <p className="mt-2 text-muted">Single-storey, ~140 ft each, before the rainy season. One visit, one mobilization, one combined job.</p>
+            <div className="mt-4 flex flex-wrap gap-2 text-sm">
+              <span className="rounded-full bg-surface-2 px-3 py-1 text-text">6 committed</span>
+              <span className="rounded-full bg-surface-2 px-3 py-1 text-text">Quote by Fri</span>
+              <span className="rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">~$1,400 job</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-border">
         <div className="container-prose flex flex-col items-center justify-between gap-4 py-10 sm:flex-row">
@@ -319,6 +404,15 @@ export default function Home() {
         </div>
       </footer>
     </main>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <div className="font-display text-3xl font-semibold text-primary sm:text-4xl">{value}</div>
+      <div className="mt-1 text-sm text-muted">{label}</div>
+    </div>
   );
 }
 

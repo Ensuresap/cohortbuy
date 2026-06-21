@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CreateCohortInput } from "../domain/cohort";
 
+export function platformPublicStats(db: SupabaseClient) {
+  return db.rpc("platform_public_stats");
+}
+
 export function createCohort(db: SupabaseClient, input: CreateCohortInput) {
   return db.rpc("create_cohort", {
     p_name: input.name,

@@ -138,6 +138,23 @@ export async function getMyCohortCards(ctx: Ctx): Promise<Result<MyCohortCard[]>
   return ok((data ?? []) as MyCohortCard[]);
 }
 
+export interface PublicStats {
+  cohorts: number;
+  members: number;
+  projects: number;
+  value_cents: number;
+  saved_cents: number;
+}
+
+/** Aggregate, non-identifying platform stats for the public landing page. */
+export async function getPublicStats(ctx: Ctx): Promise<Result<PublicStats>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.platformPublicStats(ctx.db);
+  if (error) return err("db_error", error.message);
+  const row = (Array.isArray(data) ? data[0] : data) as PublicStats | undefined;
+  return ok(row ?? { cohorts: 0, members: 0, projects: 0, value_cents: 0, saved_cents: 0 });
+}
+
 /** Platform-managed common tags (for suggestions + discover filter chips). */
 export async function getTagCatalog(ctx: Ctx): Promise<Result<TagCatalogItem[]>> {
   if (!ctx.db) return err("not_configured", "Database is not configured");
