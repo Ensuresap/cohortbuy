@@ -91,6 +91,43 @@ export async function setBenchmark(
   return ok(true);
 }
 
+export interface RegistryVendor {
+  id: string;
+  name: string;
+  website: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  vetting_status: string;
+}
+
+export async function listRegistryVendors(ctx: Ctx): Promise<Result<RegistryVendor[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.listRegistryVendors(ctx.db);
+  if (error) return err("db_error", error.message);
+  return ok((data ?? []) as RegistryVendor[]);
+}
+
+/** Add a registry vendor to a project as a supplier candidate. */
+export async function addRegistryCandidate(ctx: Ctx, args: { requestId: string; vendorId: string }): Promise<Result<true>> {
+  if (!ctx.actor?.id) return err("unauthenticated", "Sign in required");
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data: v, error: vErr } = await repo.getRegistryVendor(ctx.db, args.vendorId);
+  if (vErr) return err("db_error", vErr.message);
+  if (!v) return err("not_found", "Vendor not found");
+  const vendor = v as { id: string; name: string; website: string | null; contact_email: string | null; contact_phone: string | null };
+  const { error } = await repo.insertCandidate(ctx.db, {
+    requestId: args.requestId,
+    name: vendor.name,
+    website: vendor.website ?? undefined,
+    contact: vendor.contact_email ?? vendor.contact_phone ?? undefined,
+    source: "registry",
+    vendorId: vendor.id,
+    userId: ctx.actor.id,
+  });
+  if (error) return err("db_error", error.message);
+  return ok(true);
+}
+
 export async function setProductInfo(
   ctx: Ctx,
   args: { requestId: string; name: string; url: string; specs: string; imageUrl: string }

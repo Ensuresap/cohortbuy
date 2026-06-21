@@ -38,7 +38,7 @@ import {
 import { listMyCohorts } from "@/core/cohorts/services/cohortService";
 import { listScope } from "@/core/scope/services/scopeService";
 import { listQuotes } from "@/core/quotes/services/quoteService";
-import { listCandidates } from "@/core/research/services/researchService";
+import { listCandidates, listRegistryVendors } from "@/core/research/services/researchService";
 import { getDeal } from "@/core/groupbuy/services/groupbuyService";
 import {
   CANDIDATE_STATUS_LABELS,
@@ -88,6 +88,7 @@ import {
   setVariantAction,
   deleteVariantAction,
   setMyOrderAction,
+  addRegistryCandidateAction,
   aiSuggestVendorsAction,
   respondJoinAction,
   voteAction,
@@ -186,6 +187,8 @@ export default async function RequestPage({
 
   const dealRes = req.project_type === "group_buy" ? await getDeal(ctx, params.id) : null;
   const deal = dealRes && dealRes.ok ? dealRes.data : null;
+  const regRes = req.project_type === "group_buy" ? await listRegistryVendors(ctx) : null;
+  const registryVendors = regRes && regRes.ok ? regRes.data : [];
   const myOrderTotal = deal
     ? deal.variants.reduce((s, v) => s + (deal.myOrders[v.id] ?? 0) * (v.unit_price_cents ?? 0), 0)
     : 0;
@@ -682,6 +685,145 @@ export default async function RequestPage({
                     <p className="mt-2 text-xs text-subtle">Quantities lock when the project moves to Funding, where each member is billed their order total.</p>
                   </div>
                 )}
+              </Panel>
+            )}
+
+            {/* Suppliers & bids (group buy) */}
+            {showPrice && (
+              <Panel
+                title="Suppliers & bids"
+                action={
+                  at("research") && (isCoordinator || isManager) ? (
+                    <form action={aiSuggestVendorsAction}>
+                      <input type="hidden" name="requestId" value={req.id} />
+                      <button type="submit" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+                        <Sparkles className="h-4 w-4" /> Suggest with AI
+                      </button>
+                    </form>
+                  ) : undefined
+                }
+              >
+                {/* Candidate suppliers */}
+                {candidates.length === 0 ? (
+                  <p className="mt-2 text-sm text-muted">No suppliers yet. Add who could supply this product, or get AI suggestions.</p>
+                ) : (
+                  <ul className="mt-2 space-y-2">
+                    {candidates.map((c) => {
+                      const canManageCand = (c.suggested_by === user.id || isCoordinator || isManager) && !isCompleted;
+                      return (
+                        <li key={c.id} className="rounded-xl border border-border px-4 py-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-medium text-text">{c.name}</p>
+                              <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-subtle">
+                                <span className="rounded-full bg-surface-2 px-2 py-0.5">{CANDIDATE_SOURCE_LABELS[c.source]}</span>
+                                {c.vetting_status === "unverified" && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-accent">Not vetted</span>}
+                              </p>
+                              <div className="mt-1 space-y-0.5 text-xs text-muted">
+                                {c.website && (
+                                  <a href={c.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                                    <Globe className="h-3 w-3 shrink-0" /> {c.website.replace(/^https?:\/\//, "")}
+                                  </a>
+                                )}
+                                {c.contact && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0 text-subtle" /> {c.contact}</p>}
+                              </div>
+                              {c.notes && <p className="mt-1.5 text-sm text-muted">{c.notes}</p>}
+                            </div>
+                            {canManageCand && at("research") && (
+                              <form action={deleteCandidateAction} className="shrink-0">
+                                <input type="hidden" name="requestId" value={req.id} />
+                                <input type="hidden" name="id" value={c.id} />
+                                <button type="submit" className="text-xs text-accent hover:underline">Remove</button>
+                              </form>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                {at("research") && isParticipant && (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <form action={addCandidateAction} className="space-y-2 rounded-xl border border-border p-3">
+                      <p className="text-xs font-medium text-text">Add a supplier</p>
+                      <input type="hidden" name="requestId" value={req.id} />
+                      <input type="hidden" name="source" value="member" />
+                      <input name="name" required placeholder="Supplier / seller name" className={fieldClass} />
+                      <input name="website" type="url" placeholder="Website (optional)" className={fieldClass} />
+                      <input name="contact" placeholder="Contact (email / phone)" className={fieldClass} />
+                      <Button type="submit" size="md">Add supplier</Button>
+                    </form>
+                    {(isCoordinator || isManager) && registryVendors.length > 0 && (
+                      <form action={addRegistryCandidateAction} className="space-y-2 rounded-xl border border-border p-3">
+                        <p className="text-xs font-medium text-text">From the vendor registry</p>
+                        <input type="hidden" name="requestId" value={req.id} />
+                        <select name="vendorId" required defaultValue="" className={fieldClass}>
+                          <option value="" disabled>Pick a registered vendor…</option>
+                          {registryVendors.map((v) => (
+                            <option key={v.id} value={v.id}>{v.name}{v.vetting_status === "vetted" ? " ✓" : ""}</option>
+                          ))}
+                        </select>
+                        <Button type="submit" size="md" variant="secondary">Add from registry</Button>
+                      </form>
+                    )}
+                  </div>
+                )}
+
+                {/* Competitive bids */}
+                <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                  <h3 className="text-sm font-semibold text-text">Competitive bids</h3>
+                  {at("research") && isParticipant && <QuoteWizard requestId={req.id} />}
+                </div>
+                {quotes.length === 0 ? (
+                  <p className="mt-2 text-sm text-muted">No bids recorded yet. Ask suppliers for a price and log them here to compare.</p>
+                ) : (
+                  <ul className="mt-2 space-y-2">
+                    {quotes.map((q, i) => {
+                      const selected = q.id === req.selected_quote_id;
+                      const canManageQuote = (q.created_by === user.id || isCoordinator || isManager) && !isCompleted;
+                      return (
+                        <li key={q.id} className={"rounded-xl border px-4 py-3 " + (selected ? "border-primary bg-primary/5" : "border-border")}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium text-text">
+                              {q.vendor_name}
+                              {selected && <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">Selected supplier</span>}
+                              {!selected && i === 0 && <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Best price</span>}
+                            </span>
+                            <span className="font-display text-lg font-semibold text-primary">{fmt(q.amount_cents, q.currency)}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-subtle">
+                            {q.kind}{q.timeline ? ` · ${q.timeline}` : ""}{q.warranty ? ` · ${q.warranty}` : ""}
+                          </p>
+                          {q.notes && <p className="mt-1 text-sm text-muted">{q.notes}</p>}
+                          {at("research") && (canManageQuote || isCoordinator) && (
+                            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                              {isCoordinator && !selected && (
+                                <form action={selectQuoteAction}>
+                                  <input type="hidden" name="requestId" value={req.id} />
+                                  <input type="hidden" name="quoteId" value={q.id} />
+                                  <button type="submit" className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
+                                    <CheckCircle2 className="h-3.5 w-3.5" /> Select as supplier
+                                  </button>
+                                </form>
+                              )}
+                              {canManageQuote && (
+                                <form action={deleteQuoteAction}>
+                                  <input type="hidden" name="requestId" value={req.id} />
+                                  <input type="hidden" name="id" value={q.id} />
+                                  <button type="submit" className="text-accent hover:underline">Delete</button>
+                                </form>
+                              )}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <p className="mt-3 text-xs text-subtle">
+                  Supplier details are informational — CohortBuy doesn&rsquo;t guarantee any seller. The selected supplier is recorded for reference; set each option&rsquo;s price above from the winning bid.
+                </p>
               </Panel>
             )}
 

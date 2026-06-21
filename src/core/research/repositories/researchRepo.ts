@@ -69,6 +69,22 @@ export function setBenchmark(
   });
 }
 
+export function listRegistryVendors(db: SupabaseClient) {
+  return db
+    .from("vendors")
+    .select("id, name, website, contact_email, contact_phone, vetting_status")
+    .order("name", { ascending: true })
+    .limit(100);
+}
+
+export function getRegistryVendor(db: SupabaseClient, id: string) {
+  return db
+    .from("vendors")
+    .select("id, name, website, contact_email, contact_phone")
+    .eq("id", id)
+    .maybeSingle();
+}
+
 export function setProductInfo(
   db: SupabaseClient,
   args: { requestId: string; name: string; url: string; specs: string; imageUrl: string }

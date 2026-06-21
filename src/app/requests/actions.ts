@@ -36,6 +36,7 @@ import {
   setResearch,
   setBenchmark,
   setProductInfo,
+  addRegistryCandidate,
   approveShortlist,
 } from "@/core/research/services/researchService";
 import { estimateBenchmark, estimateProductPrice, suggestVendors, draftRfq, recommendQuote, answerDiscussion } from "@/core/research/services/researchAiService";
@@ -431,6 +432,13 @@ export async function addCandidateAction(formData: FormData) {
     source: (String(formData.get("source") ?? "member") || "member") as "member" | "registry" | "ai" | "web",
     vendorId: String(formData.get("vendorId") ?? "") || undefined,
   });
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function addRegistryCandidateAction(formData: FormData) {
+  const ctx = await getCtx();
+  const requestId = String(formData.get("requestId") ?? "");
+  await addRegistryCandidate(ctx, { requestId, vendorId: String(formData.get("vendorId") ?? "") });
   revalidatePath(`/requests/${requestId}`);
 }
 
