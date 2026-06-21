@@ -80,16 +80,6 @@ export default function CommunityWinsTicker({ wins, totalSaved }: { wins: Commun
             )}
           </Link>
         </div>
-        {wins.length > 1 && (
-          <div className="hidden shrink-0 items-center gap-1 sm:flex">
-            {wins.map((_, k) => (
-              <span
-                key={k}
-                className={"h-1.5 w-1.5 rounded-full transition-colors " + (k === i % wins.length ? "bg-primary" : "bg-primary/25")}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </section>
   );

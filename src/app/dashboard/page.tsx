@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/Button";
 import InviteNeighborsCard from "@/components/app/InviteNeighborsCard";
 import CommunityWinsTicker from "@/components/app/CommunityWinsTicker";
 import {
-  MessageSquare, Sparkles, ListChecks, Vote, Trophy, FileSignature,
+  ListChecks, Vote, Trophy, FileSignature,
   CreditCard, UserPlus, ArrowRight, Users, CheckCircle2, Coins, TrendingDown,
 } from "lucide-react";
 
@@ -229,25 +229,11 @@ export default async function DashboardPage() {
                               </span>
                             )}
                         </div>
-                        <div className="mt-1.5 flex items-center gap-2 text-xs text-subtle">
-                          {p.last_comment ? (
-                            <>
-                              {p.last_comment_kind === "ai" ? (
-                                <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
-                              ) : (
-                                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                              )}
-                              <span className="min-w-0 flex-1 truncate">
-                                <span className="font-medium text-muted">
-                                  {p.last_comment_kind === "ai" ? "AI" : (p.last_comment_author ?? "Member")}:
-                                </span>{" "}
-                                {p.last_comment}
-                              </span>
-                              <span className="shrink-0">{timeAgo(p.last_comment_at)}</span>
-                            </>
-                          ) : (
-                            <span>Updated {timeAgo(p.last_activity_at)}</span>
-                          )}
+                        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-subtle">
+                          <span className={"h-1.5 w-1.5 shrink-0 rounded-full " + (p.last_comment ? "bg-primary/70" : "bg-subtle/50")} />
+                          {p.last_comment
+                            ? `New activity ${timeAgo(p.last_comment_at ?? p.last_activity_at)}`
+                            : `Updated ${timeAgo(p.last_activity_at)}`}
                         </div>
                       </Link>
                     </li>
