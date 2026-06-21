@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/core/profiles/services/profileService";
 import { getBalance } from "@/core/tokens/services/tokenService";
-import { tierProgress, EARN_RULES } from "@/core/tokens/domain/tokens";
+import { EARN_RULES } from "@/core/tokens/domain/tokens";
 import {
   listMyActiveProjects,
   listMyActionItems,
@@ -100,7 +100,6 @@ export default async function DashboardPage() {
   const totalSaved = wins.reduce((s, w) => s + (w.saved_cents || 0), 0);
   const cohorts = (cohortsRes.ok ? cohortsRes.data : []) as CohortRow[];
   const tokens = balRes.ok ? balRes.data : { balance: 0, lifetimeEarned: 0, tier: "Newcomer" };
-  const tp = tierProgress(tokens.lifetimeEarned);
   const primaryCohort = cohorts.find((c) => c.cohort)?.cohort ?? null;
 
   // Members who only participate (don't coordinate a project or manage a cohort)
@@ -132,19 +131,14 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {/* Metric strip */}
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Tile label="Needs you" value={actions.length} icon={Bell} accent={actions.length > 0} />
-          <Tile label="Active projects" value={active.length} icon={LayoutGrid} />
-          <Tile label="Cohorts" value={cohorts.length} icon={Users} />
-          <Tile
-            label={`Tokens · ${tp.tier}`}
-            value={tokens.balance}
-            icon={Coins}
-            progress={tp.next ? tp.pct : 100}
-            sub={tp.next ? `${tp.toNext} to ${tp.next}` : "Top tier"}
-          />
-        </div>
+        {/* Metric strip — only for coordinators/managers, who have enough to summarize */}
+        {!lean && (
+          <div className="mt-8 grid grid-cols-3 gap-3">
+            <Tile label="Needs you" value={actions.length} icon={Bell} accent={actions.length > 0} />
+            <Tile label="Active projects" value={active.length} icon={LayoutGrid} />
+            <Tile label="Cohorts" value={cohorts.length} icon={Users} />
+          </div>
+        )}
 
         {/* Community wins — single-line auto-scroll ticker (coordinators/managers only) */}
         {!lean && <CommunityWinsTicker wins={wins} totalSaved={totalSaved} />}
