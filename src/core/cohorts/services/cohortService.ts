@@ -18,6 +18,7 @@ import {
   type TagCatalogItem,
 } from "../domain/cohort";
 import * as repo from "../repositories/cohortRepo";
+import { MIN_LIFETIME_TO_CREATE_COHORT } from "../../tokens/domain/tokens";
 import { ok, err, type Result } from "../../result";
 
 function dup(error: { code?: string; message?: string } | null): boolean {
@@ -41,6 +42,8 @@ export async function createCohort(
   const { data, error } = await repo.createCohort(ctx.db, parsed.data);
   if (error) {
     if (dup(error)) return err("handle_taken", "That handle is already taken");
+    if (error.message?.includes("need_tokens"))
+      return err("need_tokens", `You need ${MIN_LIFETIME_TO_CREATE_COHORT} earned tokens to start a cohort — join a project or invite a neighbor first.`);
     return err("db_error", error.message);
   }
   return ok({ cohortId: data as string });

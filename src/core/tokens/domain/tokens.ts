@@ -12,6 +12,15 @@ export const EARN_RULES = {
   leave_rating: 5,
 } as const;
 
+/** Lifetime tokens a member must have earned before they can start a cohort
+ * (anti-spam — be an engaged participant first). Staff are exempt. Mirror this
+ * value in migration 20260618200000_cohort_gates.sql. */
+export const MIN_LIFETIME_TO_CREATE_COHORT = 25;
+
+/** A cohort's runner earns `run_cohort` once it lands a completed project with
+ * at least this many approved members. Mirror in the same migration. */
+export const RUN_COHORT_MIN_MEMBERS = 5;
+
 export const EarnEvent = z.enum([
   "join_cohort",
   "complete_project",
