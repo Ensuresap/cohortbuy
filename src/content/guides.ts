@@ -131,6 +131,115 @@ A simple way to sanity-check: get one honest solo quote, then ask a vendor what 
 ## Don't chase the discount off a cliff
 The goal is value, not just the lowest number. A slightly higher bid with a better warranty, a real reference, and a firm timeline usually beats the cheapest quote — group buying just means you get that better deal at a group price.`,
   },
+  {
+    slug: "gutter-cleaning-group-buy-checklist",
+    title: "The gutter-cleaning group-buy checklist (before the rainy season)",
+    description:
+      "Gutters are the easiest first group buy on any street. Here's the short checklist to pool your block and get a per-house rate before the storms.",
+    category: "Seasonal",
+    readMins: 4,
+    updated: "2026-06-18",
+    body: `Gutter cleaning is the perfect first group buy: it's standard work, every house needs it on the same schedule, and most of the price is the crew showing up — exactly the cost that drops when they do the whole street in one visit.
+
+## Why it's an easy win
+- The job barely changes house to house, so it's simple to quote as a group.
+- Travel and setup dominate the cost, so volume cuts the per-house rate noticeably.
+- Timing is shared — everyone wants it done before the first big storm.
+
+## The checklist
+1. Pick a window (ideally a few weeks before your rainy season).
+2. Message the block and get a quorum — three or more houses is plenty to ask for a rate.
+3. Note each home's basics: single or two-storey, rough length of run, any tricky access.
+4. Ask two local crews for a per-house price for the group, same scope.
+5. Compare on price, insurance, and whether downspout flushing and debris haul-away are included.
+6. Pick one, lock a date, and split per house (evenly, or by storey/length if homes differ a lot).
+
+## Don't forget
+Confirm the crew is insured before they're on ladders over your property, and pay them directly after the work — never through anyone asking for bank details or codes up front.`,
+  },
+  {
+    slug: "how-cost-splits-work-with-neighbors",
+    title: "How to split the cost fairly with neighbors",
+    description:
+      "Even split, by quantity, or by usage? A clear guide to dividing a group job so it feels fair to everyone — and stays drama-free.",
+    category: "Coordinating",
+    readMins: 5,
+    updated: "2026-06-18",
+    body: `The fastest way to sink a group buy is a split that feels unfair. The good news: a few simple methods cover almost every job. Agree on the method **before** the work, in writing.
+
+## Even split
+Everyone pays the same share. Best when the work is roughly equal per home — a shared booking fee, a flat per-house service, a simple bulk order where everyone takes one.
+
+## By quantity
+Each home pays for what it takes. Right for product buys (you order three, I order one) and anything measured in units — footage of fence, square metres of driveway, number of panels.
+
+## By usage or size
+Cost tracks how much each home drives the price. Useful when homes differ a lot — a two-storey gutter job costs more than a bungalow, a bigger roof needs a bigger solar system.
+
+## Custom
+Sometimes the coordinator just sets each share by hand because the job is lumpy. That's fine — as long as the numbers are visible to everyone.
+
+## Make it stick
+- Decide the method up front, not after the invoice lands.
+- Show the math openly so anyone can check their share.
+- Have each home pay the vendor directly where possible, so no neighbor is stuck holding the group's money.
+
+A platform like CohortBuy can generate the split automatically and track who's paid, which keeps the awkward money conversations to a minimum.`,
+  },
+  {
+    slug: "bulk-buy-for-your-hoa-or-building",
+    title: "Running a bulk buy for your HOA or apartment building",
+    description:
+      "HOAs and buildings are ready-made cohorts. How to pool demand across units for services and products without it becoming a committee saga.",
+    category: "Getting started",
+    readMins: 5,
+    updated: "2026-06-18",
+    body: `An HOA or apartment building is a group buy waiting to happen — shared boundaries, shared timing, and a list of residents who already know each other. The trick is keeping it light instead of turning it into a committee marathon.
+
+## What works well
+- Recurring services everyone needs: landscaping, pressure washing, gutter and roof maintenance, pest control.
+- One-time upgrades across units: EV chargers, smart thermostats, window treatments.
+- Bulk product orders: mulch by the truckload, salt or propane before winter, the same appliance across units.
+
+## Keep the process light
+1. One organizer floats the idea and collects interest — a simple "who's in?" beats a formal vote.
+2. Capture each unit's specifics so vendors quote one clear scope.
+3. Get two or three comparable quotes; share them openly with everyone in.
+4. Decide together, then each unit pays the vendor directly on its share.
+
+## Watch-outs for shared property
+- Check whether the work touches common areas that need board sign-off.
+- Keep individual units' payments individual — pooling money through one person creates needless risk and friction.
+- Document the agreed scope and split so there are no surprises later.
+
+The community already exists; you're just giving it buying power.`,
+  },
+  {
+    slug: "how-to-be-a-good-cohort-coordinator",
+    title: "How to be a good cohort coordinator (without it taking over your life)",
+    description:
+      "The coordinator role is what makes a group buy actually happen. Here's how to run one well in a few minutes a week.",
+    category: "Coordinating",
+    readMins: 4,
+    updated: "2026-06-18",
+    body: `Every successful group buy has one person who keeps it moving. It's not a huge job — but it is the job that determines whether the savings happen. Here's how to do it well without it eating your week.
+
+## What the coordinator actually does
+- Rallies a quorum so there's real buying power before approaching vendors.
+- Makes sure each home's needs are captured so quotes are comparable.
+- Collects two or three bids and lays them out clearly.
+- Gets the group to a decision and a date.
+- Nudges the one or two people who always reply last.
+
+## Do it in minutes, not hours
+- Set a simple deadline for each step — "quotes in by Friday, we decide over the weekend."
+- Keep one channel, not five. Decisions scattered across texts and a group chat are where momentum dies.
+- Don't chase consensus on everything — agree the decision rule up front (you decide, or the group votes) so you're never stuck.
+- Lean on tooling. A platform that captures scope, collects quotes, runs the vote, and nudges stragglers turns most of this into a few taps.
+
+## The mindset
+You're a facilitator, not a contractor and not everyone's banker. Keep the money between each home and the vendor, keep the scope and split visible, and keep things moving. That's the whole job — and it's how a street quietly saves real money together.`,
+  },
 ];
 
 export function getGuide(slug: string): Guide | undefined {

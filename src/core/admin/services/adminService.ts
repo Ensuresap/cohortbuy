@@ -5,6 +5,8 @@ import type {
   AdminOverview,
   AdminRecentProject,
   AdminInactiveCohort,
+  AdminVendorLead,
+  AdminWaitlistEntry,
 } from "../domain/admin";
 
 function mapErr(message?: string) {
@@ -37,4 +39,18 @@ export async function getInactiveCohorts(
   const { data, error } = await repo.inactiveCohorts(ctx.db, days);
   if (error) return mapErr(error.message);
   return ok((data ?? []) as AdminInactiveCohort[]);
+}
+
+export async function getVendorLeads(ctx: Ctx, limit = 50): Promise<Result<AdminVendorLead[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.vendorLeads(ctx.db, limit);
+  if (error) return mapErr(error.message);
+  return ok((data ?? []) as AdminVendorLead[]);
+}
+
+export async function getWaitlist(ctx: Ctx, limit = 100): Promise<Result<AdminWaitlistEntry[]>> {
+  if (!ctx.db) return err("not_configured", "Database is not configured");
+  const { data, error } = await repo.waitlist(ctx.db, limit);
+  if (error) return mapErr(error.message);
+  return ok((data ?? []) as AdminWaitlistEntry[]);
 }

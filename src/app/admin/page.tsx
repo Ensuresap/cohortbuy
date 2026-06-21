@@ -6,6 +6,8 @@ import {
   getOverview,
   getRecentProjects,
   getInactiveCohorts,
+  getVendorLeads,
+  getWaitlist,
 } from "@/core/admin/services/adminService";
 import { STAGE_LABELS, type RequestStatus } from "@/core/requests/domain/request";
 import AppShell from "@/components/app/AppShell";
@@ -52,12 +54,17 @@ export default async function AdminPage() {
   }
 
   const ov = ovRes.data;
-  const [projRes, inactiveRes] = await Promise.all([
+  const [projRes, inactiveRes, leadsRes, waitRes] = await Promise.all([
     getRecentProjects(ctx, 12),
     getInactiveCohorts(ctx, 30),
+    getVendorLeads(ctx, 50),
+    getWaitlist(ctx, 100),
   ]);
   const projects = projRes.ok ? projRes.data : [];
   const inactive = inactiveRes.ok ? inactiveRes.data : [];
+  const leads = leadsRes.ok ? leadsRes.data : [];
+  const waitlist = waitRes.ok ? waitRes.data : [];
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const stages = Object.entries(ov.by_stage).sort((a, b) => b[1] - a[1]);
 
   const cards = [
@@ -159,6 +166,63 @@ export default async function AdminPage() {
               )}
             </section>
           </div>
+        </div>
+
+        {/* Inbox — inbound leads + waitlist */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-semibold text-text">Vendor leads</h2>
+              <span className="text-xs text-subtle">{leads.length}</span>
+            </div>
+            {leads.length === 0 ? (
+              <p className="mt-2 text-muted">No vendor leads yet.</p>
+            ) : (
+              <ul className="mt-3 divide-y divide-border">
+                {leads.map((l) => (
+                  <li key={l.id} className="py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-text">{l.business}</p>
+                        <p className="mt-0.5 text-xs text-muted">
+                          {l.contact_name ? `${l.contact_name} · ` : ""}
+                          <a href={`mailto:${l.email}`} className="text-primary hover:underline">{l.email}</a>
+                          {l.phone ? ` · ${l.phone}` : ""}
+                        </p>
+                        <p className="mt-0.5 text-xs text-subtle">
+                          {[l.categories, l.service_area].filter(Boolean).join(" · ") || "—"}
+                        </p>
+                        {l.message && <p className="mt-1 text-sm text-muted">{l.message}</p>}
+                      </div>
+                      <span className="shrink-0 text-xs text-subtle">{fmtDate(l.created_at)}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-semibold text-text">Waitlist</h2>
+              <span className="text-xs text-subtle">{waitlist.length}</span>
+            </div>
+            {waitlist.length === 0 ? (
+              <p className="mt-2 text-muted">No signups yet.</p>
+            ) : (
+              <ul className="mt-3 divide-y divide-border">
+                {waitlist.map((w) => (
+                  <li key={w.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <div className="min-w-0">
+                      <a href={`mailto:${w.email}`} className="truncate text-sm font-medium text-text hover:text-primary">{w.email}</a>
+                      <p className="text-xs text-subtle">{w.zip ? `ZIP ${w.zip} · ` : ""}{w.source}</p>
+                    </div>
+                    <span className="shrink-0 text-xs text-subtle">{fmtDate(w.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
       </main>
     </AppShell>

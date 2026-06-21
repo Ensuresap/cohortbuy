@@ -11,3 +11,11 @@ export function recentProjects(db: SupabaseClient, limit: number) {
 export function inactiveCohorts(db: SupabaseClient, days: number) {
   return db.rpc("admin_inactive_cohorts", { p_days: days });
 }
+
+export function vendorLeads(db: SupabaseClient, limit: number) {
+  return db.rpc("admin_vendor_leads", { p_limit: limit });
+}
+
+export function waitlist(db: SupabaseClient, limit: number) {
+  return db.rpc("admin_waitlist", { p_limit: limit });
+}

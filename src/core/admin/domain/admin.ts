@@ -27,3 +27,24 @@ export interface AdminInactiveCohort {
   last_activity_at: string;
   members: number;
 }
+
+export interface AdminVendorLead {
+  id: string;
+  business: string;
+  contact_name: string | null;
+  email: string;
+  phone: string | null;
+  categories: string | null;
+  service_area: string | null;
+  message: string | null;
+  source: string;
+  created_at: string;
+}
+
+export interface AdminWaitlistEntry {
+  id: string;
+  email: string;
+  zip: string | null;
+  source: string;
+  created_at: string;
+}
