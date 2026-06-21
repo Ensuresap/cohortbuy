@@ -658,7 +658,7 @@ export default async function RequestPage({
                 title="Vendors & quotes"
                 action={at("rfq") && isParticipant ? <QuoteWizard requestId={req.id} /> : undefined}
               >
-                {(isCoordinator || isManager) && !isCompleted && (
+                {at("rfq") && (isCoordinator || isManager) && !isCompleted && (
                   <div className="mt-2 rounded-xl border border-border p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-medium text-text">Request for quote</p>
@@ -682,7 +682,7 @@ export default async function RequestPage({
                 {at("deciding") && (
                   <div className="mt-2 rounded-xl border border-primary/15 bg-primary/5 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-text">Deciding · {DECISION_POLICY_LABELS[req.decision_policy]}</p>
+                      <p className="text-sm font-medium text-text">Select vendor · {DECISION_POLICY_LABELS[req.decision_policy]}</p>
                       {(isCoordinator || isManager) && quotes.length > 0 && (
                         <form action={aiRecommendQuoteAction}>
                           <input type="hidden" name="requestId" value={req.id} />

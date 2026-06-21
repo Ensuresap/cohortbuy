@@ -11,7 +11,7 @@ export const STAGE_LABELS: Record<RequestStatus, string> = {
   scoping: "Scoping",
   research: "Research",
   rfq: "Getting quotes",
-  deciding: "Deciding",
+  deciding: "Select vendor",
   contracting: "Contracting",
   funding: "Funding",
   in_progress: "In progress",
