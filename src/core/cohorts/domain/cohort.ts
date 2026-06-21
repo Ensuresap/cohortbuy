@@ -92,6 +92,7 @@ export type JoinAnswer = z.infer<typeof JoinAnswer>;
 export const RequestToJoinInput = z.object({
   cohortId: z.string().uuid(),
   answers: z.array(JoinAnswer).max(20).optional(),
+  invitedBy: z.string().uuid().optional(),
 });
 export type RequestToJoinInput = z.infer<typeof RequestToJoinInput>;
 

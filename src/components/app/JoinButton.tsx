@@ -15,10 +15,12 @@ export default function JoinButton({
   cohortId,
   handle,
   questions,
+  invitedBy,
 }: {
   cohortId: string;
   handle: string;
   questions: Q[];
+  invitedBy?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [answers, setAnswers] = useState<string[]>(() => questions.map(() => ""));
@@ -31,7 +33,7 @@ export default function JoinButton({
     setBusy(true);
     setError("");
     const payload = questions.map((q, i) => ({ question: q.text, answer: answers[i] ?? "" }));
-    const res = await submitJoinRequest({ cohortId, handle, answers: payload });
+    const res = await submitJoinRequest({ cohortId, handle, answers: payload, invitedBy });
     if (!res.ok) {
       setError(res.error || "Couldn't submit your request.");
       setBusy(false);

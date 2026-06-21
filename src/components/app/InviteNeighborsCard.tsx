@@ -12,10 +12,12 @@ export default function InviteNeighborsCard({
   handle,
   cohortName,
   reward,
+  inviterId,
 }: {
   handle: string | null;
   cohortName: string | null;
   reward: number;
+  inviterId?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -39,7 +41,8 @@ export default function InviteNeighborsCard({
     );
   }
 
-  const link = typeof window !== "undefined" ? `${window.location.origin}/${handle}` : `/${handle}`;
+  const ref = inviterId ? `?ref=${inviterId}` : "";
+  const link = typeof window !== "undefined" ? `${window.location.origin}/${handle}${ref}` : `/${handle}${ref}`;
   const msg = `Join me on ${cohortName ?? "our neighborhood cohort"} — we pool demand to get better prices on local services. ${link}`;
 
   async function copy() {

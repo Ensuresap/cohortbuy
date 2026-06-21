@@ -57,6 +57,7 @@ export async function requestToJoin(ctx: Ctx, raw: unknown): Promise<Result<true
   const { error } = await repo.requestJoin(ctx.db, {
     cohortId: parsed.data.cohortId,
     answers: parsed.data.answers ?? [],
+    invitedBy: parsed.data.invitedBy ?? null,
   });
   if (error) return err("db_error", error.message);
   return ok(true);

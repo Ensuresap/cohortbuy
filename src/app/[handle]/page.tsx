@@ -61,7 +61,7 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default async function CohortPage({ params }: { params: { handle: string } }) {
+export default async function CohortPage({ params, searchParams }: { params: { handle: string }; searchParams?: { ref?: string } }) {
   const supabase = createClient();
   const {
     data: { user },
@@ -132,7 +132,7 @@ export default async function CohortPage({ params }: { params: { handle: string 
               <div className="mb-1 flex flex-col items-end gap-2">
                 <CohortHeaderActions cohort={cohort} isManager={isManager} isMember={isApproved} isOwner={isOwner} tagCatalog={tagCatalog} />
                 {!membership && (
-                  <JoinButton cohortId={cohort.id} handle={cohort.handle} questions={cohort.join_questions ?? []} />
+                  <JoinButton cohortId={cohort.id} handle={cohort.handle} questions={cohort.join_questions ?? []} invitedBy={searchParams?.ref} />
                 )}
                 {membership && membership.status !== "approved" && (
                   <span className="rounded-full bg-surface-2 px-3 py-1.5 text-sm text-muted capitalize">{membership.status}</span>

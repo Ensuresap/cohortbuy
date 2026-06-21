@@ -61,9 +61,13 @@ export function discover(
 
 export function requestJoin(
   db: SupabaseClient,
-  args: { cohortId: string; answers: unknown }
+  args: { cohortId: string; answers: unknown; invitedBy?: string | null }
 ) {
-  return db.rpc("request_join", { p_cohort: args.cohortId, p_answers: args.answers });
+  return db.rpc("request_join", {
+    p_cohort: args.cohortId,
+    p_answers: args.answers,
+    p_invited_by: args.invitedBy ?? null,
+  });
 }
 
 export function reviewJoin(

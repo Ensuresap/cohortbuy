@@ -68,11 +68,13 @@ export async function submitJoinRequest(input: {
   cohortId: string;
   handle: string;
   answers: { question: string; answer: string }[];
+  invitedBy?: string;
 }) {
   const ctx = await getCtx();
   const res = await requestToJoin(ctx, {
     cohortId: input.cohortId,
     answers: input.answers,
+    invitedBy: input.invitedBy,
   });
   if (!res.ok) return { ok: false as const, error: res.error.message };
   revalidatePath(`/${input.handle}`);

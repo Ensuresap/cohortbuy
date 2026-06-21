@@ -302,7 +302,7 @@ export default async function DashboardPage() {
             {lean ? (
               primaryCohort && (
                 <Link
-                  href={`/${primaryCohort.handle}`}
+                  href={`/${primaryCohort.handle}?ref=${user.id}`}
                   className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-surface px-5 py-3 text-sm shadow-soft hover:bg-surface-2"
                 >
                   <span className="flex items-center gap-2 text-muted"><UserPlus className="h-4 w-4 text-primary" /> Invite a neighbor</span>
@@ -314,6 +314,7 @@ export default async function DashboardPage() {
                 handle={primaryCohort?.handle ?? null}
                 cohortName={primaryCohort?.name ?? null}
                 reward={EARN_RULES.refer_neighbor}
+                inviterId={user.id}
               />
             )}
 
