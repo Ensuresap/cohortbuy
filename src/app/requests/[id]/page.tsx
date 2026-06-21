@@ -59,6 +59,7 @@ import { Button } from "@/components/ui/Button";
 import ProjectHeaderActions from "@/components/app/ProjectHeaderActions";
 import RfqDraftEditor from "@/components/app/RfqDraftEditor";
 import QuoteWizard from "@/components/app/QuoteWizard";
+import AiPickBadge from "@/components/app/AiPickBadge";
 import CardTitle from "@/components/ui/CardTitle";
 import MarkdownLite from "@/components/ui/MarkdownLite";
 import {
@@ -661,7 +662,21 @@ export default async function RequestPage({
             {showQuotes && (
               <Panel
                 title={viewedStep === "rfq" ? "Vendors & quotes" : "Compare & select"}
-                action={at("rfq") && isParticipant ? <QuoteWizard requestId={req.id} /> : undefined}
+                action={
+                  onRfqStep && isParticipant ? (
+                    <QuoteWizard requestId={req.id} />
+                  ) : onDecideStep && at("deciding") && (isCoordinator || isManager) && quotes.length > 0 ? (
+                    <form action={aiRecommendQuoteAction}>
+                      <input type="hidden" name="requestId" value={req.id} />
+                      <button
+                        type="submit"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-semibold text-primary transition hover:bg-primary/10"
+                      >
+                        <Sparkles className="h-4 w-4" /> AI Advisor
+                      </button>
+                    </form>
+                  ) : undefined
+                }
               >
                 {onRfqStep && at("rfq") && (isCoordinator || isManager) && !isCompleted && (
                   <div className="mt-2 rounded-xl border border-border p-4">
@@ -686,19 +701,9 @@ export default async function RequestPage({
                 )}
                 {onDecideStep && at("deciding") && (
                   <div className="mt-2 rounded-xl border border-primary/15 bg-primary/5 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-text">Select vendor · {DECISION_POLICY_LABELS[req.decision_policy]}</p>
-                      {(isCoordinator || isManager) && quotes.length > 0 && (
-                        <form action={aiRecommendQuoteAction}>
-                          <input type="hidden" name="requestId" value={req.id} />
-                          <button type="submit" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
-                            <Sparkles className="h-3.5 w-3.5" /> Recommend with AI
-                          </button>
-                        </form>
-                      )}
-                    </div>
-                    {req.ai_recommendation && (
-                      <p className="mt-1 text-sm text-muted"><span className="font-medium text-text">AI:</span> {req.ai_recommendation}</p>
+                    <p className="text-sm font-medium text-text">Select vendor · {DECISION_POLICY_LABELS[req.decision_policy]}</p>
+                    {req.ai_recommended_quote_id && (
+                      <p className="mt-1 text-xs text-subtle">The AI Advisor flagged a pick below — tap the <span className="font-medium text-amber-700 dark:text-amber-300">AI pick</span> badge to see why.</p>
                     )}
                     {req.decision_policy === "vote" && (
                       <p className="mt-1 text-xs text-subtle">Members vote below to advise; the coordinator makes the final pick.</p>
@@ -719,7 +724,17 @@ export default async function RequestPage({
                       const selected = q.id === req.selected_quote_id;
                       const canManageQuote = (q.created_by === user.id || isCoordinator || isManager) && !isCompleted;
                       return (
-                        <li key={q.id} className={"rounded-xl border px-4 py-3 " + (selected ? "border-primary bg-primary/5" : "border-border")}>
+                        <li
+                          key={q.id}
+                          className={
+                            "rounded-xl border px-4 py-3 " +
+                            (selected
+                              ? "border-primary bg-primary/5"
+                              : q.id === req.ai_recommended_quote_id
+                                ? "border-amber-400/60 bg-amber-50/50 dark:border-amber-500/40 dark:bg-amber-500/5"
+                                : "border-border")
+                          }
+                        >
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium text-text">
                               {q.vendor_name}
@@ -729,8 +744,8 @@ export default async function RequestPage({
                               {!hasSelection && i === 0 && (
                                 <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Best price</span>
                               )}
-                              {q.id === req.ai_recommended_quote_id && (
-                                <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-primary/40 px-2 py-0.5 text-[11px] font-medium text-primary"><Sparkles className="h-3 w-3" /> AI pick</span>
+                              {q.id === req.ai_recommended_quote_id && onDecideStep && (
+                                <AiPickBadge rationale={req.ai_recommendation} />
                               )}
                               {onDecideStep && at("deciding") && req.decision_policy === "vote" && tally[q.id] ? (
                                 <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-text">{tally[q.id]} vote{tally[q.id] === 1 ? "" : "s"}</span>
