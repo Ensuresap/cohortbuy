@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Send a message." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const ctx = { db: supabase, actor: undefined };
   const res = await conciergeReply(ctx, messages);
 

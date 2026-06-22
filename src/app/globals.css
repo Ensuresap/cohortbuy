@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Epilogue:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -12,38 +12,39 @@
 */
 @layer base {
   :root {
-    --bg: 251 247 240; /* cream */
+    /* Warm Sand editorial palette — #faf8f5 / #f0ebe3 / #c9b99a / #8b7355 */
+    --bg: 250 248 245; /* sand-50 */
     --surface: 255 255 255;
-    --surface-2: 240 245 242;
-    --border: 226 224 216;
-    --text: 38 49 46; /* ink */
-    --muted: 90 102 98;
-    --subtle: 132 142 138;
-    --primary: 31 111 92; /* forest */
-    --primary-hover: 21 84 63;
-    --primary-foreground: 251 247 240;
-    --accent: 224 122 95; /* clay */
-    --accent-foreground: 255 255 255;
-    --highlight: 233 185 73; /* sun */
-    --ring: 31 111 92;
-    --shadow-color: 31 111 92;
+    --surface-2: 240 235 227; /* sand-100 */
+    --border: 226 217 201;
+    --text: 43 38 32; /* ink */
+    --muted: 120 107 91;
+    --subtle: 159 145 126;
+    --primary: 139 115 85; /* sand-600 */
+    --primary-hover: 111 91 67;
+    --primary-foreground: 250 248 245;
+    --accent: 201 185 154; /* sand-300 */
+    --accent-foreground: 43 38 32;
+    --highlight: 201 185 154;
+    --ring: 139 115 85;
+    --shadow-color: 60 50 38;
   }
 
   .dark {
-    --bg: 16 22 20;
-    --surface: 25 33 30;
-    --surface-2: 33 43 39;
-    --border: 52 64 59;
-    --text: 240 237 230;
-    --muted: 176 186 181;
-    --subtle: 128 138 134;
-    --primary: 52 168 142;
-    --primary-hover: 78 190 164;
-    --primary-foreground: 12 18 16;
-    --accent: 230 132 105;
-    --accent-foreground: 18 14 12;
-    --highlight: 233 185 73;
-    --ring: 78 190 164;
+    --bg: 31 27 22;
+    --surface: 41 36 30;
+    --surface-2: 51 45 37;
+    --border: 71 63 52;
+    --text: 250 248 245;
+    --muted: 190 180 165;
+    --subtle: 150 140 124;
+    --primary: 201 185 154; /* sand-300 leads in dark */
+    --primary-hover: 214 201 174;
+    --primary-foreground: 43 38 32;
+    --accent: 139 115 85; /* sand-600 */
+    --accent-foreground: 250 248 245;
+    --highlight: 201 185 154;
+    --ring: 201 185 154;
     --shadow-color: 0 0 0;
   }
 
@@ -52,12 +53,36 @@
   }
   body {
     @apply bg-background text-text font-sans antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  /* Editorial display headings — tight, crisp (Urbanist) */
+  h1, h2, h3, h4, h5 {
+    @apply font-display;
+    letter-spacing: -0.02em;
   }
 }
 
 @layer utilities {
   .container-prose {
     @apply mx-auto w-full max-w-6xl px-6;
+  }
+  /* Editorial eyebrow — uppercase, tracked label (ported from cohort-connect, themed to CohortBuy tokens) */
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.22em] text-subtle;
+  }
+  /* Card that lifts on hover and zooms its image */
+  .lift {
+    @apply transition duration-300;
+  }
+  .lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 30px 60px -30px rgb(var(--shadow-color) / 0.35);
+  }
+  .lift img {
+    @apply transition duration-500;
+  }
+  .lift:hover img {
+    transform: scale(1.05);
   }
 }
 

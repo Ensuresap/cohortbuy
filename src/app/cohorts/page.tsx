@@ -32,12 +32,11 @@ function statusLabelFor(c: MyCohortCard) {
   return c.my_status.charAt(0).toUpperCase() + c.my_status.slice(1);
 }
 
-export default async function CohortsPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; tag?: string; loc?: string };
+export default async function CohortsPage(props: {
+  searchParams: Promise<{ q?: string; tag?: string; loc?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

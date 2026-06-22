@@ -61,8 +61,10 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default async function CohortPage({ params, searchParams }: { params: { handle: string }; searchParams?: { ref?: string } }) {
-  const supabase = createClient();
+export default async function CohortPage(props: { params: Promise<{ handle: string }>; searchParams?: Promise<{ ref?: string }> }) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

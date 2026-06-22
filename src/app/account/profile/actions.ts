@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { completeOnboarding } from "@/core/profiles/services/profileService";
 
 export async function updateProfileAction(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

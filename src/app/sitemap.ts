@@ -15,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let guideRoutes: MetadataRoute.Sitemap = [];
   try {
-    const guides = await listPublicGuides({ db: createClient(), actor: undefined });
+    const guides = await listPublicGuides({ db: await createClient(), actor: undefined });
     guideRoutes = guides.map((g) => ({
       url: `${SITE_URL}/guides/${g.slug}`,
       lastModified: new Date(g.updated),

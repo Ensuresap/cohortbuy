@@ -7,7 +7,7 @@ import { saveGuide, deleteGuide } from "@/core/guides/services/guideService";
 import { logAudit } from "@/core/audit/services/auditService";
 
 async function ctxOrLogin() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   return { db: supabase, actor: { id: user.id } };

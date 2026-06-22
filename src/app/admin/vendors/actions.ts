@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addVendor } from "@/core/vendors/services/vendorService";
 
 export async function addVendorAction(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

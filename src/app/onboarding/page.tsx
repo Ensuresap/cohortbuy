@@ -3,12 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/core/profiles/services/profileService";
 import OnboardingForm from "./OnboardingForm";
 
-export default async function OnboardingPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
+export default async function OnboardingPage(props: {
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

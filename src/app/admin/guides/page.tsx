@@ -7,7 +7,7 @@ import AppShell from "@/components/app/AppShell";
 export const dynamic = "force-dynamic";
 
 export default async function AdminGuidesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const ctx = { db: supabase, actor: { id: user.id } };

@@ -29,7 +29,7 @@ const steps = [
 ];
 
 export default async function VendorsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const statsRes = await getPublicStats({ db: supabase, actor: undefined });
   const stats = statsRes.ok ? statsRes.data : { cohorts: 0, members: 0, projects: 0, value_cents: 0, saved_cents: 0 };
   const hasStats = stats.cohorts > 0 || stats.value_cents > 0;

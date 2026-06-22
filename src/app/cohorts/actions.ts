@@ -24,7 +24,7 @@ import {
 } from "@/core/posts/services/postService";
 
 async function getCtx() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

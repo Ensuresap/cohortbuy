@@ -6,8 +6,9 @@ import { getBalance } from "@/core/tokens/services/tokenService";
 import AppShell from "@/components/app/AppShell";
 import { deleteAccountAction } from "./actions";
 
-export default async function AccountPage({ searchParams }: { searchParams?: { delete?: string } }) {
-  const supabase = createClient();
+export default async function AccountPage(props: { searchParams?: Promise<{ delete?: string }> }) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

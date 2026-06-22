@@ -21,7 +21,7 @@ function initialsFrom(name: string): string {
 
 /** Authenticated app frame: top bar with nav + profile menu. */
 export default async function AppShell({ children }: { children: React.ReactNode }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -41,10 +41,10 @@ export default async function AppShell({ children }: { children: React.ReactNode
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 sm:px-6">
           <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
             <svg viewBox="0 0 32 32" className="h-7 w-7" aria-hidden="true">
-              <circle cx="16" cy="16" r="15" fill="#1F6F5C" />
-              <circle cx="12" cy="13" r="3.2" fill="#FBF7F0" />
-              <circle cx="20" cy="13" r="3.2" fill="#E9B949" />
-              <circle cx="16" cy="20" r="3.2" fill="#E07A5F" />
+              <circle cx="16" cy="16" r="15" fill="#8B7355" />
+              <circle cx="12" cy="13" r="3.2" fill="#FAF8F5" />
+              <circle cx="20" cy="13" r="3.2" fill="#C9B99A" />
+              <circle cx="16" cy="20" r="3.2" fill="#5E4B36" />
             </svg>
             <span className="hidden font-display text-lg font-semibold text-primary sm:inline">
               CohortBuy

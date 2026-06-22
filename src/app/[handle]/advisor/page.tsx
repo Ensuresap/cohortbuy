@@ -8,8 +8,9 @@ import AdvisorChat from "@/components/app/AdvisorChat";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdvisorPage({ params }: { params: { handle: string } }) {
-  const supabase = createClient();
+export default async function AdvisorPage(props: { params: Promise<{ handle: string }> }) {
+  const params = await props.params;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

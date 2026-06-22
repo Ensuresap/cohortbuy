@@ -4,7 +4,7 @@ import { advise } from "@/core/advisor/services/advisorService";
 
 // Advisor turn endpoint. Auth via cookie session; thin adapter over the service.
 export async function POST(req: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

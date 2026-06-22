@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 // Pull quote text from a pasted email or an uploaded document, then AI-extract fields.
 export async function POST(req: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

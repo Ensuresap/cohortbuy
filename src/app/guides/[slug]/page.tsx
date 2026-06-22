@@ -10,8 +10,9 @@ import { SITE_URL, SITE_NAME } from "@/lib/site";
 
 export const revalidate = 300;
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const g = await getPublicGuide({ db: createClient(), actor: undefined }, params.slug);
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
+  const g = await getPublicGuide({ db: await createClient(), actor: undefined }, params.slug);
   if (!g) return { title: "Guide not found — CohortBuy" };
   const url = `${SITE_URL}/guides/${g.slug}`;
   return {
@@ -30,8 +31,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function GuidePage({ params }: { params: { slug: string } }) {
-  const ctx = { db: createClient(), actor: undefined };
+export default async function GuidePage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
+  const ctx = { db: await createClient(), actor: undefined };
   const g = await getPublicGuide(ctx, params.slug);
   if (!g) notFound();
   const others = (await listPublicGuides(ctx)).filter((o) => o.slug !== g.slug).slice(0, 3);

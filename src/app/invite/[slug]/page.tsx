@@ -12,8 +12,9 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export default async function InvitePage({ params }: { params: { slug: string } }) {
-  const supabase = createClient();
+export default async function InvitePage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -44,10 +45,10 @@ export default async function InvitePage({ params }: { params: { slug: string } 
       <div className="w-full max-w-md">
         <div className="mb-5 flex items-center gap-2">
           <svg viewBox="0 0 32 32" className="h-7 w-7" aria-hidden="true">
-            <circle cx="16" cy="16" r="15" fill="#1F6F5C" />
-            <circle cx="12" cy="13" r="3.2" fill="#FBF7F0" />
-            <circle cx="20" cy="13" r="3.2" fill="#E9B949" />
-            <circle cx="16" cy="20" r="3.2" fill="#E07A5F" />
+            <circle cx="16" cy="16" r="15" fill="#8B7355" />
+            <circle cx="12" cy="13" r="3.2" fill="#FAF8F5" />
+            <circle cx="20" cy="13" r="3.2" fill="#C9B99A" />
+            <circle cx="16" cy="20" r="3.2" fill="#5E4B36" />
           </svg>
           <span className="font-display text-lg font-semibold text-primary">CohortBuy</span>
         </div>

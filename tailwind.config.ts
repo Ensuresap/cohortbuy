@@ -32,18 +32,19 @@ const config: Config = {
 
         // Fixed brand colors — only for intentional brand marks (logo, brand
         // panels). Not theme-aware; do not use for normal text/surfaces.
+        // Warm Sand identity.
         brand: {
-          cream: "#FBF7F0",
-          ink: "#26312E",
-          forest: "#1F6F5C",
-          "forest-dark": "#15543F",
-          clay: "#E07A5F",
-          sun: "#E9B949",
+          cream: "#FAF8F5",
+          ink: "#2B2620",
+          forest: "#8B7355",
+          "forest-dark": "#6F5B43",
+          clay: "#C9B99A",
+          sun: "#C9B99A",
         },
       },
       fontFamily: {
-        display: ["Fraunces", "ui-serif", "Georgia", "serif"],
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Urbanist", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["Epilogue", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       boxShadow: {
         soft: "0 10px 40px -12px rgb(var(--shadow-color) / 0.22)",

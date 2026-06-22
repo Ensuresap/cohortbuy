@@ -5,33 +5,19 @@ import Reveal from "@/components/Reveal";
 import CountUp from "@/components/CountUp";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicStats } from "@/core/cohorts/services/cohortService";
+import { LIFECYCLE, POSTURE, POSTURE_TAGLINE, IMAGES } from "@/content/marketing";
 
 // Hero photo — swap this for your own:
 //  • Local file: drop an image into /public and set HERO_PHOTO = "/your-file.jpg"
 //  • Hosted URL: use an Unsplash/Pexels link (hosts allowed in next.config.mjs)
 const HERO_PHOTO = "/hero.jpg";
 
-const steps = [
-  {
-    n: "01",
-    title: "Start a project",
-    body: "Message the CohortBuy agent: “I want to redo my backyard fence — anyone else in?” It opens a project and invites your neighbors.",
-  },
-  {
-    n: "02",
-    title: "Gather the group",
-    body: "Neighbors join, the agent captures what each home needs, and the group picks a coordinator. No spreadsheets, no group-chat chaos.",
-  },
-  {
-    n: "03",
-    title: "Get real quotes",
-    body: "The agent researches the market and collects comparable bids from vetted vendors — apples-to-apples, with a clear recommendation.",
-  },
-  {
-    n: "04",
-    title: "Share the cost, fairly",
-    body: "One combined job, a transparent split everyone can see, and a clean contract. You pay the vendor directly or through secure escrow.",
-  },
+// Illustrative gallery of the kinds of work neighbors bundle (static imagery).
+const gallery = [
+  { src: IMAGES.solar, category: "Solar & energy", blurb: "Same orientation, one installer rate." },
+  { src: IMAGES.exterior, category: "Paint & siding", blurb: "One crew, one palette, one window." },
+  { src: IMAGES.ev, category: "EV charging", blurb: "Level-2 chargers across the block in one trip." },
+  { src: IMAGES.trees, category: "Landscaping", blurb: "Seasonal tree care at a locked annual rate." },
 ];
 
 const values = [
@@ -90,7 +76,7 @@ const projects = [
 ];
 
 export default async function Home() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const statsRes = await getPublicStats({ db: supabase, actor: undefined });
   const stats = statsRes.ok ? statsRes.data : { cohorts: 0, members: 0, projects: 0, value_cents: 0, saved_cents: 0 };
   const hasStats = stats.cohorts > 0 || stats.value_cents > 0;
@@ -142,14 +128,15 @@ export default async function Home() {
         <div className="glow pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full" aria-hidden="true" />
         <div className="container-prose relative grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-2">
           <div className="reveal">
+            <p className="eyebrow mb-4">Vol. 01 · Neighborhoods first · Expanding to any cohort</p>
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-surface-2 px-3 py-1 text-sm font-medium text-primary">
               <span className="h-2 w-2 rounded-full bg-accent" />
               Now forming neighborhood cohorts
             </span>
-            <h1 className="mt-5 font-display text-5xl font-semibold leading-[1.05] text-text sm:text-6xl">
+            <h1 className="mt-5 font-display font-semibold leading-[0.95] tracking-tight text-text text-[clamp(2.75rem,6vw,4.5rem)]">
               Stop overpaying.
               <br />
-              <span className="text-primary">Buy with your block.</span>
+              Buy <em className="italic text-primary">better,</em> with your block.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
               Gutter cleaning, a fence, solar, a bulk laptop order — whatever it
@@ -254,10 +241,11 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* How it works */}
+      {/* How it works — the cohort lifecycle */}
       <section id="how" className="container-prose scroll-mt-20 py-20 sm:py-28">
         <div className="max-w-2xl">
-          <h2 className="font-display text-4xl font-semibold text-text">
+          <p className="eyebrow mb-3">The lifecycle</p>
+          <h2 className="font-display text-4xl font-semibold tracking-tight text-text">
             From &ldquo;I need this done&rdquo; to done — together
           </h2>
           <p className="mt-4 text-lg text-muted">
@@ -265,21 +253,59 @@ export default async function Home() {
             the calls that matter.
           </p>
         </div>
-        <div className="reveal mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((s) => (
+        <div className="reveal mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {LIFECYCLE.map((s) => (
             <div
               key={s.n}
-              className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition hover:shadow-soft"
+              className="lift rounded-2xl border border-border bg-surface p-6 shadow-sm"
             >
-              <div className="font-display text-3xl font-semibold text-accent">
-                {s.n}
+              <div className="flex items-baseline gap-3">
+                <span className="font-display text-3xl font-semibold text-accent">
+                  {s.n}
+                </span>
+                <h3 className="font-display text-xl font-semibold text-text">
+                  {s.key}
+                </h3>
               </div>
-              <h3 className="mt-3 font-display text-xl font-semibold text-text">
-                {s.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted">{s.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Live-feel gallery — the kinds of work neighbors bundle */}
+      <section className="border-y border-border bg-surface-2/60 py-20 sm:py-24">
+        <div className="container-prose">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="max-w-xl">
+              <p className="eyebrow mb-3">What neighbors bundle</p>
+              <h2 className="font-display text-4xl font-semibold tracking-tight text-text">
+                One block, one job, one price
+              </h2>
+            </div>
+            <a href="#waitlist" className="text-sm font-semibold text-primary hover:text-primary-hover">
+              Start your own &rarr;
+            </a>
+          </div>
+          <div className="reveal mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {gallery.map((g) => (
+              <div key={g.category} className="lift overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+                <div className="relative aspect-[4/3] w-full overflow-hidden">
+                  <Image
+                    src={g.src}
+                    alt={g.category}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 280px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="p-5">
+                  <p className="eyebrow">{g.category}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{g.blurb}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -391,18 +417,31 @@ export default async function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border">
-        <div className="container-prose flex flex-col items-center justify-between gap-4 py-10 sm:flex-row">
-          <div className="flex items-center gap-2">
-            <Logo />
-            <span className="font-display font-semibold text-primary">
-              CohortBuy
-            </span>
+      <footer className="border-t border-border bg-surface/60">
+        {/* Posture — facilitator, not principal */}
+        <div className="container-prose grid gap-8 py-14 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="lg:col-span-1">
+            <div className="flex items-center gap-2">
+              <Logo />
+              <span className="font-display text-lg font-semibold text-primary">CohortBuy</span>
+            </div>
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted">
+              The social layer for any group that buys together — starting with
+              neighborhoods. We coordinate the work; you keep every decision.
+            </p>
           </div>
-          <p className="text-sm text-subtle">
-            Neighbors, pooled. &copy; {new Date().getFullYear()} CohortBuy. A
-            facilitator — not a party to your contracts.
-          </p>
+          {POSTURE.map((p) => (
+            <div key={p.label}>
+              <p className="eyebrow">{p.label}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{p.detail}</p>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-border">
+          <div className="container-prose flex flex-col items-center justify-between gap-2 py-6 text-sm text-subtle sm:flex-row">
+            <p>&copy; {new Date().getFullYear()} {POSTURE_TAGLINE}</p>
+            <p>Neighbors, pooled. Trust first.</p>
+          </div>
         </div>
       </footer>
     </main>
@@ -430,10 +469,10 @@ function CountStat({ n, label, prefix }: { n: number; label: string; prefix?: st
 function Logo() {
   return (
     <svg viewBox="0 0 32 32" className="h-8 w-8" aria-hidden="true">
-      <circle cx="16" cy="16" r="15" fill="#1F6F5C" />
-      <circle cx="12" cy="13" r="3.2" fill="#FBF7F0" />
-      <circle cx="20" cy="13" r="3.2" fill="#E9B949" />
-      <circle cx="16" cy="20" r="3.2" fill="#E07A5F" />
+      <circle cx="16" cy="16" r="15" fill="#8B7355" />
+      <circle cx="12" cy="13" r="3.2" fill="#FAF8F5" />
+      <circle cx="20" cy="13" r="3.2" fill="#C9B99A" />
+      <circle cx="16" cy="20" r="3.2" fill="#5E4B36" />
     </svg>
   );
 }

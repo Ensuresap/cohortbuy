@@ -4,12 +4,11 @@ import { getMyProfile } from "@/core/profiles/services/profileService";
 import AppShell from "@/components/app/AppShell";
 import ProfileForm from "./ProfileForm";
 
-export default async function EditProfilePage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
+export default async function EditProfilePage(props: {
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

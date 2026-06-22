@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default async function GuidesIndex() {
-  const guides = await listPublicGuides({ db: createClient(), actor: undefined });
+  const guides = await listPublicGuides({ db: await createClient(), actor: undefined });
   return (
     <main className="min-h-screen">
       <header className="container-prose flex items-center justify-between py-6 pt-[calc(1.5rem+env(safe-area-inset-top))]">

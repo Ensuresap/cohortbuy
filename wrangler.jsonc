@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "cohortbuy",
+  "compatibility_date": "2025-06-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // Serve on the custom domain (zone already in this Cloudflare account).
+  // custom_domain: true makes Wrangler create the DNS record + edge cert on deploy.
+  "routes": [
+    { "pattern": "cohortbuy.com", "custom_domain": true },
+    { "pattern": "www.cohortbuy.com", "custom_domain": true }
+  ]
+}

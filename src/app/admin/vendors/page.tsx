@@ -14,7 +14,7 @@ import { addVendorAction } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function AdminVendorsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

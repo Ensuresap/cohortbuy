@@ -7,7 +7,7 @@ import { logAudit } from "@/core/audit/services/auditService";
 
 export async function deleteAccountAction(formData: FormData) {
   const confirm = String(formData.get("confirm") ?? "");
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   if (confirm !== "DELETE") {

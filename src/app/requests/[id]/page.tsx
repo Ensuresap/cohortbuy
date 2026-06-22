@@ -147,14 +147,13 @@ function initials(name: string | null) {
   return (name ?? "?").trim().split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase() || "?";
 }
 
-export default async function RequestPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams?: { step?: string; disc?: string };
+export default async function RequestPage(props: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ step?: string; disc?: string }>;
 }) {
-  const supabase = createClient();
+  const params = await props.params;
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

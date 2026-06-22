@@ -6,7 +6,7 @@ import { logAudit } from "@/core/audit/services/auditService";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   const ctx = { db: supabase, actor: { id: user.id } };

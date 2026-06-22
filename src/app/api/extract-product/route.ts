@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 // Pull product details from pasted text (a product page copy or description),
 // then AI-extract name/specs/url/price. No live URL fetch (no web access).
 export async function POST(req: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

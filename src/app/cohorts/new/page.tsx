@@ -9,12 +9,11 @@ import type { TagCatalogItem } from "@/core/cohorts/domain/cohort";
 import CreateCohortForm from "./CreateCohortForm";
 import AppShell from "@/components/app/AppShell";
 
-export default async function NewCohortPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
+export default async function NewCohortPage(props: {
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

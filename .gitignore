@@ -34,3 +34,8 @@ next-env.d.ts
 /supabase/.branches
 /supabase/.temp
 /supabase/.env
+
+# cloudflare / opennext
+.open-next/
+.wrangler/
+cloudflare-env.d.ts

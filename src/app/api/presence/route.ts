@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { touchPresence } from "@/core/profiles/services/profileService";
 
 export async function POST() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
